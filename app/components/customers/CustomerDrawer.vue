@@ -111,12 +111,20 @@ watch(
   },
   { immediate: true }
 );
+watch(
+  () => props.open,
+  (open) => {
+    if (open && !props.customer) {
+      resetForm();
+    }
+  }
+);
+
 
 const fetchCep = async () => {
   const cleanCep = form.cep.replace(/\D/g, "");
   if (cleanCep.length !== 8) return;
 
-  loadingCep.value = true;
   try {
     const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
     const data = await res.json();

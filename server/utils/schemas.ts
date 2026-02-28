@@ -1,14 +1,16 @@
 import { z } from "zod";
 
 const dateSchema = z.union([
-  z.string().date(),     // Accepts "YYYY-MM-DD"
+  z.string().date(), // Accepts "YYYY-MM-DD"
   z.string().datetime(), // Accepts ISO datetime
-  z.date(),              // Accepts Date objects
+  z.date(), // Accepts Date objects
 ]);
 
 // --- Company Schemas ---
 export const companySchema = z.object({
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   document: z
     .string()
     .min(11, { message: "O documento deve ser válido (CPF/CNPJ)" })
@@ -20,7 +22,10 @@ export const companySchema = z.object({
     .transform((val) => val?.replace(/\D/g, "")),
   address: z.string().optional(),
   city: z.string().optional(),
-  state: z.string().length(2, { message: "O estado deve ter 2 caracteres" }).optional(),
+  state: z
+    .string()
+    .length(2, { message: "O estado deve ter 2 caracteres" })
+    .optional(),
   zip: z
     .string()
     .optional()
@@ -39,7 +44,9 @@ export const companyUpdateSchema = companySchema
 export const userSchema = z.object({
   companyId: z.number().optional(), // Nullable/Optional
   defaultCompanyId: z.number().optional().nullable(), // Preferred company for login
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   email: z.string().email("Endereço de e-mail inválido"),
   document: z
     .string()
@@ -80,7 +87,9 @@ export const productSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   description: z.string().optional(),
   type: z
     .enum(["concrete", "pump", "additive", "rental", "other"])
@@ -105,7 +114,9 @@ export const productUpdateSchema = productSchema
 // --- Quote Schemas ---
 export const quoteItemSchema = z.object({
   productId: z.number().optional(), // Can be null if custom item
-  productName: z.string().min(1, { message: "O nome do produto é obrigatório" }),
+  productName: z
+    .string()
+    .min(1, { message: "O nome do produto é obrigatório" }),
   description: z.string().optional(),
   unit: z.string().optional(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
@@ -126,9 +137,17 @@ export const quoteSchema = z.object({
   driverId: z.number().optional(),
   pumperId: z.number().optional(),
 
-  customerName: z.string().min(3, { message: "O nome do cliente é obrigatório" }),
-  customerDocument: z.string().optional(),
-  customerPhone: z.string().optional(),
+  customerName: z
+    .string()
+    .min(3, { message: "O nome do cliente é obrigatório" }),
+  customerDocument: z
+    .string()
+    .optional()
+    .transform((val) => val?.replace(/\D/g, "")),
+  customerPhone: z
+    .string()
+    .optional()
+    .transform((val) => val?.replace(/\D/g, "")),
   customerAddress: z.string().optional(),
 
   status: z
@@ -160,7 +179,9 @@ export type QuoteUpdateInput = z.infer<typeof quoteUpdateSchema>;
 // --- Sale Schemas ---
 export const saleItemSchema = z.object({
   productId: z.number().optional(), // Can be null if custom item
-  productName: z.string().min(1, { message: "O nome do produto é obrigatório" }),
+  productName: z
+    .string()
+    .min(1, { message: "O nome do produto é obrigatório" }),
   description: z.string().optional(),
   unit: z.string().optional(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
@@ -182,9 +203,17 @@ export const saleSchema = z.object({
   driverId: z.number().optional(),
   pumperId: z.number().optional(),
 
-  customerName: z.string().min(3, { message: "O nome do cliente é obrigatório" }),
-  customerDocument: z.string().optional(),
-  customerPhone: z.string().optional(),
+  customerName: z
+    .string()
+    .min(3, { message: "O nome do cliente é obrigatório" }),
+  customerDocument: z
+    .string()
+    .optional()
+    .transform((val) => val?.replace(/\D/g, "")),
+  customerPhone: z
+    .string()
+    .optional()
+    .transform((val) => val?.replace(/\D/g, "")),
   customerAddress: z.string().optional(),
 
   date: dateSchema.optional(),
@@ -213,7 +242,9 @@ export const paymentMethodSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   type: z
     .enum([
       "cash",
@@ -246,7 +277,9 @@ export const sellerSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   document: z
     .string()
     .optional()
@@ -272,7 +305,9 @@ export const driverSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   document: z
     .string()
     .optional()
@@ -296,7 +331,9 @@ export const pumperSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   document: z
     .string()
     .optional()
@@ -383,7 +420,9 @@ export const scheduleSchema = z.object({
   companyId: z.number({ required_error: "O ID da empresa é obrigatório" }),
   userId: z.number({ required_error: "O ID do usuário é obrigatório" }),
   saleId: z.number().optional().nullable(),
-  title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres" }),
+  title: z
+    .string()
+    .min(3, { message: "O título deve ter pelo menos 3 caracteres" }),
   description: z.string().optional().nullable(),
   customerName: z.string().optional().nullable(),
   customerPhone: z
@@ -423,7 +462,9 @@ export const materialSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   type: z
     .enum(["cement", "sand", "stone", "additive", "water", "other"])
     .default("other"),
@@ -450,7 +491,9 @@ export const mixDesignSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
+  name: z
+    .string()
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   description: z.string().optional(),
   fck: z.number().int().optional(), // MPa
   slump: z.number().int().optional(), // cm

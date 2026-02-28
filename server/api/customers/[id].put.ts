@@ -42,6 +42,25 @@ export default defineEventHandler(async (event) => {
         requireCompanyAccess(event, existing.ownerCompanyId)
     }
 
+    // Check for duplicate document
+    if (result.data.document && result.data.document !== existing.document && existing.ownerCompanyId) {
+        const duplicate = await db
+            .select()
+            .from(companies)
+            .where(
+                and(
+                    eq(companies.document, result.data.document),
+                    eq(companies.isCustomer, true),
+                    eq(companies.ownerCompanyId, existing.ownerCompanyId)
+                )
+            )
+            .get()
+
+        if (duplicate) {
+            throw createError({ statusCode: 409, message: 'Já existe um cliente com este documento.' })
+        }
+    }
+
     // 2. Update
     const updated = await db
         .update(companies)

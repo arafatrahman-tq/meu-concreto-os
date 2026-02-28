@@ -16,10 +16,23 @@ export function useKnownCustomers(
     const history = toValue(historyList) || [];
     const source = toValue(sourceType);
 
+    // Helper to generate a unique key for aggregation (aligned with backend)
+    const getKey = (doc?: string | null, name?: string | null) => {
+      let d = doc?.trim();
+      // Normalize document: remove non-alphanumeric characters if not a placeholder
+      if (d && !d.startsWith("_cust_")) {
+        d = d.replace(/[^a-zA-Z0-9]/g, "");
+      }
+      const n = name?.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      // Ignore internal placeholder documents when generating key
+      if (d && !d.startsWith("_cust_")) return d;
+      return n || "unknown";
+    };
+
     // 1. Companies first (source of truth)
-    for (const c of companies) {
-      const key = c.document || c.name;
-      if (!key) continue;
+    for (const c of toValue(companies) || []) {
+      const key = getKey(c.document, c.name);
+      if (!key || key === "unknown") continue;
 
       const fullAddress = [c.address, c.city, c.state]
         .filter(Boolean)
@@ -38,22 +51,20 @@ export function useKnownCustomers(
     }
 
     // 2. History customers (skip if already registered as company)
-    for (const item of history) {
-      const customerName = item.customerName;
-      const customerDocument = item.customerDocument;
-      const key = customerDocument || customerName;
-      if (!key) continue;
+    for (const item of toValue(history) || []) {
+      const key = getKey(item.customerDocument, item.customerName);
+      if (!key || key === "unknown") continue;
 
       if (!map.has(key)) {
         map.set(key, {
           id: `${source}-${item.id}`,
-          label: customerName,
-          name: customerName,
-          document: customerDocument ?? "",
+          label: item.customerName,
+          name: item.customerName,
+          document: item.customerDocument ?? "",
           phone: item.customerPhone ?? "",
           address: item.customerAddress ?? "",
-          suffix: customerDocument
-            ? `CPF/CNPJ ${customerDocument}`
+          suffix: item.customerDocument
+            ? `CPF/CNPJ ${item.customerDocument}`
             : "Cliente anterior",
           source: source,
         });
