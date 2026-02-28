@@ -1,0 +1,168 @@
+import type { MixDesign } from "./mix-designs";
+
+export type SaleStatus =
+  | "pending"
+  | "confirmed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export type QuoteStatus =
+  | "draft"
+  | "sent"
+  | "approved"
+  | "rejected"
+  | "expired";
+
+export interface SaleItem {
+  id?: number;
+  productId?: number | null;
+  productName: string;
+  description?: string;
+  unit?: string;
+  quantity: number;
+  unitPrice: number; // cents
+  totalPrice?: number;
+  fck?: number | null;
+  slump?: number | null;
+  stoneSize?: string | null;
+  mixDesignId?: number | null;
+}
+
+export interface Sale {
+  id: number;
+  customerName: string;
+  customerDocument?: string | null;
+  customerPhone?: string | null;
+  customerAddress?: string | null;
+  status: SaleStatus;
+  date: string | number | null;
+  deliveryDate?: string | number | null;
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentMethod?: string | null;
+  notes?: string | null;
+  companyId: number;
+  userId?: number | null;
+  quoteId?: number | null;
+  sellerId?: number | null;
+  driverId?: number | null;
+  pumperId?: number | null;
+  items: SaleItem[];
+  transactions?: any[];
+  createdAt: string | number;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  unit: string;
+  price: number;
+  description?: string | null;
+  fck?: number | null;
+  slump?: number | null;
+  stoneSize?: string | null;
+  mixDesignId?: number | null;
+}
+
+export interface PaymentMethod {
+  id: number;
+  name: string;
+  type: string;
+  active: boolean;
+}
+
+export interface Company {
+  id: number;
+  name: string;
+  document: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+}
+
+export interface Seller {
+  id: number;
+  name: string;
+  phone?: string | null;
+  active: boolean;
+}
+
+export interface Driver {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface Pumper {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface KnownCustomer {
+  id?: string;
+  label: string;
+  name: string;
+  document: string;
+  phone: string;
+  address: string;
+  suffix?: string;
+  source: "company" | "sale" | "quote";
+}
+
+export interface QuoteItem {
+  id?: number;
+  productId?: number | null;
+  productName: string;
+  description?: string;
+  unit?: string;
+  quantity: number;
+  unitPrice: number; // cents
+  totalPrice?: number;
+  fck?: number | null;
+  slump?: number | null;
+  stoneSize?: string | null;
+  mixDesignId?: number | null;
+}
+
+export interface Quote {
+  id: number;
+  customerName: string;
+  customerDocument?: string | null;
+  customerPhone?: string | null;
+  customerAddress?: string | null;
+  status: QuoteStatus;
+  date: string | number;
+  validUntil?: string | number | null;
+  subtotal: number;
+  discount: number;
+  total: number;
+  notes?: string | null;
+  companyId: number;
+  userId?: number | null;
+  sellerId?: number | null;
+  driverId?: number | null;
+  pumperId?: number | null;
+  items: QuoteItem[];
+  createdAt: string | number;
+}
+
+export interface FormItem {
+  _key: number;
+  productId: number | null;
+  productName: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number; // display value in BRL (float)
+  fck: number | null;
+  slump: number | null;
+  stoneSize: string;
+  mixDesignId: number | null;
+}
+
+export type { MixDesign };
