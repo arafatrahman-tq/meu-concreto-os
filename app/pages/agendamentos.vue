@@ -617,7 +617,7 @@ const getTypeIcon = (type: ScheduleType) => {
               <!-- Actions Column -->
               <td class="px-4 py-3.5 text-right">
                 <div
-                  class="flex items-center justify-end gap-0.5 opacity-100 transition-opacity"
+                  class="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <UTooltip text="Enviar WhatsApp">
                     <UButton
