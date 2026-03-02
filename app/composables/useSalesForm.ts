@@ -18,7 +18,8 @@ export const useSalesForm = (options: {
   knownCustomers: ComputedRef<KnownCustomer[]>;
   mixDesigns: ComputedRef<MixDesign[]>;
 }) => {
-  const { refreshSales, products, companiesList, knownCustomers, mixDesigns } = options;
+  const { refreshSales, products, companiesList, knownCustomers, mixDesigns } =
+    options;
   const { companyId } = useAuth();
   const toast = useToast();
 
@@ -70,6 +71,37 @@ export const useSalesForm = (options: {
 
   // Validation State
   const formErrors = reactive<Record<string, string>>({});
+
+  // ─────────────────────────────────────────────
+  // Watchers
+  // ─────────────────────────────────────────────
+  watch(selectedCustomer, (newVal) => {
+    if (newVal) {
+      form.customerName = newVal.name;
+      form.customerDocument = newVal.document ?? "";
+      form.customerPhone = newVal.phone ?? "";
+
+      // Clear validation error for customer name
+      if (formErrors.customerName) {
+        delete formErrors.customerName;
+      }
+
+      // Update registered address info
+      customerRegisteredAddress.value = newVal.address ?? "";
+
+      // If we're not using a custom delivery address, sync the form address
+      if (!useDeliveryAddress.value) {
+        form.customerAddress = newVal.address ?? "";
+      }
+    }
+  });
+
+  watch(useDeliveryAddress, (val) => {
+    if (!val && selectedCustomer.value) {
+      // If turning off delivery address, revert to registered address
+      form.customerAddress = selectedCustomer.value.address ?? "";
+    }
+  });
 
   const clearErrors = () => {
     for (const key in formErrors) {
@@ -185,14 +217,14 @@ export const useSalesForm = (options: {
       matchedCustomer ??
       (s.customerName
         ? {
-          id: `edit-${s.id}`,
-          label: s.customerName,
-          name: s.customerName,
-          document: s.customerDocument ?? "",
-          phone: s.customerPhone ?? "",
-          address: s.customerAddress ?? "",
-          source: "sale" as const,
-        }
+            id: `edit-${s.id}`,
+            label: s.customerName,
+            name: s.customerName,
+            document: s.customerDocument ?? "",
+            phone: s.customerPhone ?? "",
+            address: s.customerAddress ?? "",
+            source: "sale" as const,
+          }
         : undefined);
     customerSearchTerm.value = "";
 
@@ -240,6 +272,27 @@ export const useSalesForm = (options: {
       form.customerAddress = q.customerAddress ?? "";
       form.sellerId = q.sellerId ?? 0;
       customerSearchTerm.value = q.customerName ?? "";
+
+      // Try to match with known customers
+      const matchedCustomer = knownCustomers.value.find(
+        (c) =>
+          (q.customerDocument && c.document === q.customerDocument) ||
+          c.name === q.customerName
+      );
+      if (matchedCustomer) {
+        selectedCustomer.value = matchedCustomer;
+      } else if (q.customerName) {
+        selectedCustomer.value = {
+          id: `quote-${quoteId}`,
+          label: q.customerName,
+          name: q.customerName,
+          document: q.customerDocument ?? "",
+          phone: q.customerPhone ?? "",
+          address: q.customerAddress ?? "",
+          source: "quote" as const,
+        };
+      }
+
       form.discount = (q.discount ?? 0) / 100;
       form.notes = q.notes ?? "";
       form.items = mapApiItemsToForm(q.items);
@@ -331,7 +384,10 @@ export const useSalesForm = (options: {
       const payload = {
         ...form,
         companyId: companyId.value,
-        quoteId: linkedQuoteId.value,
+        quoteId: linkedQuoteId.value || null,
+        sellerId: form.sellerId || null,
+        driverId: form.driverId || null,
+        pumperId: form.pumperId || null,
         discount: Math.round(form.discount * 100),
         items: form.items.map((it) => ({
           ...it,
@@ -379,7 +435,10 @@ export const useSalesForm = (options: {
 
     isSendingPdf.value = s.id;
     try {
-      const res = await $fetch<{ success: boolean, sent: string[] }>(`/api/sales/${s.id}/send-pdf`, { method: "POST" });
+      const res = await $fetch<{ success: boolean; sent: string[] }>(
+        `/api/sales/${s.id}/send-pdf`,
+        { method: "POST" }
+      );
       toast.add({
         title: "PDF Enviado",
         description: `O pedido foi enviado para ${res.sent.length} destinatário(s) via WhatsApp.`,

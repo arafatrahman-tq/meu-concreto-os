@@ -1,10 +1,13 @@
 import { z } from "zod";
 
-const dateSchema = z.union([
-  z.string().date(), // Accepts "YYYY-MM-DD"
-  z.string().datetime(), // Accepts ISO datetime
-  z.date(), // Accepts Date objects
-]);
+const dateSchema = z
+  .union([
+    z.string().date(), // Accepts "YYYY-MM-DD"
+    z.string().datetime(), // Accepts ISO datetime
+    z.date(), // Accepts Date objects
+    z.literal(""), // Accepts empty string
+  ])
+  .transform((val) => (val === "" ? undefined : val));
 
 // --- Company Schemas ---
 export const companySchema = z.object({
@@ -113,18 +116,18 @@ export const productUpdateSchema = productSchema
 
 // --- Quote Schemas ---
 export const quoteItemSchema = z.object({
-  productId: z.number().optional(), // Can be null if custom item
+  productId: z.number().optional().nullable(), // Can be null if custom item
   productName: z
     .string()
     .min(1, { message: "O nome do produto é obrigatório" }),
-  description: z.string().optional(),
-  unit: z.string().optional(),
+  description: z.string().optional().nullable(),
+  unit: z.string().optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
   unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
   // Specifics
-  fck: z.number().optional(),
-  slump: z.number().optional(),
-  stoneSize: z.string().optional(),
+  fck: z.number().optional().nullable(),
+  slump: z.number().optional().nullable(),
+  stoneSize: z.string().optional().nullable(),
   mixDesignId: z.number().optional().nullable(),
 });
 
@@ -178,18 +181,18 @@ export type QuoteUpdateInput = z.infer<typeof quoteUpdateSchema>;
 
 // --- Sale Schemas ---
 export const saleItemSchema = z.object({
-  productId: z.number().optional(), // Can be null if custom item
+  productId: z.number().optional().nullable(), // Can be null if custom item
   productName: z
     .string()
     .min(1, { message: "O nome do produto é obrigatório" }),
-  description: z.string().optional(),
-  unit: z.string().optional(),
+  description: z.string().optional().nullable(),
+  unit: z.string().optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
   unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
   // Specifics
-  fck: z.number().optional(),
-  slump: z.number().optional(),
-  stoneSize: z.string().optional(),
+  fck: z.number().optional().nullable(),
+  slump: z.number().optional().nullable(),
+  stoneSize: z.string().optional().nullable(),
   mixDesignId: z.number().optional().nullable(),
 });
 
@@ -197,11 +200,11 @@ export const saleSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  userId: z.number().optional(),
-  quoteId: z.number().optional(),
-  sellerId: z.number().optional(),
-  driverId: z.number().optional(),
-  pumperId: z.number().optional(),
+  userId: z.number().optional().nullable(),
+  quoteId: z.number().optional().nullable(),
+  sellerId: z.number().optional().nullable(),
+  driverId: z.number().optional().nullable(),
+  pumperId: z.number().optional().nullable(),
 
   customerName: z
     .string()
