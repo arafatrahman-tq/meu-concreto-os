@@ -33,7 +33,8 @@ const {
   handleDelete,
   updateStatus: apiUpdateStatus,
   isUpdatingStatus,
-  driverOptions,
+  driversList,
+  // driverOptions, // We'll create a local one for multi-select
   pumperOptions,
   isConfirmDeleteModalOpen,
   confirmDeleteData,
@@ -48,7 +49,17 @@ const {
   onCreatePumper,
   handleConfirmCreate,
   mixDesigns,
+  isCancelModalOpen,
+  cancelTarget,
+  cancelReason,
+  loadingCancel,
+  openCancelConfirm,
+  handleCancel,
 } = useQuotes();
+
+const driverOptions = computed(() => [
+  ...driversList.value.map((d) => ({ label: d.name, value: d.id })),
+]);
 
 // 2. Form logic from useQuotesForm
 const {
@@ -111,7 +122,7 @@ const {
 
 // 4. Local helpers
 const sellerOptions = computed(() => [
-  { label: "Nenhum selecionado", value: 0 },
+  { label: "Nenhum selecionado", value: null },
   ...sellersList.value.map((s) => ({ label: s.name, value: s.id })),
 ]);
 
@@ -144,7 +155,7 @@ onMounted(() => {
 
     if (customerDocument) {
       const match = companiesList.value.find(
-        (c) => c.document === String(customerDocument)
+        (c) => c.document === String(customerDocument),
       );
       if (match) {
         selectedCustomer.value = {
@@ -166,10 +177,8 @@ onMounted(() => {
 
 <template>
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-    <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-    >
+    <!-- ── Page Header ── -->
+    <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-2xl font-black text-zinc-900 dark:text-white">
           Orçamentos
@@ -189,7 +198,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <!-- Stats -->
+    <!-- ── KPI Strip ── -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div
         v-for="(kpi, i) in [
@@ -271,6 +280,7 @@ onMounted(() => {
       @edit="openEdit"
       @delete="confirmDelete"
       @duplicate="duplicateQuote"
+      @cancel="openCancelConfirm"
       @send-pdf="sendPdf"
       @update-status="handleStatusUpdate"
     />
@@ -328,6 +338,11 @@ onMounted(() => {
       :promote-target="promoteTarget"
       :is-promoting="isPromoting"
       :promote-to-sale="promoteToSale"
+      v-model:is-cancel-modal-open="isCancelModalOpen"
+      :cancel-target="cancelTarget"
+      :loading-cancel="loadingCancel"
+      v-model:cancel-reason="cancelReason"
+      @cancel="handleCancel"
     />
   </div>
 </template>

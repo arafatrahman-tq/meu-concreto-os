@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
     const sale = await db.query.sales.findFirst({
         where: eq(sales.id, saleId),
         with: {
-            items: true
+            items: true,
+            paymentMethodReference: true
         }
     })
 
@@ -25,10 +26,13 @@ export default defineEventHandler(async (event) => {
     await requireCompanyAccess(event, sale.companyId)
 
     // 3. Fetch Context
-    const { company, seller } = await getPDFContext(
+    const { company, seller, defaultPaymentMethod } = await getPDFContext(
         sale.companyId,
         sale.sellerId
     )
+
+    // Select payment method: sale-specific or default
+    const paymentMethodToUse = sale.paymentMethodReference || defaultPaymentMethod
 
     // 4. Generate PDF
     const pdfBuffer = await generateDocumentPDF({
@@ -51,7 +55,8 @@ export default defineEventHandler(async (event) => {
             email: company.email,
             address: company.address,
             city: company.city,
-            state: company.state
+            state: company.state,
+            logo: company.logo
         },
         items: sale.items.map(i => ({
             productName: i.productName,
@@ -63,6 +68,13 @@ export default defineEventHandler(async (event) => {
             slump: i.slump || null,
             stoneSize: i.stoneSize || null
         })),
+        paymentMethod: paymentMethodToUse
+            ? {
+                name: paymentMethodToUse.name,
+                type: paymentMethodToUse.type,
+                details: paymentMethodToUse.details
+            }
+            : null,
         seller: seller
             ? {
                 name: seller.name,

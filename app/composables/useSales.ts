@@ -17,45 +17,61 @@ export const useSales = () => {
   // Data Fetching
   // ─────────────────────────────────────────────
   const {
-    data: salesData,
+    data: dashboardPayload,
     refresh: refreshSales,
     pending: loadingSales,
-  } = useFetch<{ sales: Sale[] }>("/api/sales", {
-    query: { companyId },
-  });
+  } = useAsyncData(
+    `sales-dashboard-${companyId.value}`,
+    async () => {
+      if (!companyId.value) {
+        return {
+          sales: [],
+          products: [],
+          companies: [],
+          paymentMethods: [],
+          sellers: [],
+          mixDesigns: [],
+        };
+      }
 
-  const { data: productsData } = useFetch<{ products: Product[] }>(
-    "/api/products",
-    {
-      query: { companyId },
-    }
-  );
+      const [
+        salesRes,
+        productsRes,
+        companiesRes,
+        paymentMethodsRes,
+        sellersRes,
+        mixRes,
+      ] = await Promise.all([
+        $fetch<{ sales: Sale[] }>("/api/sales", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ products: Product[] }>("/api/products", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ companies: Company[] }>("/api/companies", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ paymentMethods: PaymentMethod[] }>("/api/payment-methods", {
+          query: { companyId: companyId.value, active: true },
+        }),
+        $fetch<{ sellers: Seller[] }>("/api/sellers", {
+          query: { companyId: companyId.value, active: true },
+        }),
+        $fetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", {
+          query: { companyId: companyId.value },
+        }),
+      ]);
 
-  const { data: companiesData } = useFetch<{ companies: Company[] }>(
-    "/api/companies",
-    {
-      query: { companyId },
-    }
-  );
-
-  const { data: paymentMethodsData } = useFetch<{
-    paymentMethods: PaymentMethod[];
-  }>("/api/payment-methods", {
-    query: { companyId, active: true },
-  });
-
-  const { data: sellersData } = useFetch<{ sellers: Seller[] }>(
-    "/api/sellers",
-    {
-      query: { companyId, active: true },
-    }
-  );
-
-  const { data: mixDesignsData } = useFetch<{ mixDesigns: MixDesign[] }>(
-    "/api/mix-designs",
-    {
-      query: { companyId },
-    }
+      return {
+        sales: salesRes.sales || [],
+        products: productsRes.products || [],
+        companies: companiesRes.companies || [],
+        paymentMethods: paymentMethodsRes.paymentMethods || [],
+        sellers: sellersRes.sellers || [],
+        mixDesigns: mixRes.mixDesigns || [],
+      };
+    },
+    { watch: [companyId] },
   );
 
   const {
@@ -82,14 +98,14 @@ export const useSales = () => {
   // ─────────────────────────────────────────────
   // Computed Lists
   // ─────────────────────────────────────────────
-  const sales = computed(() => salesData.value?.sales ?? []);
-  const products = computed(() => productsData.value?.products ?? []);
-  const companiesList = computed(() => companiesData.value?.companies ?? []);
+  const sales = computed(() => dashboardPayload.value?.sales ?? []);
+  const products = computed(() => dashboardPayload.value?.products ?? []);
+  const companiesList = computed(() => dashboardPayload.value?.companies ?? []);
   const paymentMethods = computed(
-    () => paymentMethodsData.value?.paymentMethods ?? []
+    () => dashboardPayload.value?.paymentMethods ?? [],
   );
-  const sellersList = computed(() => sellersData.value?.sellers ?? []);
-  const mixDesigns = computed(() => mixDesignsData.value?.mixDesigns ?? []);
+  const sellersList = computed(() => dashboardPayload.value?.sellers ?? []);
+  const mixDesigns = computed(() => dashboardPayload.value?.mixDesigns ?? []);
 
   // ─────────────────────────────────────────────
   // Known Customers (from companies + past sales)
@@ -118,7 +134,7 @@ export const useSales = () => {
       })
       .sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
   });
 
@@ -128,7 +144,7 @@ export const useSales = () => {
   });
 
   const totalPages = computed(() =>
-    Math.ceil(filteredSales.value.length / pageSize.value)
+    Math.ceil(filteredSales.value.length / pageSize.value),
   );
 
   watch([search, statusFilter], () => {
@@ -143,7 +159,7 @@ export const useSales = () => {
     return {
       total: all.length,
       inProgress: all.filter(
-        (s) => s.status === "confirmed" || s.status === "in_progress"
+        (s) => s.status === "confirmed" || s.status === "in_progress",
       ).length,
       completed: all.filter((s) => s.status === "completed").length,
       totalValue: all
@@ -151,7 +167,7 @@ export const useSales = () => {
           (s) =>
             s.status === "completed" ||
             s.status === "confirmed" ||
-            s.status === "in_progress"
+            s.status === "in_progress",
         )
         .reduce((sum, s) => sum + s.total, 0),
     };
@@ -210,7 +226,7 @@ export const useSales = () => {
         title: "Status atualizado",
         description: `Venda #${String(s.id).padStart(
           4,
-          "0"
+          "0",
         )} agora está ${next}`,
         color: "success",
       });
@@ -229,6 +245,54 @@ export const useSales = () => {
     billingForm.paymentMethod = s.paymentMethod || undefined;
     billingForm.status = "paid";
     billingDialog.value = true;
+  };
+
+  // ─────────────────────────────────────────────
+  // Cancel
+  // ─────────────────────────────────────────────
+  const isCancelModalOpen = ref(false);
+  const cancelTarget = ref<Sale | null>(null);
+  const cancelReason = ref("");
+  const loadingCancel = ref(false);
+
+  const openCancelConfirm = (s: Sale) => {
+    cancelTarget.value = s;
+    cancelReason.value = "";
+    isCancelModalOpen.value = true;
+  };
+
+  const handleCancel = async () => {
+    if (!cancelTarget.value) return;
+    loadingCancel.value = true;
+    try {
+      await $fetch(`/api/sales/${cancelTarget.value.id}`, {
+        method: "PUT",
+        body: {
+          status: "cancelled",
+          ...(cancelReason.value.trim()
+            ? { notes: cancelReason.value.trim() }
+            : {}),
+        },
+      });
+      toast.add({
+        title: "Venda cancelada",
+        description: `Venda #${String(cancelTarget.value.id).padStart(4, "0")} foi cancelada.`,
+        color: "warning",
+        icon: "i-heroicons-no-symbol",
+      });
+      isCancelModalOpen.value = false;
+      await refreshSales();
+    } catch (e) {
+      toast.add({
+        title: "Erro ao cancelar",
+        description: getApiError(e),
+        color: "error",
+      });
+    } finally {
+      loadingCancel.value = false;
+      cancelTarget.value = null;
+      cancelReason.value = "";
+    }
   };
 
   const handleBill = async () => {
@@ -287,6 +351,13 @@ export const useSales = () => {
     isConfirmCreateModalOpen,
     confirmCreateData,
     isCreating,
+    // Cancel
+    isCancelModalOpen,
+    cancelTarget,
+    cancelReason,
+    loadingCancel,
+    openCancelConfirm,
+    handleCancel,
     // Actions
     openDeleteConfirm,
     handleDelete,

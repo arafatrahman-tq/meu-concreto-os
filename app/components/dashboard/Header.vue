@@ -22,13 +22,18 @@ const emit = defineEmits<{
 <template>
     <div class="space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-black text-zinc-900 dark:text-white">
-                    Visão Geral
-                </h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    Acompanhe o desempenho da sua concreteira em tempo real
-                </p>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
+                    <UIcon name="i-heroicons-squares-2x2" class="w-6 h-6 text-primary-500" />
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-zinc-900 dark:text-white">
+                        Visão Geral
+                    </h1>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                        Acompanhe o desempenho da sua concreteira em tempo real
+                    </p>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-xs text-zinc-400 hidden md:block">

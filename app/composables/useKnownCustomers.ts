@@ -18,15 +18,25 @@ export function useKnownCustomers(
 
     // Helper to generate a unique key for aggregation (aligned with backend)
     const getKey = (doc?: string | null, name?: string | null) => {
-      let d = doc?.trim();
-      // Normalize document: remove non-alphanumeric characters if not a placeholder
+      const d = doc?.trim();
+
+      // 1. Priority: Clean document (if valid and not internal placeholder)
       if (d && !d.startsWith("_cust_")) {
-        d = d.replace(/[^a-zA-Z0-9]/g, "");
+        const cleanDoc = d.replace(/[^a-zA-Z0-9]/g, "");
+        if (cleanDoc.length > 0) return cleanDoc;
       }
-      const n = name?.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      // Ignore internal placeholder documents when generating key
-      if (d && !d.startsWith("_cust_")) return d;
-      return n || "unknown";
+
+      // 2. Fallback: Normalized name
+      const n = name
+        ?.trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+      if (n && n.length > 0) return n;
+
+      // 3. If document is placeholder/invalid and no name, return unknown
+      return "unknown";
     };
 
     // 1. Companies first (source of truth)

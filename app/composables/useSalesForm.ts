@@ -17,9 +17,16 @@ export const useSalesForm = (options: {
   companiesList: ComputedRef<Company[]>;
   knownCustomers: ComputedRef<KnownCustomer[]>;
   mixDesigns: ComputedRef<MixDesign[]>;
+  driverOptions: ComputedRef<any[]>;
 }) => {
-  const { refreshSales, products, companiesList, knownCustomers, mixDesigns } =
-    options;
+  const {
+    refreshSales,
+    products,
+    companiesList,
+    knownCustomers,
+    mixDesigns,
+    driverOptions,
+  } = options;
   const { companyId } = useAuth();
   const toast = useToast();
 
@@ -52,9 +59,9 @@ export const useSalesForm = (options: {
     customerDocument: "",
     customerPhone: "",
     customerAddress: "",
-    sellerId: 0,
-    driverId: 0,
-    pumperId: 0,
+    sellerId: null as number | null,
+    driverIds: [] as number[],
+    pumperId: null as number | null,
     status: "pending" as SaleStatus,
     date: formatISO(new Date(), { representation: "date" }),
     deliveryDate: "",
@@ -155,9 +162,9 @@ export const useSalesForm = (options: {
     form.customerDocument = "";
     form.customerPhone = "";
     form.customerAddress = "";
-    form.sellerId = 0;
-    form.driverId = 0;
-    form.pumperId = 0;
+    form.sellerId = null;
+    form.driverIds = [];
+    form.pumperId = null;
     form.status = "pending";
     form.date = formatISO(new Date(), { representation: "date" });
     form.deliveryDate = "";
@@ -204,9 +211,9 @@ export const useSalesForm = (options: {
     form.customerDocument = s.customerDocument ?? "";
     form.customerPhone = s.customerPhone ?? "";
     form.customerAddress = s.customerAddress ?? "";
-    form.sellerId = s.sellerId ?? 0;
-    form.driverId = s.driverId ?? 0;
-    form.pumperId = s.pumperId ?? 0;
+    form.sellerId = s.sellerId ?? null;
+    form.driverIds = s.drivers?.map((d: any) => d.driverId) ?? [];
+    form.pumperId = s.pumperId ?? null;
 
     const matchedCustomer = knownCustomers.value.find(
       (c) =>
@@ -271,6 +278,9 @@ export const useSalesForm = (options: {
       form.customerPhone = q.customerPhone ?? "";
       form.customerAddress = q.customerAddress ?? "";
       form.sellerId = q.sellerId ?? 0;
+      form.driverIds =
+        q.drivers?.map((d: any) => d.driverId) ?? q.driverIds ?? [];
+      form.pumperId = q.pumperId ?? null;
       customerSearchTerm.value = q.customerName ?? "";
 
       // Try to match with known customers
@@ -369,10 +379,13 @@ export const useSalesForm = (options: {
   // ─────────────────────────────────────────────
   const handleSave = async () => {
     if (!validateForm()) {
+      const errorList = Object.values(formErrors).filter(Boolean);
       toast.add({
-        title: "Campos obrigatórios",
+        title: "Verifique os campos obrigatórios",
         description:
-          "Por favor, corrija os campos em destaque antes de salvar.",
+          errorList.length > 0
+            ? errorList.join(" | ")
+            : "Por favor, corrija os campos em destaque antes de salvar.",
         color: "error",
         icon: "i-heroicons-exclamation-triangle",
       });
@@ -382,16 +395,32 @@ export const useSalesForm = (options: {
     loadingSave.value = true;
     try {
       const payload = {
-        ...form,
         companyId: companyId.value,
         quoteId: linkedQuoteId.value || null,
+        customerName: form.customerName,
+        customerDocument: form.customerDocument || null,
+        customerPhone: form.customerPhone || null,
+        customerAddress: form.customerAddress || null,
         sellerId: form.sellerId || null,
-        driverId: form.driverId || null,
+        driverIds: form.driverIds,
         pumperId: form.pumperId || null,
+        status: form.status,
+        date: form.date || null,
+        deliveryDate: form.deliveryDate || null,
         discount: Math.round(form.discount * 100),
+        paymentMethod: form.paymentMethod || null,
+        notes: form.notes || null,
         items: form.items.map((it) => ({
-          ...it,
+          productId: it.productId || null,
+          productName: it.productName,
+          description: it.description || null,
+          unit: it.unit || null,
+          quantity: it.quantity,
           unitPrice: Math.round(it.unitPrice * 100),
+          fck: it.fck || null,
+          slump: it.slump || null,
+          stoneSize: it.stoneSize || null,
+          mixDesignId: it.mixDesignId || null,
         })),
       };
 
@@ -457,6 +486,16 @@ export const useSalesForm = (options: {
     }
   };
 
+  const selectedDriver = computed({
+    get: () => {
+      const opts = toValue(driverOptions);
+      return opts.filter((d) => form.driverIds.includes(d.value));
+    },
+    set: (val: any[]) => {
+      form.driverIds = val.map((v) => v.value);
+    },
+  });
+
   return {
     form,
     formErrors,
@@ -469,8 +508,12 @@ export const useSalesForm = (options: {
     selectedCustomer,
     customerRegisteredAddress,
     useDeliveryAddress,
+    selectedDriver,
     subtotalBRL,
     totalBRL,
+
+    // Methods
+    resetForm,
     openCreate,
     openEdit,
     prefillFromQuote,
@@ -479,7 +522,6 @@ export const useSalesForm = (options: {
     removeItem,
     onProductSelect,
     onMixDesignSelect,
-    resetForm,
     sendPdf,
     isSendingPdf,
   };

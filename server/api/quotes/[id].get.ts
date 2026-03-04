@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
     where: eq(quotes.id, quoteId),
     with: {
       items: true,
-      seller: true
+      seller: true,
+      drivers: true
     }
   })
 

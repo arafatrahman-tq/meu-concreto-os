@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { userCompanies, users } from "#server/database/schema";
 import { db } from "#server/utils/db";
 import { createNotification } from "#server/utils/notifications";
+import { requireCompanyAccess } from "../../utils/session";
 
 // DELETE /api/user-companies/[id]
 // or DELETE /api/user-companies/by?userId=X&companyId=Y
@@ -23,13 +24,25 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Security: Admin bypass; Non-admin needs manager access to the company
+    const auth = event.context.auth;
+    if (!auth)
+      throw createError({
+        statusCode: 401,
+        statusMessage: "Não autorizado",
+      });
+
+    if (auth.role !== "admin") {
+      requireCompanyAccess(event, companyId);
+    }
+
     await db
       .delete(userCompanies)
       .where(
         and(
           eq(userCompanies.userId, userId),
-          eq(userCompanies.companyId, companyId)
-        )
+          eq(userCompanies.companyId, companyId),
+        ),
       );
 
     // Notification
@@ -54,6 +67,25 @@ export default defineEventHandler(async (event) => {
 
   if (!id || isNaN(parseInt(id))) {
     throw createError({ statusCode: 400, statusMessage: "ID required" });
+  }
+
+  // Security: Fetch entry first to check companyId
+  const existing = await db
+    .select()
+    .from(userCompanies)
+    .where(eq(userCompanies.id, parseInt(id)))
+    .get();
+
+  if (!existing) {
+    throw createError({ statusCode: 404, statusMessage: "Entry not found" });
+  }
+
+  const auth = event.context.auth;
+  if (!auth)
+    throw createError({ statusCode: 401, statusMessage: "Não autorizado" });
+
+  if (auth.role !== "admin") {
+    requireCompanyAccess(event, existing.companyId);
   }
 
   const deleted = await db

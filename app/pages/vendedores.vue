@@ -46,7 +46,7 @@ const stats = computed(() => {
     total: list.length,
     active: list.filter((s) => s.active).length,
     inactive: list.filter((s) => !s.active).length,
-    avgCommission: avgCommission.toFixed(2),
+    avgCommission: Number(avgCommission.toFixed(2)),
   };
 });
 
@@ -287,7 +287,8 @@ const handleSave = async () => {
     toast.add({
       title: "Erro ao salvar",
       description:
-        err?.data?.message ?? err?.data?.statusMessage ??
+        err?.data?.message ??
+        err?.data?.statusMessage ??
         err?.message ??
         "Erro ao salvar.",
       color: "error",
@@ -318,7 +319,8 @@ const toggleActive = async (s: Seller) => {
     const err = e;
     toast.add({
       title: "Erro",
-      description: err?.data?.message ?? err?.data?.statusMessage ?? "Tente novamente.",
+      description:
+        err?.data?.message ?? err?.data?.statusMessage ?? "Tente novamente.",
       color: "error",
       icon: "i-heroicons-exclamation-circle",
     });
@@ -356,7 +358,10 @@ const handleDelete = async () => {
     toast.add({
       title: "Erro ao excluir",
       description:
-        err?.data?.message ?? err?.data?.statusMessage ?? err?.message ?? "Tente novamente.",
+        err?.data?.message ??
+        err?.data?.statusMessage ??
+        err?.message ??
+        "Tente novamente.",
       color: "error",
     });
   } finally {
@@ -399,7 +404,7 @@ const STATUS_FILTER_OPTS = [
 </script>
 
 <template>
-  <div class="p-6 lg:p-8 space-y-6">
+  <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
     <!-- ── Page Header ── -->
     <div class="flex items-start justify-between gap-4">
       <div>
@@ -431,7 +436,7 @@ const STATUS_FILTER_OPTS = [
             icon: 'i-heroicons-user-group',
             color: 'text-primary-500',
             bg: 'bg-primary-50 dark:bg-primary-500/10',
-            sub: 'cadastrados',
+            suffix: 'cadastrados',
           },
           {
             label: 'Vendedores Ativos',
@@ -439,7 +444,7 @@ const STATUS_FILTER_OPTS = [
             icon: 'i-heroicons-check-circle',
             color: 'text-green-500',
             bg: 'bg-green-50 dark:bg-green-500/10',
-            sub: 'disponíveis',
+            suffix: 'disponíveis',
           },
           {
             label: 'Vendedores Inativos',
@@ -447,7 +452,7 @@ const STATUS_FILTER_OPTS = [
             icon: 'i-heroicons-eye-slash',
             color: 'text-zinc-400',
             bg: 'bg-zinc-100 dark:bg-zinc-800',
-            sub: 'desativados',
+            suffix: 'desativados',
           },
           {
             label: 'Comissão Média',
@@ -455,7 +460,7 @@ const STATUS_FILTER_OPTS = [
             icon: 'i-heroicons-percent-badge',
             color: 'text-amber-500',
             bg: 'bg-amber-50 dark:bg-amber-500/10',
-            sub: 'sobre vendas',
+            suffix: 'sobre vendas',
           },
         ]"
         :key="i"
@@ -481,8 +486,8 @@ const STATUS_FILTER_OPTS = [
         >
           {{ kpi.value }}
         </p>
-        <p class="text-xs text-zinc-400 font-medium -mt-2">
-          {{ kpi.sub }}
+        <p v-if="kpi.suffix" class="text-xs text-zinc-400 font-medium -mt-2">
+          {{ kpi.suffix }}
         </p>
       </div>
     </div>
@@ -490,19 +495,36 @@ const STATUS_FILTER_OPTS = [
     <!-- ── Table Card ── -->
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between gap-4">
-          <h3
-            class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-          >
-            Lista de Vendedores
-          </h3>
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+            >
+              <UIcon
+                name="i-heroicons-user-group"
+                class="w-5 h-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Vendedores
+              </h3>
+              <p class="text-xs text-zinc-400 mt-0.5">
+                Lista de funcionários e parceiros
+              </p>
+            </div>
+          </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <UInput
               v-model="search"
               icon="i-heroicons-magnifying-glass"
               placeholder="Buscar nome, CPF, e-mail..."
               size="sm"
-              class="w-48 lg:w-64"
+              class="w-full sm:w-48 lg:w-64"
             />
             <USelect
               v-model="activeFilter"
@@ -510,7 +532,7 @@ const STATUS_FILTER_OPTS = [
               value-key="value"
               label-key="label"
               size="sm"
-              class="w-28"
+              class="w-full sm:w-28"
             />
           </div>
         </div>
@@ -545,12 +567,12 @@ const STATUS_FILTER_OPTS = [
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto">
+      <div v-else class="overflow-x-auto -mx-4 sm:mx-0">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-zinc-100 dark:border-zinc-800">
               <th
-                class="text-left px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-400"
+                class="text-left px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-400 whitespace-nowrap"
               >
                 Vendedor
               </th>
@@ -585,30 +607,30 @@ const STATUS_FILTER_OPTS = [
             <tr
               v-for="s in paginatedSellers"
               :key="s.id"
-              class="border-b border-zinc-100 dark:border-zinc-800/60 hover:bg-primary-50/50 dark:hover:bg-primary-500/5 transition-colors group"
+              class="border-b border-zinc-100 dark:border-zinc-800/60 hover:bg-primary-50/50 dark:hover:bg-primary-500/5 transition-colors group relative"
               :class="{ 'opacity-60': !s.active }"
             >
               <!-- Name + avatar -->
               <td class="px-4 py-3.5">
                 <div class="flex items-center gap-3">
                   <div
-                    class="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+                    class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
                   >
                     <span
-                      class="text-sm font-black text-primary-600 dark:text-primary-400"
+                      class="text-xs font-black text-primary-600 dark:text-primary-400"
                     >
                       {{ sellerInitials(s.name) }}
                     </span>
                   </div>
                   <div class="min-w-0">
                     <p
-                      class="font-bold text-zinc-900 dark:text-white truncate max-w-36 sm:max-w-52"
+                      class="font-bold text-zinc-900 dark:text-white truncate max-w-35 sm:max-w-50"
                     >
                       {{ s.name }}
                     </p>
                     <p
                       v-if="s.email"
-                      class="text-xs text-zinc-400 truncate max-w-36 sm:max-w-52"
+                      class="text-xs text-zinc-400 truncate max-w-35 sm:max-w-50"
                     >
                       {{ s.email }}
                     </p>
@@ -766,9 +788,9 @@ const STATUS_FILTER_OPTS = [
               Identificação
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <UFormField 
-                label="Nome Completo" 
-                required 
+              <UFormField
+                label="Nome Completo"
+                required
                 :error="formErrors.name"
                 class="col-span-full"
               >
@@ -780,10 +802,7 @@ const STATUS_FILTER_OPTS = [
                 />
               </UFormField>
 
-              <UFormField 
-                label="CPF"
-                :error="formErrors.document"
-              >
+              <UFormField label="CPF" :error="formErrors.document">
                 <UInput
                   v-model="form.document"
                   placeholder="000.000.000-00"
@@ -792,10 +811,7 @@ const STATUS_FILTER_OPTS = [
                 />
               </UFormField>
 
-              <UFormField 
-                label="Telefone"
-                :error="formErrors.phone"
-              >
+              <UFormField label="Telefone" :error="formErrors.phone">
                 <UInput
                   v-model="form.phone"
                   placeholder="(00) 00000-0000"
@@ -804,8 +820,8 @@ const STATUS_FILTER_OPTS = [
                 />
               </UFormField>
 
-              <UFormField 
-                label="E-mail" 
+              <UFormField
+                label="E-mail"
                 :error="formErrors.email"
                 class="col-span-full"
               >
@@ -986,4 +1002,3 @@ const STATUS_FILTER_OPTS = [
     </UModal>
   </div>
 </template>
-

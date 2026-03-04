@@ -1,34 +1,36 @@
 import {
   sales,
   saleItems,
+  salesDrivers,
   quotes,
   companies,
-  sellers
-} from '../database/schema'
-import { saleSchema } from '../utils/schemas'
-import { db, parseDate } from '../utils/db'
-import { eq, and } from 'drizzle-orm'
-import { requireCompanyAccess } from '../utils/session'
-import { createNotification } from '../utils/notifications'
-import { getWhatsappConfig, sendWhatsappPDF } from '../utils/whatsapp'
-import { generateDocumentPDF } from '../utils/pdf'
+  sellers,
+  paymentMethods,
+} from "../database/schema";
+import { saleSchema } from "../utils/schemas";
+import { db, parseDate } from "../utils/db";
+import { eq, and } from "drizzle-orm";
+import { requireCompanyAccess } from "../utils/session";
+import { createNotification } from "../utils/notifications";
+import { getWhatsappConfig, sendWhatsappPDF } from "../utils/whatsapp";
+import { generateDocumentPDF } from "../utils/pdf";
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const result = saleSchema.safeParse(body)
+  const body = await readBody(event);
+  const result = saleSchema.safeParse(body);
 
   if (!result.success) {
     throw createError({
       statusCode: 400,
-      message: 'Falha na validação',
-      data: result.error.flatten()
-    })
+      message: "Falha na validação",
+      data: result.error.flatten(),
+    });
   }
 
-  const { items, ...saleData } = result.data
+  const { items, driverIds, ...saleData } = result.data;
 
   // Verify the caller has access to the target company (prevents cross-tenant write)
-  await requireCompanyAccess(event, saleData.companyId)
+  await requireCompanyAccess(event, saleData.companyId);
 
   // If quoteId is provided, verify it exists and belongs to the company
   if (saleData.quoteId) {
@@ -41,30 +43,30 @@ export default defineEventHandler(async (event) => {
           eq(quotes.companyId, saleData.companyId)
         )
       )
-      .limit(1)
+      .limit(1);
 
     if (existingQuotes.length === 0) {
       throw createError({
         statusCode: 404,
-        message: 'Orçamento não encontrado ou não pertence a esta empresa'
-      })
+        message: "Orçamento não encontrado ou não pertence a esta empresa",
+      });
     }
   }
 
   try {
     const insertedSale = await db.transaction(async (tx) => {
       // 1. Calculate totals from items
-      let subtotal = 0
+      let subtotal = 0;
       const processedItems = items.map((item: any) => {
-        const lineTotal = Math.round(item.quantity * item.unitPrice)
-        subtotal += lineTotal
+        const lineTotal = Math.round(item.quantity * item.unitPrice);
+        subtotal += lineTotal;
         return {
           ...item,
-          totalPrice: lineTotal
-        }
-      })
+          totalPrice: lineTotal,
+        };
+      });
 
-      const total = Math.max(0, subtotal - (saleData.discount || 0))
+      const total = Math.max(0, subtotal - (saleData.discount || 0));
 
       // 2. Create Sale
       const [newSale] = await tx
@@ -74,12 +76,12 @@ export default defineEventHandler(async (event) => {
           subtotal,
           total,
           date: parseDate(saleData.date) ?? new Date(),
-          deliveryDate: parseDate(saleData.deliveryDate) ?? null
+          deliveryDate: parseDate(saleData.deliveryDate) ?? null,
         })
-        .returning()
+        .returning();
 
       if (!newSale) {
-        throw new Error('Falha ao criar registro da venda')
+        throw new Error("Falha ao criar registro da venda");
       }
 
       // 3. Create Sale Items
@@ -97,59 +99,85 @@ export default defineEventHandler(async (event) => {
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,
-            mixDesignId: item.mixDesignId
+            mixDesignId: item.mixDesignId,
           }))
-        )
+        );
       }
 
-      // 4. Update source quote if exists
+      // 4. Associate Drivers
+      if (driverIds && driverIds.length > 0) {
+        await tx.insert(salesDrivers).values(
+          driverIds.map((driverId: any) => ({
+            saleId: newSale.id,
+            driverId,
+          }))
+        );
+      }
+
+      // 5. Update source quote if exists
       if (saleData.quoteId) {
         await tx
           .update(quotes)
-          .set({ status: 'approved', updatedAt: new Date() })
-          .where(eq(quotes.id, saleData.quoteId))
+          .set({ status: "approved", updatedAt: new Date() })
+          .where(eq(quotes.id, saleData.quoteId));
       }
 
-      return newSale
-    })
+      return newSale;
+    });
 
     if (!insertedSale) {
-      throw new Error('Transação concluída, mas nenhuma venda retornada')
+      throw new Error("Transação concluída, mas nenhuma venda retornada");
     }
 
     // Fetch complete sale with items using query builder (validates schema relations)
     const sale = await db.query.sales.findFirst({
       where: eq(sales.id, insertedSale.id),
       with: {
-        items: true
-      }
-    })
+        items: true,
+        paymentMethodReference: true,
+        drivers: true,
+      },
+    });
 
     if (!sale) {
-      throw new Error('Falha ao recuperar a venda criada')
+      throw new Error("Falha ao recuperar a venda criada");
     }
 
     // ── WhatsApp PDF Push ──
     try {
-      const waSettings = await getWhatsappConfig(sale.companyId)
-      const connected = waSettings?.isConnected && waSettings?.phoneNumber
+      const waSettings = await getWhatsappConfig(sale.companyId);
+      const connected = waSettings?.isConnected && waSettings?.phoneNumber;
 
       if (
-        connected
-        && (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
+        connected &&
+        (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
       ) {
         const company = await db
           .select()
           .from(companies)
           .where(eq(companies.id, sale.companyId))
-          .get()
+          .get();
         const seller = sale.sellerId
           ? await db
-            .select()
-            .from(sellers)
-            .where(eq(sellers.id, sale.sellerId))
-            .get()
-          : null
+              .select()
+              .from(sellers)
+              .where(eq(sellers.id, sale.sellerId))
+              .get()
+          : null;
+
+        const defaultPaymentMethod = await db
+          .select()
+          .from(paymentMethods)
+          .where(
+            and(
+              eq(paymentMethods.companyId, sale.companyId),
+              eq(paymentMethods.isDefault, true)
+            )
+          )
+          .get();
+
+        const paymentMethodToUse =
+          sale.paymentMethodReference || defaultPaymentMethod;
 
         if (company) {
           const pdfBuffer = await generateDocumentPDF({
@@ -174,41 +202,50 @@ export default defineEventHandler(async (event) => {
               email: company.email,
               address: company.address,
               city: company.city,
-              state: company.state
+              state: company.state,
             },
-            items: (sale.items ?? []).map(i => ({
+            items: (sale.items ?? []).map((i) => ({
               productName: i.productName,
               quantity: i.quantity,
-              unit: i.unit || 'm3',
+              unit: i.unit || "m3",
               unitPrice: i.unitPrice,
               totalPrice: i.totalPrice,
               fck: i.fck || null,
               slump: i.slump || null,
-              stoneSize: i.stoneSize || null
+              stoneSize: i.stoneSize || null,
             })),
+            paymentMethod: paymentMethodToUse
+              ? {
+                  name: paymentMethodToUse.name,
+                  type: paymentMethodToUse.type,
+                  details: paymentMethodToUse.details,
+                }
+              : null,
             seller: seller
               ? {
-                name: seller.name,
-                phone: seller.phone || null,
-                commissionRate: seller.commissionRate
-              }
-              : null
-          })
+                  name: seller.name,
+                  phone: seller.phone || null,
+                  commissionRate: seller.commissionRate,
+                }
+              : null,
+          });
 
           const config = {
             apiUrl: waSettings.apiUrl!,
             apiKey: waSettings.apiKey!,
-            phoneNumber: waSettings.phoneNumber!
-          }
+            phoneNumber: waSettings.phoneNumber!,
+          };
 
-          const fileName = `PedidoVenda_${String(sale.id).padStart(5, '0')}.pdf`
-          const caption = `📄 Pedido de Venda: ${sale.customerName}\nTotal: ${new Intl.NumberFormat(
-            'pt-BR',
-            {
-              style: 'currency',
-              currency: 'BRL'
-            }
-          ).format(sale.total / 100)}`
+          const fileName = `PedidoVenda_${String(sale.id).padStart(
+            5,
+            "0"
+          )}.pdf`;
+          const caption = `📄 Pedido de Venda: ${
+            sale.customerName
+          }\nTotal: ${new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(sale.total / 100)}`;
 
           // A. Send to Seller
           if (waSettings.quotePdfToSeller) {
@@ -219,16 +256,20 @@ export default defineEventHandler(async (event) => {
                 pdfBuffer,
                 fileName,
                 caption
-              )
+              );
             } else {
               // Notification for missing seller phone
               await createNotification({
                 companyId: sale.companyId,
-                type: 'user',
-                title: 'Vendedor sem telefone',
-                body: `O vendedor ${seller?.name || 'desconhecido'} não possui telefone cadastrado para receber o PDF do pedido #${sale.id}.`,
-                icon: 'i-heroicons-exclamation-triangle'
-              })
+                type: "user",
+                title: "Vendedor sem telefone",
+                body: `O vendedor ${
+                  seller?.name || "desconhecido"
+                } não possui telefone cadastrado para receber o PDF do pedido #${
+                  sale.id
+                }.`,
+                icon: "i-heroicons-exclamation-triangle",
+              });
             }
           }
 
@@ -241,45 +282,45 @@ export default defineEventHandler(async (event) => {
                 pdfBuffer,
                 fileName,
                 caption
-              )
+              );
             } else {
               // Notification for missing customer phone
               await createNotification({
                 companyId: sale.companyId,
-                type: 'sale',
-                title: 'Cliente sem telefone',
+                type: "sale",
+                title: "Cliente sem telefone",
                 body: `O cliente ${sale.customerName} não possui telefone no pedido #${sale.id} para receber o PDF.`,
-                icon: 'i-heroicons-exclamation-triangle'
-              })
+                icon: "i-heroicons-exclamation-triangle",
+              });
             }
           }
         }
       }
     } catch (waErr) {
-      console.error('WhatsApp Push Error:', waErr)
+      console.error("WhatsApp Push Error:", waErr);
     }
 
     // Notification trigger
-    const totalDisplay = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(sale.total / 100)
+    const totalDisplay = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(sale.total / 100);
     await createNotification({
       companyId: sale.companyId,
-      type: 'sale',
-      title: 'Nova venda registrada',
+      type: "sale",
+      title: "Nova venda registrada",
       body: `${sale.customerName} — ${totalDisplay}`,
-      link: '/vendas',
-      icon: 'i-heroicons-shopping-cart'
-    })
+      link: "/vendas",
+      icon: "i-heroicons-shopping-cart",
+    });
 
-    return { sale }
+    return { sale };
   } catch (e: any) {
-    console.error('Create Sale Error:', e)
+    console.error("Create Sale Error:", e);
     throw createError({
       statusCode: 500,
-      message: 'Erro interno do servidor',
-      data: { message: e.message }
-    })
+      message: "Erro interno do servidor",
+      data: { message: e.message },
+    });
   }
-})
+});

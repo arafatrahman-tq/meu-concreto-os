@@ -3,8 +3,10 @@ import type {
   Product,
   ProductType,
   ProductUnit,
+  ProductForm,
   MixDesign,
 } from "~/types/products";
+import { UNIT_LABELS as UNIT_LABELS_MAP } from "~/types/products";
 
 const props = defineProps<{
   open: boolean;
@@ -28,21 +30,21 @@ const isOpen = computed({
 const isEditing = computed(() => !!props.product);
 const loadingSave = ref(false);
 
-const form = reactive({
+const form = reactive<ProductForm>({
   name: "",
   description: "",
-  type: "concrete" as ProductType,
-  unit: "m3" as ProductUnit,
+  type: "concrete",
+  unit: "m3",
   price: 0, // display in BRL float
   sku: "",
-  fck: undefined as number | undefined,
-  slump: undefined as number | undefined,
+  fck: undefined,
+  slump: undefined,
   stoneSize: "",
-  mixDesignId: undefined as number | undefined,
+  mixDesignId: undefined,
   active: true,
 });
 
-const formErrors = reactive<Record<string, string>>({});
+const formErrors = reactive<Record<keyof ProductForm | string, string>>({});
 
 const clearErrors = () => {
   for (const key in formErrors) {
@@ -102,11 +104,16 @@ watch(
       form.unit = p.unit;
       form.price = p.price / 100;
       form.sku = p.sku ?? "";
-      form.fck = p.fck ?? undefined;
-      form.slump = p.slump ?? undefined;
-      form.stoneSize = p.stoneSize ?? "";
-      form.mixDesignId = p.mixDesignId ?? undefined;
       form.active = p.active;
+      form.mixDesignId = p.mixDesignId ?? undefined;
+
+      // Restore specific fields after mix design auto-fill
+      nextTick(() => {
+        form.fck = p.fck ?? undefined;
+        form.slump = p.slump ?? undefined;
+        form.stoneSize = p.stoneSize ?? "";
+      });
+
       clearErrors();
     } else {
       resetForm();
@@ -211,14 +218,6 @@ const handleSave = async () => {
   } finally {
     loadingSave.value = false;
   }
-};
-
-const UNIT_LABELS: Record<ProductUnit, string> = {
-  m3: "m³",
-  un: "un",
-  hr: "hr",
-  kg: "kg",
-  ton: "ton",
 };
 
 const mixDesignOptions = computed(() =>
@@ -483,7 +482,7 @@ const TYPE_FORM_OPTS = [
           <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300">
             {{ formatCurrency(Math.round(form.price * 100)) }}
             <span class="text-zinc-400 font-normal"
-              >/ {{ UNIT_LABELS[form.unit] }}</span
+              >/ {{ UNIT_LABELS_MAP[form.unit] }}</span
             >
           </span>
         </div>

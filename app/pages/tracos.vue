@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { MixDesign, MixDesignItem } from "~/types/mix-designs";
-import { typeConfig, type Material, type MaterialType, type MaterialUnit } from "~/types/inventory";
+import {
+  typeConfig,
+  type Material,
+  type MaterialType,
+  type MaterialUnit,
+} from "~/types/inventory";
 
 definePageMeta({ layout: "default" });
 useSeoMeta({ title: "Traços | Meu Concreto" });
@@ -158,42 +163,47 @@ const deleteMixDesign = async (id: number) => {
       <div
         class="flex flex-col gap-4 rounded-2xl bg-white p-6 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
       >
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <span
-            class="text-xs font-black uppercase tracking-widest text-zinc-400"
+            class="text-xs font-black uppercase tracking-widest leading-tight text-zinc-400"
             >Total de Traços</span
           >
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
           >
-            <UIcon
-              name="i-lucide-flask-conical"
-              class="h-5 w-5 text-primary-500"
-            />
+            <UIcon name="i-heroicons-beaker" class="h-5 w-5 text-primary-500" />
           </div>
         </div>
-        <span class="text-3xl font-black text-zinc-900 dark:text-white tabular-nums">{{
-          stats.total
-        }}</span>
+        <span
+          class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
+          >{{ stats.total }}</span
+        >
+        <p class="text-xs font-medium text-zinc-400 -mt-2">
+          receitas cadastradas
+        </p>
       </div>
 
       <div
         class="flex flex-col gap-4 rounded-2xl bg-white p-6 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
       >
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <span
-            class="text-xs font-black uppercase tracking-widest text-zinc-400"
+            class="text-xs font-black uppercase tracking-widest leading-tight text-zinc-400"
             >Novos (30d)</span
           >
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10"
           >
             <UIcon name="i-heroicons-sparkles" class="h-5 w-5 text-blue-500" />
           </div>
         </div>
-        <span class="text-3xl font-black text-zinc-900 dark:text-white tabular-nums">{{
-          stats.recent
-        }}</span>
+        <span
+          class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
+          >{{ stats.recent }}</span
+        >
+        <p class="text-xs font-medium text-zinc-400 -mt-2">
+          criados recentemente
+        </p>
       </div>
     </div>
 
@@ -201,11 +211,24 @@ const deleteMixDesign = async (id: number) => {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-4">
-          <h3
-            class="shrink-0 text-sm font-black uppercase tracking-widest text-zinc-400"
-          >
-            Lista de Traços
-          </h3>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
+            >
+              <UIcon
+                name="i-heroicons-beaker"
+                class="h-5 w-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Lista de Traços
+              </h3>
+              <p class="mt-0.5 text-xs text-zinc-400">Gerencie suas receitas</p>
+            </div>
+          </div>
           <div class="flex flex-wrap items-center justify-end gap-2">
             <UInput
               v-model="search"
@@ -226,10 +249,7 @@ const deleteMixDesign = async (id: number) => {
         <div
           class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800"
         >
-          <UIcon
-            name="i-lucide-flask-conical-off"
-            class="h-8 w-8 text-zinc-400"
-          />
+          <UIcon name="i-heroicons-beaker" class="h-8 w-8 text-zinc-400" />
         </div>
         <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
           Nenhum traço encontrado
@@ -257,9 +277,9 @@ const deleteMixDesign = async (id: number) => {
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
               >
-                <UIcon name="i-lucide-flask-conical" class="h-5 w-5" />
+                <UIcon name="i-heroicons-beaker" class="h-5 w-5" />
               </div>
               <div>
                 <h4 class="font-bold text-zinc-900 dark:text-white">
@@ -306,10 +326,10 @@ const deleteMixDesign = async (id: number) => {
 
           <!-- Ingredients Preview -->
           <div
-            class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50"
+            class="flex flex-col gap-2 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50"
           >
             <span
-              class="text-[10px] font-bold uppercase tracking-wider text-zinc-400"
+              class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
               >Composição (Resumo)</span
             >
             <div class="flex flex-wrap gap-2">

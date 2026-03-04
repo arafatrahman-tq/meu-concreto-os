@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { companies } from "../database/schema";
 import { db } from "../utils/db";
 import { requireCompanyAccess } from "../utils/session";
+import { unscopeCustomerDocument } from "../utils/customer";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -53,7 +54,9 @@ export default defineEventHandler(async (event) => {
 
   // Helper to generate a unique key for aggregation
   const getCustomerKey = (doc?: string | null, name?: string | null) => {
-    let d = doc?.trim();
+    // Unscope first so scoped docs ("12345678901@5") produce the same key
+    // as their unscoped equivalents stored in quotes/sales.
+    let d = unscopeCustomerDocument(doc?.trim());
     // Normalize document: remove non-alphanumeric characters if not a placeholder
     if (d && !d.startsWith("_cust_")) {
       d = d.replace(/[^a-zA-Z0-9]/g, "");
@@ -90,7 +93,7 @@ export default defineEventHandler(async (event) => {
     // Merge timestamps
     target.lastActivityAt = Math.max(
       target.lastActivityAt,
-      source.lastActivityAt
+      source.lastActivityAt,
     );
     target.createdAt = Math.min(target.createdAt, source.createdAt);
 
@@ -122,7 +125,7 @@ export default defineEventHandler(async (event) => {
       approvedQuotes?: number;
       completedSales?: number;
       cancelledSales?: number;
-    }
+    },
   ) => {
     const rawKey = getCustomerKey(data.document, data.name);
     const nameKey = data.name?.trim().toLowerCase() || "unknown";
@@ -159,7 +162,7 @@ export default defineEventHandler(async (event) => {
         id: data.id,
         key,
         name: data.name,
-        document: data.document ?? "",
+        document: unscopeCustomerDocument(data.document) ?? "",
         phone: data.phone ?? "",
         address: data.address ?? "",
         quotesCount: 0,
@@ -201,13 +204,15 @@ export default defineEventHandler(async (event) => {
     // Ensure ID is preserved if available
     if (data.id && !c.id) c.id = data.id;
 
-    // Update document if we have a better one (e.g. valid doc vs placeholder)
+    // Update document if we have a better one (e.g. valid doc vs placeholder).
+    // Always unscope so the client receives the clean CPF/CNPJ.
+    const unscopedDoc = unscopeCustomerDocument(data.document);
     if (
-      data.document &&
-      !data.document.startsWith("_cust_") &&
+      unscopedDoc &&
+      !unscopedDoc.startsWith("_cust_") &&
       (!c.document || c.document.startsWith("_cust_"))
     ) {
-      c.document = data.document;
+      c.document = unscopedDoc;
     }
   };
 
@@ -219,8 +224,8 @@ export default defineEventHandler(async (event) => {
     .where(
       and(
         eq(companies.isCustomer, true),
-        eq(companies.ownerCompanyId, companyId)
-      )
+        eq(companies.ownerCompanyId, companyId),
+      ),
     )
     .all();
 
@@ -239,7 +244,7 @@ export default defineEventHandler(async (event) => {
         createdAt: ts,
         id: sc.id,
       },
-      {}
+      {},
     );
   }
 
@@ -263,7 +268,7 @@ export default defineEventHandler(async (event) => {
         totalQuoted: q.total,
         pendingQuotes: q.status === "sent" || q.status === "draft" ? 1 : 0,
         approvedQuotes: q.status === "approved" ? 1 : 0,
-      }
+      },
     );
   }
 
@@ -287,12 +292,12 @@ export default defineEventHandler(async (event) => {
         completedSales: s.status === "completed" ? 1 : 0,
         cancelledSales: s.status === "cancelled" ? 1 : 0,
         totalSpent: s.status === "completed" ? s.total : 0,
-      }
+      },
     );
   }
 
   const customers = Array.from(customerMap.values()).sort(
-    (a, b) => b.lastActivityAt - a.lastActivityAt
+    (a, b) => b.lastActivityAt - a.lastActivityAt,
   );
 
   return { customers };

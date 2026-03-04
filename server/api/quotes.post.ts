@@ -1,5 +1,12 @@
-import { eq } from "drizzle-orm";
-import { quotes, quoteItems, companies, sellers } from "../database/schema";
+import { eq, and } from "drizzle-orm";
+import {
+  quotes,
+  quoteItems,
+  quotesDrivers,
+  companies,
+  sellers,
+  paymentMethods,
+} from "../database/schema";
 import { db, parseDate } from "../utils/db";
 import { quoteSchema } from "../utils/schemas";
 import { requireCompanyAccess } from "../utils/session";
@@ -20,7 +27,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { items, ...quoteData } = validation.data;
+  const { items, driverIds, ...quoteData } = validation.data;
 
   // Verify the caller has access to the target company (prevents cross-tenant write)
   await requireCompanyAccess(event, quoteData.companyId);
@@ -41,7 +48,7 @@ export default defineEventHandler(async (event) => {
           companyId: quoteData.companyId,
           userId: quoteData.userId,
           sellerId: quoteData.sellerId,
-          driverId: quoteData.driverId,
+          // driverId removed
           pumperId: quoteData.pumperId,
           customerName: quoteData.customerName,
           customerDocument: quoteData.customerDocument,
@@ -76,6 +83,16 @@ export default defineEventHandler(async (event) => {
         }));
 
         await tx.insert(quoteItems).values(itemsToInsert);
+      }
+
+      // 3. Associate Drivers
+      if (driverIds && driverIds.length > 0) {
+        await tx.insert(quotesDrivers).values(
+          driverIds.map((driverId) => ({
+            quoteId: newQuote.id,
+            driverId,
+          }))
+        );
       }
 
       return newQuote;
@@ -115,11 +132,22 @@ export default defineEventHandler(async (event) => {
           .get();
         const seller = quoteData.sellerId
           ? await db
-            .select()
-            .from(sellers)
-            .where(eq(sellers.id, quoteData.sellerId))
-            .get()
+              .select()
+              .from(sellers)
+              .where(eq(sellers.id, quoteData.sellerId))
+              .get()
           : null;
+
+        const defaultPaymentMethod = await db
+          .select()
+          .from(paymentMethods)
+          .where(
+            and(
+              eq(paymentMethods.companyId, quoteData.companyId),
+              eq(paymentMethods.isDefault, true)
+            )
+          )
+          .get();
 
         if (company) {
           const pdfBuffer = await generateDocumentPDF({
@@ -155,12 +183,19 @@ export default defineEventHandler(async (event) => {
               slump: i.slump || null,
               stoneSize: i.stoneSize || null,
             })),
+            paymentMethod: defaultPaymentMethod
+              ? {
+                  name: defaultPaymentMethod.name,
+                  type: defaultPaymentMethod.type,
+                  details: defaultPaymentMethod.details,
+                }
+              : null,
             seller: seller
               ? {
-                name: seller.name,
-                phone: seller.phone || null,
-                commissionRate: seller.commissionRate,
-              }
+                  name: seller.name,
+                  phone: seller.phone || null,
+                  commissionRate: seller.commissionRate,
+                }
               : null,
           });
 
@@ -174,11 +209,12 @@ export default defineEventHandler(async (event) => {
             5,
             "0"
           )}.pdf`;
-          const caption = `📄 Orçamento de ${fullQuote.customerName
-            }\nTotal: ${new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(fullQuote.total / 100)}`;
+          const caption = `📄 Orçamento de ${
+            fullQuote.customerName
+          }\nTotal: ${new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(fullQuote.total / 100)}`;
 
           let wasSentResult = false;
 
@@ -199,9 +235,11 @@ export default defineEventHandler(async (event) => {
                 companyId: quoteData.companyId,
                 type: "user",
                 title: "Vendedor sem telefone",
-                body: `O vendedor ${seller?.name || "desconhecido"
-                  } não possui telefone cadastrado para receber o PDF do orçamento #${result.id
-                  }.`,
+                body: `O vendedor ${
+                  seller?.name || "desconhecido"
+                } não possui telefone cadastrado para receber o PDF do orçamento #${
+                  result.id
+                }.`,
                 icon: "i-heroicons-exclamation-triangle",
               });
             }

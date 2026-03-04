@@ -34,6 +34,7 @@ const {
         city?: string | null;
         state?: string | null;
         zip?: string | null;
+        logo?: string | null;
         active: boolean;
         quickAccessEnabled?: boolean | null;
         quickAccessPin?: string | null;
@@ -52,6 +53,7 @@ const companyForm = reactive({
     city: "",
     state: undefined as string | undefined,
     zip: "",
+    logo: "" as string | null,
     active: true,
     quickAccessEnabled: false,
     quickAccessPin: "",
@@ -76,6 +78,7 @@ watch(
         companyForm.city = c.city ?? "";
         companyForm.state = c.state ?? undefined;
         companyForm.zip = c.zip ? formatZip(c.zip) : "";
+        companyForm.logo = c.logo ?? null;
         companyForm.active = c.active ?? true;
         companyForm.quickAccessEnabled = c.quickAccessEnabled ?? false;
         companyForm.quickAccessPin = c.quickAccessPin ?? "";
@@ -169,6 +172,51 @@ const validate = (): boolean => {
 
 const loadingSave = ref(false);
 
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+    fileInput.value?.click();
+};
+
+const handleFileSelect = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+        const file = target.files[0];
+        
+        // Validation: Size < 1MB, Type: Image
+        if (file.size > 1024 * 1024) {
+            toast.add({
+                title: "Arquivo muito grande",
+                description: "O logo deve ter no máximo 1MB.",
+                color: "error"
+            });
+            return;
+        }
+        
+        if (!file.type.startsWith("image/")) {
+             toast.add({
+                title: "Formato inválido",
+                description: "Selecione uma imagem válida (PNG, JPG).",
+                color: "error"
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (e.target?.result) {
+                companyForm.logo = e.target.result as string;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const removeLogo = () => {
+    companyForm.logo = null;
+    if (fileInput.value) fileInput.value.value = "";
+};
+
 const handleSave = async () => {
     if (!validate()) return;
     
@@ -178,13 +226,14 @@ const handleSave = async () => {
             method: "PUT",
             body: {
                 name: companyForm.name.trim(),
-                document: companyForm.document.replace(/\D/g, "") || undefined,
-                email: companyForm.email.trim() || undefined,
-                phone: companyForm.phone.trim() || undefined,
-                address: companyForm.address.trim() || undefined,
-                city: companyForm.city.trim() || undefined,
-                state: companyForm.state?.trim() || undefined,
-                zip: companyForm.zip.trim() || undefined,
+                document: companyForm.document.replace(/\D/g, "") || undefined, // Document is usually required or not clearable
+                email: companyForm.email.trim() || null,
+                phone: companyForm.phone.trim() || null,
+                address: companyForm.address.trim() || null,
+                city: companyForm.city.trim() || null,
+                state: companyForm.state?.trim() || null,
+                zip: companyForm.zip.trim() || null,
+                logo: companyForm.logo,
                 active: companyForm.active,
                 quickAccessEnabled: companyForm.quickAccessEnabled,
                 quickAccessPin: companyForm.quickAccessPin.trim() || null,
@@ -236,6 +285,61 @@ const handleSave = async () => {
         </div>
 
         <div v-else class="space-y-4">
+            <!-- Logo Upload -->
+            <div class="flex items-center gap-6 p-4 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/20">
+                <div class="relative group cursor-pointer" @click="triggerFileInput">
+                    <div 
+                        class="w-24 h-24 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center bg-white dark:bg-zinc-900 overflow-hidden hover:border-primary-500 transition-colors"
+                    >
+                        <img v-if="companyForm.logo" :src="companyForm.logo" class="w-full h-full object-contain" alt="Logo da Empresa" />
+                        <UIcon v-else name="i-heroicons-photo" class="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+                    </div>
+                    
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                        <UIcon name="i-heroicons-pencil" class="w-6 h-6 text-white" />
+                    </div>
+                </div>
+                
+                <div class="flex-1 space-y-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">Logo da Empresa</h3>
+                        <p class="text-xs text-zinc-500 mt-1">Exibido em orçamentos, relatórios e documentos.</p>
+                        <p class="text-xs text-zinc-400 mt-0.5">Recomendado: 200x200px, PNG ou JPG. Máx: 1MB.</p>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <UButton 
+                            color="white" 
+                            variant="solid" 
+                            size="xs" 
+                            icon="i-heroicons-arrow-up-tray"
+                            @click="triggerFileInput"
+                        >
+                            Carregar Logo
+                        </UButton>
+                        <UButton 
+                            v-if="companyForm.logo"
+                            color="red" 
+                            variant="ghost" 
+                            size="xs" 
+                            icon="i-heroicons-trash"
+                            @click="removeLogo"
+                        >
+                            Remover
+                        </UButton>
+                    </div>
+                    
+                    <input 
+                        ref="fileInput" 
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        class="hidden" 
+                        @change="handleFileSelect"
+                    />
+                </div>
+            </div>
+
             <!-- Nome -->
             <UFormField label="Razão Social" required :error="companyErrors.name">
                 <UInput v-model="companyForm.name" placeholder="Nome da empresa" icon="i-heroicons-building-office-2"

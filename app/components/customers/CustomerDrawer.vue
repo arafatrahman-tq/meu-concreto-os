@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import type { Customer } from "~/types/customers";
-import { formatCPF, formatCNPJ, formatPhone, maskPhone, maskDocument, maskCep } from "~/utils/formatters";
+import {
+  formatCPF,
+  formatCNPJ,
+  formatPhone,
+  maskPhone,
+  maskDocument,
+  maskCep,
+} from "~/utils/formatters";
 
 const props = defineProps<{
   open: boolean;
@@ -26,6 +33,7 @@ const loadingCep = ref(false);
 
 const form = reactive({
   name: "",
+  email: "",
   document: "",
   phone: "",
   cep: "",
@@ -73,6 +81,7 @@ const validateForm = (): boolean => {
 
 const resetForm = () => {
   form.name = "";
+  form.email = "";
   form.document = "";
   form.phone = "";
   form.cep = "";
@@ -90,26 +99,27 @@ watch(
   (c) => {
     if (c) {
       form.name = c.name;
+      form.email = c.email || "";
       form.document = c.document ? maskDocument(c.document) : "";
       form.phone = c.phone ? formatPhone(c.phone) : "";
       form.cep = c.zip || "";
       form.city = c.city || "";
       form.state = c.state || "";
-      
+
       // Best-effort: if address is "street, city, state" try to extract city/state
       const parts = c.address?.split(" - ").map((s) => s.trim());
       if (parts && parts.length >= 1) {
-          const mainAddr = parts[0]!.split(",").map(s => s.trim());
-          form.street = mainAddr[0] || "";
-          form.number = mainAddr[1] || "";
-          if (parts.length >= 2) form.complement = parts[1] || "";
-          if (parts.length >= 3) form.neighborhood = parts[2] || "";
+        const mainAddr = parts[0]!.split(",").map((s) => s.trim());
+        form.street = mainAddr[0] || "";
+        form.number = mainAddr[1] || "";
+        if (parts.length >= 2) form.complement = parts[1] || "";
+        if (parts.length >= 3) form.neighborhood = parts[2] || "";
       }
     } else {
       resetForm();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => props.open,
@@ -117,9 +127,8 @@ watch(
     if (open && !props.customer) {
       resetForm();
     }
-  }
+  },
 );
-
 
 const fetchCep = async () => {
   const cleanCep = form.cep.replace(/\D/g, "");
@@ -161,11 +170,13 @@ const handleSave = async () => {
     const fullAddressParts = [];
     if (displayAddress) fullAddressParts.push(displayAddress);
     if (form.complement?.trim()) fullAddressParts.push(form.complement.trim());
-    if (form.neighborhood?.trim()) fullAddressParts.push(form.neighborhood.trim());
+    if (form.neighborhood?.trim())
+      fullAddressParts.push(form.neighborhood.trim());
 
     const payload = {
       companyId: companyId.value,
       name: form.name.trim(),
+      email: form.email.trim() || undefined,
       document: form.document.replace(/\D/g, "") || undefined,
       phone: form.phone.replace(/\D/g, "") || undefined,
       address: fullAddressParts.join(" - ") || undefined,
@@ -232,11 +243,15 @@ const handleSave = async () => {
           <h4
             class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
           >
-            <UIcon name="i-heroicons-user" class="w-4 h-4" />
+            <UIcon name="i-heroicons-user" class="w-4 h-4 text-primary-500" />
             Dados de Identificação
           </h4>
 
-          <UFormField label="Nome / Razão Social" required :error="formErrors.name">
+          <UFormField
+            label="Nome / Razão Social"
+            required
+            :error="formErrors.name"
+          >
             <UInput
               v-model="form.name"
               placeholder="Ex: João Silva ou Construtora XYZ"
@@ -266,6 +281,15 @@ const handleSave = async () => {
               />
             </UFormField>
           </div>
+
+          <UFormField label="E-mail" :error="formErrors.email">
+            <UInput
+              v-model="form.email"
+              placeholder="Ex: cliente@email.com"
+              icon="i-heroicons-envelope"
+              class="w-full"
+            />
+          </UFormField>
         </div>
 
         <USeparator />
@@ -275,7 +299,10 @@ const handleSave = async () => {
           <h4
             class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
           >
-            <UIcon name="i-heroicons-map-pin" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-map-pin"
+              class="w-4 h-4 text-primary-500"
+            />
             Endereço de Entrega
           </h4>
 

@@ -7,7 +7,8 @@ import { createNotification } from "#server/utils/notifications";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  if (!id) throw createError({ statusCode: 400, statusMessage: "ID obrigatório" });
+  if (!id)
+    throw createError({ statusCode: 400, statusMessage: "ID obrigatório" });
 
   const userToUpdate = await db
     .select()
@@ -16,7 +17,10 @@ export default defineEventHandler(async (event) => {
     .get();
 
   if (!userToUpdate) {
-    throw createError({ statusCode: 404, statusMessage: "Usuário não encontrado" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Usuário não encontrado",
+    });
   }
 
   // Security: Admin can update anyone. Users can update themselves.
@@ -34,6 +38,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
+
+  // Security: Only admins can change the role.
+  // We check the raw body before parsing to ensure no one slips a role change.
+  if (body.role && body.role !== userToUpdate.role && auth.role !== "admin") {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Apenas administradores podem alterar perfis de usuário",
+    });
+  }
+
   const result = userUpdateSchema.safeParse(body);
 
   if (!result.success) {
@@ -55,7 +69,10 @@ export default defineEventHandler(async (event) => {
       .returning();
 
     if (!updatedUser) {
-      throw createError({ statusCode: 404, statusMessage: "Usuário não encontrado" });
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Usuário não encontrado",
+      });
     }
 
     // Notification trigger

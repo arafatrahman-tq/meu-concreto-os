@@ -169,6 +169,41 @@
       "when": 1772028719375,
       "tag": "0023_short_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1772540108078,
+      "tag": "0024_milky_red_wolf",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1772540961606,
+      "tag": "0025_aberrant_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1772544033109,
+      "tag": "0026_damp_lily_hollister",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1772625658387,
+      "tag": "0027_typical_liz_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1772648483181,
+      "tag": "0028_nebulous_mandroid",
+      "breakpoints": true
     }
   ]
 }

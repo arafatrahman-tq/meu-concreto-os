@@ -396,7 +396,7 @@ const handleSave = async () => {
           >
             <UIcon
               name="i-heroicons-building-office-2"
-              class="w-4 h-4"
+              class="w-4 h-4 text-primary-500"
             />
             Identificação
           </h4>
@@ -474,7 +474,7 @@ const handleSave = async () => {
           >
             <UIcon
               name="i-heroicons-map-pin"
-              class="w-4 h-4"
+              class="w-4 h-4 text-primary-500"
             />
             Endereço
           </h4>
@@ -550,7 +550,7 @@ const handleSave = async () => {
               >
                 <UIcon
                   name="i-heroicons-users"
-                  class="w-4 h-4"
+                  class="w-4 h-4 text-primary-500"
                 />
                 Membros com Acesso
               </h4>

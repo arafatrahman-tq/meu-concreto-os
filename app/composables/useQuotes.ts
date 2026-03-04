@@ -7,6 +7,7 @@ import type {
   QuoteStatus,
   MixDesign,
 } from "~/types/sales";
+import { getApiError } from "~/utils/errors";
 
 // Constantes estáticas fora do escopo do Composable para não alocar memória repetida
 export const STATUS_OPTS = [
@@ -53,33 +54,50 @@ export const useQuotes = () => {
   const {
     data: dashboardPayload,
     pending: loadingQuotes,
-    refresh: refreshQuotes
+    refresh: refreshQuotes,
   } = useAsyncData(
     `quotes-dashboard-${companyId.value}`, // Unique cache key
     async () => {
       // Se não houver empresa selecionada, não faz requisições inúteis
       if (!companyId.value) {
-        return { quotes: [], products: [], companies: [], sellers: [], mixDesigns: [] };
+        return {
+          quotes: [],
+          products: [],
+          companies: [],
+          sellers: [],
+          mixDesigns: [],
+        };
       }
 
       // $fetch não é reativo, por isso é o correto para usar dentro do useAsyncData
-      const [quotesRes, productsRes, companiesRes, sellersRes, mixRes] = await Promise.all([
-        $fetch<{ quotes: Quote[] }>("/api/quotes", { query: { companyId: companyId.value } }),
-        $fetch<{ products: Product[] }>("/api/products", { query: { companyId: companyId.value } }),
-        $fetch<{ companies: Company[] }>("/api/companies", { query: { companyId: companyId.value } }),
-        $fetch<{ sellers: Seller[] }>("/api/sellers", { query: { companyId: companyId.value, active: "true" } }),
-        $fetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", { query: { companyId: companyId.value } })
-      ]);
+      const [quotesRes, productsRes, companiesRes, sellersRes, mixRes] =
+        await Promise.all([
+          $fetch<{ quotes: Quote[] }>("/api/quotes", {
+            query: { companyId: companyId.value },
+          }),
+          $fetch<{ products: Product[] }>("/api/products", {
+            query: { companyId: companyId.value },
+          }),
+          $fetch<{ companies: Company[] }>("/api/companies", {
+            query: { companyId: companyId.value },
+          }),
+          $fetch<{ sellers: Seller[] }>("/api/sellers", {
+            query: { companyId: companyId.value, active: "true" },
+          }),
+          $fetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", {
+            query: { companyId: companyId.value },
+          }),
+        ]);
 
       return {
         quotes: quotesRes.quotes || [],
         products: productsRes.products || [],
         companies: companiesRes.companies || [],
         sellers: sellersRes.sellers || [],
-        mixDesigns: mixRes.mixDesigns || []
+        mixDesigns: mixRes.mixDesigns || [],
       };
     },
-    { watch: [companyId] } // Refaz o fetch universal se a empresa logada mudar!
+    { watch: [companyId] }, // Refaz o fetch universal se a empresa logada mudar!
   );
 
   // Computed views em cima do cache mestre
@@ -123,7 +141,8 @@ export const useQuotes = () => {
   const filteredQuotes = computed(() => {
     return quotes.value
       .filter((q) => {
-        const matchState = statusFilter.value === "all" || q.status === statusFilter.value;
+        const matchState =
+          statusFilter.value === "all" || q.status === statusFilter.value;
         const searchLower = search.value.toLowerCase();
 
         const matchSearch =
@@ -134,7 +153,11 @@ export const useQuotes = () => {
 
         return matchState && matchSearch;
       })
-      .sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt as string).getTime() -
+          new Date(a.createdAt as string).getTime(),
+      );
   });
 
   const paginatedQuotes = computed(() => {
@@ -142,7 +165,9 @@ export const useQuotes = () => {
     return filteredQuotes.value.slice(start, start + pageSize.value);
   });
 
-  const totalPages = computed(() => Math.max(1, Math.ceil(filteredQuotes.value.length / pageSize.value)));
+  const totalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredQuotes.value.length / pageSize.value)),
+  );
 
   watch([search, statusFilter], () => {
     page.value = 1;
@@ -153,7 +178,8 @@ export const useQuotes = () => {
     return {
       total: all.length,
       approved: all.filter((q) => q.status === "approved").length,
-      pending: all.filter((q) => q.status === "sent" || q.status === "draft").length,
+      pending: all.filter((q) => q.status === "sent" || q.status === "draft")
+        .length,
       totalValue: all
         .filter((q) => q.status === "approved")
         .reduce((s, q) => s + q.total, 0),
@@ -190,7 +216,7 @@ export const useQuotes = () => {
     } catch (e: any) {
       toast.add({
         title: "Erro ao excluir",
-        description: e?.data?.message || "Tente novamente.",
+        description: getApiError(e),
         color: "error",
         icon: "i-heroicons-exclamation-circle",
       });
@@ -207,7 +233,10 @@ export const useQuotes = () => {
       await $fetch(`/api/quotes/${q.id}`, { method: "PUT", body: { status } });
       toast.add({
         title: "Status atualizado",
-        description: `Orçamento #${String(q.id).padStart(4, "0")} agora é ${status}`,
+        description: `Orçamento #${String(q.id).padStart(
+          4,
+          "0",
+        )} agora é ${status}`,
         color: "success",
       });
       await refreshQuotes();
@@ -215,12 +244,60 @@ export const useQuotes = () => {
     } catch (e: any) {
       toast.add({
         title: "Erro ao atualizar status",
-        description: e?.data?.message || "Tente novamente.",
+        description: getApiError(e),
         color: "error",
       });
       return false;
     } finally {
       isUpdatingStatus.value = null;
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // Cancel
+  // ─────────────────────────────────────────────
+  const isCancelModalOpen = ref(false);
+  const cancelTarget = ref<Quote | null>(null);
+  const cancelReason = ref("");
+  const loadingCancel = ref(false);
+
+  const openCancelConfirm = (q: Quote) => {
+    cancelTarget.value = q;
+    cancelReason.value = "";
+    isCancelModalOpen.value = true;
+  };
+
+  const handleCancel = async () => {
+    if (!cancelTarget.value) return;
+    loadingCancel.value = true;
+    try {
+      await $fetch(`/api/quotes/${cancelTarget.value.id}`, {
+        method: "PUT",
+        body: {
+          status: "rejected",
+          ...(cancelReason.value.trim()
+            ? { notes: cancelReason.value.trim() }
+            : {}),
+        },
+      });
+      toast.add({
+        title: "Orçamento cancelado",
+        description: `Orçamento #${String(cancelTarget.value.id).padStart(4, "0")} foi cancelado.`,
+        color: "warning",
+        icon: "i-heroicons-no-symbol",
+      });
+      isCancelModalOpen.value = false;
+      await refreshQuotes();
+    } catch (e: any) {
+      toast.add({
+        title: "Erro ao cancelar",
+        description: getApiError(e),
+        color: "error",
+      });
+    } finally {
+      loadingCancel.value = false;
+      cancelTarget.value = null;
+      cancelReason.value = "";
     }
   };
 
@@ -252,7 +329,13 @@ export const useQuotes = () => {
     confirmDelete,
     handleDelete,
     updateStatus,
-
+    // Cancel
+    isCancelModalOpen,
+    cancelTarget,
+    cancelReason,
+    loadingCancel,
+    openCancelConfirm,
+    handleCancel,
     // Logistics Repass
     driverOptions,
     pumperOptions,

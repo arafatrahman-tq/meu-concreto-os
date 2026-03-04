@@ -5,6 +5,7 @@ import {
   real,
   uniqueIndex,
   unique,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { sql, relations } from "drizzle-orm";
 
@@ -18,6 +19,7 @@ export const companies = sqliteTable("companies", {
   city: text("city"),
   state: text("state"),
   zip: text("zip"),
+  logo: text("logo"), // Base64 encoded image
   active: integer("active", { mode: "boolean" }).default(true).notNull(),
 
   // Fast Mobile Access
@@ -65,7 +67,7 @@ export const users = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     companyId: integer("company_id").references(() => companies.id), // Nullable for system admins or until assigned
     defaultCompanyId: integer("default_company_id").references(
-      () => companies.id
+      () => companies.id,
     ), // Preferred company for login
     name: text("name").notNull(),
     email: text("email").notNull(),
@@ -86,7 +88,7 @@ export const users = sqliteTable(
   (table) => ({
     emailUnique: uniqueIndex("users_email_unique_idx").on(table.email),
     documentUnique: uniqueIndex("users_document_unique_idx").on(table.document),
-  })
+  }),
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -119,7 +121,7 @@ export const userCompanies = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (table) => [unique().on(table.userId, table.companyId)]
+  (table) => [unique().on(table.userId, table.companyId)],
 );
 
 export const userCompaniesRelations = relations(userCompanies, ({ one }) => ({
@@ -217,9 +219,7 @@ export const quotes = sqliteTable("quotes", {
   sellerId: integer("seller_id").references(() => sellers.id, {
     onDelete: "set null",
   }),
-  driverId: integer("driver_id").references(() => drivers.id, {
-    onDelete: "set null",
-  }),
+  // driverId removed in favor of junction table
   pumperId: integer("pumper_id").references(() => pumpers.id, {
     onDelete: "set null",
   }),
@@ -252,16 +252,65 @@ export const quotesRelations = relations(quotes, ({ one, many }) => ({
     fields: [quotes.sellerId],
     references: [sellers.id],
   }),
-  driver: one(drivers, {
-    fields: [quotes.driverId],
-    references: [drivers.id],
-  }),
+  drivers: many(quotesDrivers),
   pumper: one(pumpers, {
     fields: [quotes.pumperId],
     references: [pumpers.id],
   }),
   items: many(quoteItems),
   sales: many(sales),
+}));
+
+export const quotesDrivers = sqliteTable(
+  "quotes_drivers",
+  {
+    quoteId: integer("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    driverId: integer("driver_id")
+      .notNull()
+      .references(() => drivers.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.quoteId, t.driverId] }),
+  }),
+);
+
+export const quotesDriversRelations = relations(quotesDrivers, ({ one }) => ({
+  quote: one(quotes, {
+    fields: [quotesDrivers.quoteId],
+    references: [quotes.id],
+  }),
+  driver: one(drivers, {
+    fields: [quotesDrivers.driverId],
+    references: [drivers.id],
+  }),
+}));
+
+export const salesDrivers = sqliteTable(
+  "sales_drivers",
+  {
+    saleId: integer("sale_id")
+      .notNull()
+      .references(() => sales.id, { onDelete: "cascade" }),
+    driverId: integer("driver_id")
+      .notNull()
+      .references(() => drivers.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.saleId, t.driverId] }),
+  }),
+);
+
+export const salesDriversRelations = relations(salesDrivers, ({ one }) => ({
+  sale: one(sales, {
+    fields: [salesDrivers.saleId],
+    references: [sales.id],
+  }),
+  driver: one(drivers, {
+    fields: [salesDrivers.driverId],
+    references: [drivers.id],
+  }),
 }));
 
 // ─── Drivers ─────────────────────────────────────────────────────────────────
@@ -288,8 +337,8 @@ export const driversRelations = relations(drivers, ({ one, many }) => ({
     fields: [drivers.companyId],
     references: [companies.id],
   }),
-  quotes: many(quotes),
-  sales: many(sales),
+  quotes: many(quotesDrivers),
+  sales: many(salesDrivers),
 }));
 
 // ─── Pumpers (Bombeadores) ──────────────────────────────────────────────────
@@ -383,14 +432,12 @@ export const sales = sqliteTable("sales", {
 
   paymentMethod: text("payment_method"), // Snapshot/Legacy name
   paymentMethodId: integer("payment_method_id").references(
-    () => paymentMethods.id
+    () => paymentMethods.id,
   ),
   sellerId: integer("seller_id").references(() => sellers.id, {
     onDelete: "set null",
   }),
-  driverId: integer("driver_id").references(() => drivers.id, {
-    onDelete: "set null",
-  }),
+  // driverId removed in favor of junction table
   pumperId: integer("pumper_id").references(() => pumpers.id, {
     onDelete: "set null",
   }),
@@ -422,10 +469,7 @@ export const salesRelations = relations(sales, ({ one, many }) => ({
     fields: [sales.sellerId],
     references: [sellers.id],
   }),
-  driver: one(drivers, {
-    fields: [sales.driverId],
-    references: [drivers.id],
-  }),
+  drivers: many(salesDrivers),
   pumper: one(pumpers, {
     fields: [sales.pumperId],
     references: [pumpers.id],
@@ -471,25 +515,29 @@ export const saleItemsRelations = relations(saleItems, ({ one }) => ({
 }));
 
 // ─── Sellers ─────────────────────────────────────────────────────────────────
-export const sellers = sqliteTable("sellers", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  companyId: integer("company_id")
-    .notNull()
-    .references(() => companies.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  document: text("document"), // CPF — stored without mask
-  email: text("email"),
-  phone: text("phone"),
-  commissionRate: real("commission_rate").notNull().default(0), // % e.g. 3.5
-  active: integer("active", { mode: "boolean" }).default(true).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`)
-    .$onUpdate(() => new Date()),
-});
+export const sellers = sqliteTable(
+  "sellers",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    document: text("document"), // CPF — stored without mask
+    email: text("email"),
+    phone: text("phone"),
+    commissionRate: real("commission_rate").notNull().default(0), // % e.g. 3.5
+    active: integer("active", { mode: "boolean" }).default(true).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [unique().on(table.companyId, table.document)],
+);
 
 export const sellersRelations = relations(sellers, ({ one, many }) => ({
   company: one(companies, {
@@ -525,6 +573,7 @@ export const paymentMethods = sqliteTable("payment_methods", {
   details: text("details", { mode: "json" }),
 
   active: integer("active", { mode: "boolean" }).default(true).notNull(),
+  isDefault: integer("is_default", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -695,7 +744,7 @@ export const whatsappSettingsRelations = relations(
       fields: [whatsappSettings.companyId],
       references: [companies.id],
     }),
-  })
+  }),
 );
 
 // ─── Schedules ────────────────────────────────────────────────────────────────

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { Quote } from "~/types/sales";
+import type {
+  Quote,
+  ConfirmDeleteData,
+  ConfirmCreateData,
+} from "~/types/sales";
 
 const props = defineProps<{
   // Delete Quote
@@ -9,11 +13,11 @@ const props = defineProps<{
   handleDelete: () => void;
   // Logistics Delete/Create
   isConfirmDeleteModalOpen: boolean;
-  confirmDeleteData: any;
+  confirmDeleteData: ConfirmDeleteData;
   isDeletingMeta: boolean;
   handleConfirmDelete: () => void;
   isConfirmCreateModalOpen: boolean;
-  confirmCreateData: any;
+  confirmCreateData: ConfirmCreateData;
   isCreatingMeta: boolean;
   handleConfirmCreate: () => void;
   // Promotion
@@ -21,6 +25,11 @@ const props = defineProps<{
   promoteTarget: Quote | null;
   isPromoting: boolean;
   promoteToSale: (billNow: boolean) => void;
+  // Cancel
+  isCancelModalOpen: boolean;
+  cancelTarget: Quote | null;
+  loadingCancel: boolean;
+  cancelReason: string;
 }>();
 
 const emit = defineEmits([
@@ -28,7 +37,20 @@ const emit = defineEmits([
   "update:isConfirmDeleteModalOpen",
   "update:isConfirmCreateModalOpen",
   "update:isPromoteModalOpen",
+  "update:isCancelModalOpen",
+  "update:cancelReason",
+  "cancel",
 ]);
+
+const isCancelModalOpen = computed({
+  get: () => props.isCancelModalOpen,
+  set: (val) => emit("update:isCancelModalOpen", val),
+});
+
+const localCancelReason = computed({
+  get: () => props.cancelReason,
+  set: (val) => emit("update:cancelReason", val),
+});
 
 const isDeleteModalOpen = computed({
   get: () => props.isDeleteModalOpen,
@@ -278,6 +300,63 @@ const isPromoteModalOpen = computed({
             >
               Agora não
             </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- MODAL — Cancelar Orçamento -->
+    <UModal v-model:open="isCancelModalOpen" title="Cancelar Orçamento">
+      <template #body>
+        <div class="p-6 space-y-4">
+          <div class="flex items-start gap-4">
+            <div
+              class="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0"
+            >
+              <UIcon
+                name="i-heroicons-no-symbol"
+                class="w-6 h-6 text-amber-500"
+              />
+            </div>
+            <div>
+              <p class="font-bold text-zinc-900 dark:text-white">
+                Confirmar cancelamento
+              </p>
+              <p class="text-sm text-zinc-500 mt-1">
+                Tem certeza que deseja cancelar o orçamento
+                <strong class="text-zinc-700 dark:text-zinc-300">
+                  #{{ String(cancelTarget?.id ?? 0).padStart(4, "0") }}
+                </strong>
+                de
+                <strong class="text-zinc-700 dark:text-zinc-300">{{
+                  cancelTarget?.customerName
+                }}</strong
+                >? O status será alterado para <strong>Rejeitado</strong>.
+              </p>
+            </div>
+          </div>
+          <UFormField label="Motivo do cancelamento" hint="Opcional">
+            <UTextarea
+              v-model="localCancelReason"
+              placeholder="Ex: Cliente recusou proposta, preço não aprovado..."
+              :rows="3"
+              class="w-full"
+            />
+          </UFormField>
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="isCancelModalOpen = false"
+              >Voltar</UButton
+            >
+            <UButton
+              color="warning"
+              :loading="loadingCancel"
+              icon="i-heroicons-no-symbol"
+              @click="emit('cancel')"
+              >Confirmar Cancelamento</UButton
+            >
           </div>
         </div>
       </template>

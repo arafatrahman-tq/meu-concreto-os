@@ -167,18 +167,27 @@ const UNIT_OPTS = [
   <USlideover
     v-model:open="isOpen"
     :title="isEditing ? 'Editar Insumo' : 'Novo Insumo'"
+    :description="
+      isEditing
+        ? 'Atualize os dados do insumo'
+        : 'Cadastre um novo insumo no estoque'
+    "
     side="right"
     :ui="{ footer: 'p-0 block' }"
   >
     <template #body>
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
-        <form @submit.prevent="saveMaterial" class="flex flex-col gap-6" id="material-form">
+        <form
+          @submit.prevent="saveMaterial"
+          class="flex flex-col gap-6"
+          id="material-form"
+        >
           <!-- ── Section: Identificação ── -->
           <div class="space-y-4">
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon name="i-lucide-package" class="w-4 h-4" />
+              <UIcon name="i-heroicons-cube" class="w-4 h-4 text-primary-500" />
               Identificação
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -191,7 +200,7 @@ const UNIT_OPTS = [
                 <UInput
                   v-model="form.name"
                   placeholder="Ex: Cimento CP II"
-                  icon="i-lucide-package"
+                  icon="i-heroicons-cube"
                   class="w-full"
                 />
               </UFormField>
@@ -202,7 +211,7 @@ const UNIT_OPTS = [
                   :items="TYPE_OPTS"
                   label-key="label"
                   value-key="value"
-                  icon="i-lucide-layers"
+                  icon="i-heroicons-square-3-stack-3d"
                   class="w-full"
                 />
               </UFormField>
@@ -213,7 +222,7 @@ const UNIT_OPTS = [
                   :items="UNIT_OPTS"
                   label-key="label"
                   value-key="value"
-                  icon="i-lucide-scale"
+                  icon="i-heroicons-scale"
                   class="w-full"
                 />
               </UFormField>
@@ -261,7 +270,10 @@ const UNIT_OPTS = [
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon name="i-heroicons-adjustments-horizontal" class="w-4 h-4" />
+              <UIcon
+                name="i-heroicons-adjustments-horizontal"
+                class="w-4 h-4 text-primary-500"
+              />
               Configurações
             </h4>
             <UFormField label="Status do Insumo" class="col-span-full">
@@ -298,27 +310,27 @@ const UNIT_OPTS = [
     </template>
 
     <template #footer>
-      <div
-        class="flex items-center gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
-      >
-        <UButton
-          color="neutral"
-          variant="outline"
-          class="flex-1"
-          @click="isOpen = false"
-        >
-          Cancelar
-        </UButton>
-        <UButton
-          color="primary"
-          class="flex-1"
-          :loading="loadingSave"
-          icon="i-heroicons-check"
-          type="submit"
-          form="material-form"
-        >
-          {{ isEditing ? "Salvar Alterações" : "Criar Insumo" }}
-        </UButton>
+      <div class="p-6 border-t border-zinc-200 dark:border-zinc-800">
+        <div class="flex items-center gap-3">
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="flex-1"
+            @click="isOpen = false"
+          >
+            Cancelar
+          </UButton>
+          <UButton
+            color="primary"
+            class="flex-1"
+            :loading="loadingSave"
+            :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
+            type="submit"
+            form="material-form"
+          >
+            {{ isEditing ? "Salvar Alterações" : "Criar Insumo" }}
+          </UButton>
+        </div>
       </div>
     </template>
   </USlideover>

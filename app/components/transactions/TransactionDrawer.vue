@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { Transaction, TransactionType, TransactionStatus } from "~/types/transactions";
+import type {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+} from "~/types/transactions";
 import { CATEGORY_SUGGESTIONS } from "~/types/transactions";
 
 const props = defineProps<{
@@ -22,6 +26,18 @@ const isOpen = computed({
 
 const isEditing = computed(() => !!props.transaction);
 const loadingSave = ref(false);
+
+const { data: pmData, pending: loadingPM } = useFetch("/api/payment-methods", {
+  query: { companyId, active: "true" },
+});
+
+const paymentMethodsOptions = computed(() => {
+  const methods = (pmData.value as any)?.paymentMethods || [];
+  return methods.map((m: any) => ({
+    label: m.name,
+    value: m.name,
+  }));
+});
 
 const form = reactive({
   description: "",
@@ -102,7 +118,7 @@ watch(
       resetForm();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const handleSave = async () => {
@@ -165,7 +181,11 @@ const handleSave = async () => {
   >
     <template #body>
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
-        <form @submit.prevent="handleSave" class="flex flex-col gap-8" id="transaction-form">
+        <form
+          @submit.prevent="handleSave"
+          class="flex flex-col gap-8"
+          id="transaction-form"
+        >
           <!-- ── Primary Info ── -->
           <div class="space-y-4">
             <h4
@@ -175,7 +195,11 @@ const handleSave = async () => {
               Geral
             </h4>
             <div class="grid grid-cols-1 gap-4">
-              <UFormField label="Descrição" required :error="formErrors.description">
+              <UFormField
+                label="Descrição"
+                required
+                :error="formErrors.description"
+              >
                 <UInput
                   v-model="form.description"
                   placeholder="Ex: Pagamento Fornecedor Cimento"
@@ -194,7 +218,11 @@ const handleSave = async () => {
                     class="w-full"
                   />
                 </UFormField>
-                <UFormField label="Valor (R$)" required :error="formErrors.amount">
+                <UFormField
+                  label="Valor (R$)"
+                  required
+                  :error="formErrors.amount"
+                >
                   <UInput
                     v-model.number="form.amount"
                     type="number"
@@ -207,7 +235,11 @@ const handleSave = async () => {
               </div>
 
               <div class="grid grid-cols-2 gap-4">
-                <UFormField label="Categoria" required :error="formErrors.category">
+                <UFormField
+                  label="Categoria"
+                  required
+                  :error="formErrors.category"
+                >
                   <USelectMenu
                     v-model="form.category"
                     :items="CATEGORY_SUGGESTIONS"
@@ -255,11 +287,14 @@ const handleSave = async () => {
                 required
                 :error="formErrors.paymentMethod"
               >
-                <UInput
+                <USelectMenu
                   v-model="form.paymentMethod"
-                  placeholder="Ex: Itau, Pix, Dinheiro, CC..."
+                  :items="paymentMethodsOptions"
+                  value-attribute="value"
+                  placeholder="Selecione..."
                   icon="i-lucide-credit-card"
                   class="w-full"
+                  :loading="loadingPM"
                 />
               </UFormField>
             </div>
@@ -272,7 +307,12 @@ const handleSave = async () => {
       <div
         class="flex items-center gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
       >
-        <UButton color="neutral" variant="outline" class="flex-1" @click="isOpen = false">
+        <UButton
+          color="neutral"
+          variant="outline"
+          class="flex-1"
+          @click="isOpen = false"
+        >
           Cancelar
         </UButton>
         <UButton
@@ -283,7 +323,7 @@ const handleSave = async () => {
           type="submit"
           form="transaction-form"
         >
-          {{ isEditing ? 'Salvar Alterações' : 'Registrar Transação' }}
+          {{ isEditing ? "Salvar Alterações" : "Registrar Transação" }}
         </UButton>
       </div>
     </template>

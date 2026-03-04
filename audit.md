@@ -6,15 +6,15 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Runtime | Bun 1.3 |
-| Framework | Nuxt 4 (full-stack SSR) |
-| UI | @nuxt/ui + Tailwind v4 |
-| ORM | Drizzle ORM |
-| DB | libsql (SQLite / Turso-compatible) |
-| Validation | Zod |
-| Auth | bcryptjs + cookie-based session |
+| Layer      | Technology                         |
+| ---------- | ---------------------------------- |
+| Runtime    | Bun 1.3                            |
+| Framework  | Nuxt 4 (full-stack SSR)            |
+| UI         | @nuxt/ui + Tailwind v4             |
+| ORM        | Drizzle ORM                        |
+| DB         | libsql (SQLite / Turso-compatible) |
+| Validation | Zod                                |
+| Auth       | bcryptjs + cookie-based session    |
 
 ---
 
@@ -283,8 +283,22 @@ flowchart LR
 - **Strict Company Access**: `requireCompanyAccess` utility ensures users can only access data for companies they are explicitly authorized for, preventing horizontal privilege escalation.
 - **Encrypted Sessions**: Server-side session management (H3) with signed/encrypted cookies prevents session tampering.
 
+### 🛡️ RBAC & Permissions (Active)
+
+| Resource         | Action                | Required Role    | Note                                               |
+| ---------------- | --------------------- | ---------------- | -------------------------------------------------- |
+| **Users**        | `DELETE user-company` | Admin or Manager | Fixed (C1) - Previously open to users              |
+| **Users**        | `PUT role change`     | Admin            | Fixed (C2) - Users could promote themselves        |
+| **Companies**    | `PUT edit data`       | Manager+         | Fixed (M1) - Now requires Manager/Admin            |
+| **Quotes**       | `DELETE`              | Manager+         | Fixed (A2) - Restricted to management              |
+| **Sales**        | `DELETE completed`    | Admin            | Fixed - Blocks managers/users from erasing history |
+| **Sales**        | `PUT edit completed`  | Admin/Manager    | Fixed (M2) - Admins can now edit history in UI     |
+| **Transactions** | `POST create`         | Manager+         | Fixed (C3) - Regular users cannot add records      |
+| **Payments**     | `POST create`         | Manager+         | Fixed (A1)                                         |
+
 ### ⚠️ Potential Issues
 
-| # | Area | Issue |
-|---|---|---|
-| 1 | **No test suite** | No Vitest/Playwright setup detected. All business logic is untested. |
+| #   | Area                 | Issue                                                                                   |
+| --- | -------------------- | --------------------------------------------------------------------------------------- |
+| 1   | **No test suite**    | No Vitest/Playwright setup detected. All business logic is untested.                    |
+| 2   | **Delete Auxiliary** | `DELETE` for Drivers/Venders/Materials is open to any user by design (user preference). |

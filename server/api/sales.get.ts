@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
       // Dashboard needs minimal data, skip full item lists
       with: minimal
         ? { seller: true }
-        : { seller: true, items: true, transactions: true }
+        : { seller: true, items: true, transactions: true, drivers: true }
     })
 
     return { sales: allSales }

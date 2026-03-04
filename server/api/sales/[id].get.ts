@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
       with: {
         items: true,
         seller: true,
-        transactions: true
+        transactions: true,
+        drivers: true
       }
     })
 

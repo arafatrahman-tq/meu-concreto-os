@@ -4,29 +4,19 @@ import type {
   FormItem,
   SaleStatus,
   KnownCustomer,
+  SaleForm,
 } from "../../types/sales";
-import { formatCurrency, maskPhone, maskDocument } from "../../utils/formatters";
+import {
+  formatCurrency,
+  maskPhone,
+  maskDocument,
+} from "../../utils/formatters";
 
 const props = defineProps<{
   open: boolean;
   isEditing: boolean;
   loadingSave: boolean;
-  form: {
-    customerName: string;
-    customerDocument: string;
-    customerPhone: string;
-    customerAddress: string;
-    sellerId: number;
-    driverId: number;
-    pumperId: number;
-    status: SaleStatus;
-    date: string;
-    deliveryDate: string;
-    discount: number;
-    paymentMethod: string;
-    notes: string;
-    items: FormItem[];
-  };
+  form: SaleForm;
   linkedQuoteId: number | null;
   selectedCustomer: KnownCustomer | undefined;
   customerSearchTerm: string;
@@ -93,10 +83,9 @@ const STATUS_OPTS = [
 
 const selectedDriver = computed({
   get: () =>
-    props.driverOptions.find((d) => d.value === props.form.driverId) ||
-    props.driverOptions[0],
-  set: (val: any) => {
-    props.form.driverId = val?.value ?? 0;
+    props.driverOptions.filter((d) => props.form.driverIds.includes(d.value)),
+  set: (val: any[]) => {
+    props.form.driverIds = val.map((v) => v.value);
   },
 });
 
@@ -149,7 +138,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
           <h4
             class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
           >
-            <UIcon name="i-heroicons-user" class="w-4 h-4" />
+            <UIcon name="i-heroicons-user" class="w-4 h-4 text-primary-500" />
             Dados do Cliente
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -220,7 +209,9 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 icon="i-heroicons-identification"
                 class="w-full"
-                @update:model-value="(v) => (form.customerDocument = maskDocument(v))"
+                @update:model-value="
+                  (v) => (form.customerDocument = maskDocument(v))
+                "
               />
             </UFormField>
             <UFormField label="Telefone">
@@ -232,7 +223,6 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 @update:model-value="(v) => (form.customerPhone = maskPhone(v))"
               />
             </UFormField>
-
             <div class="col-span-full space-y-3">
               <div
                 v-if="customerRegisteredAddress"
@@ -299,6 +289,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 <UInputMenu
                   v-model="selectedDriver"
                   :items="driverOptions"
+                  multiple
                   placeholder="Selecione ou crie..."
                   icon="i-heroicons-truck"
                   class="w-full"
@@ -499,7 +490,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                   <div
                     class="flex items-center h-9 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 text-sm font-bold text-zinc-700 dark:text-zinc-300 ring-1 ring-zinc-200 dark:ring-zinc-700"
                   >
-                    <UIcon name="i-heroicons-receipt-percent" class="w-4 h-4 mr-2 text-zinc-400" />
+                    <UIcon
+                      name="i-heroicons-receipt-percent"
+                      class="w-4 h-4 mr-2 text-zinc-400"
+                    />
                     {{
                       formatCurrency(
                         Math.round(item.quantity * item.unitPrice * 100)
@@ -510,7 +504,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
               </div>
 
               <!-- Concrete specifics -->
-              <div v-if="item.unit === 'm3'" class="space-y-3 pt-1 border-t border-dashed border-zinc-100 dark:border-zinc-700">
+              <div
+                v-if="item.unit === 'm3'"
+                class="space-y-3 pt-1 border-t border-dashed border-zinc-100 dark:border-zinc-700"
+              >
                 <UFormField label="Traço de Produção (Receita)">
                   <USelectMenu
                     :model-value="item.mixDesignId ?? undefined"
@@ -526,31 +523,31 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
 
                 <div class="grid grid-cols-3 gap-3">
                   <UFormField label="FCK (MPa)">
-                  <UInput
-                    v-model.number="item.fck"
-                    type="number"
-                    placeholder="25"
-                    icon="i-heroicons-beaker"
-                    class="w-full"
-                  />
-                </UFormField>
-                <UFormField label="Slump (cm)">
-                  <UInput
-                    v-model.number="item.slump"
-                    type="number"
-                    placeholder="10"
-                    icon="i-heroicons-adjustments-horizontal"
-                    class="w-full"
-                  />
-                </UFormField>
-                <UFormField label="Brita">
-                  <UInput
-                    v-model="item.stoneSize"
-                    placeholder="brita 1"
-                    icon="i-heroicons-circle-stack"
-                    class="w-full"
-                  />
-                </UFormField>
+                    <UInput
+                      v-model.number="item.fck"
+                      type="number"
+                      placeholder="25"
+                      icon="i-heroicons-beaker"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField label="Slump (cm)">
+                    <UInput
+                      v-model.number="item.slump"
+                      type="number"
+                      placeholder="10"
+                      icon="i-heroicons-adjustments-horizontal"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField label="Brita">
+                    <UInput
+                      v-model="item.stoneSize"
+                      placeholder="brita 1"
+                      icon="i-heroicons-circle-stack"
+                      class="w-full"
+                    />
+                  </UFormField>
                 </div>
               </div>
             </div>
@@ -590,10 +587,20 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
               />
             </UFormField>
             <UFormField label="Data da Venda">
-              <UInput v-model="form.date" type="date" icon="i-heroicons-calendar" class="w-full" />
+              <UInput
+                v-model="form.date"
+                type="date"
+                icon="i-heroicons-calendar"
+                class="w-full"
+              />
             </UFormField>
             <UFormField label="Data de Entrega">
-              <UInput v-model="form.deliveryDate" type="date" icon="i-heroicons-calendar-days" class="w-full" />
+              <UInput
+                v-model="form.deliveryDate"
+                type="date"
+                icon="i-heroicons-calendar-days"
+                class="w-full"
+              />
             </UFormField>
             <UFormField label="Desconto (R$)" :error="formErrors.discount">
               <UInput

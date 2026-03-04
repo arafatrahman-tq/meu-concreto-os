@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { formatISO } from "date-fns";
-import type { Quote, QuoteStatus } from "~/types/sales";
+import type { Quote, QuoteStatus, QuoteItem } from "~/types/sales";
 
 // Opcional: interface para os parâmetros do composable
 export interface PromoteQuoteOptions {
@@ -25,27 +25,27 @@ export const usePromoteQuote = (options?: PromoteQuoteOptions) => {
       const saleData = {
         companyId: q.companyId,
         quoteId: q.id,
-        sellerId: q.sellerId || undefined,
+        sellerId: q.sellerId || null,
         customerName: q.customerName,
-        customerDocument: q.customerDocument ?? undefined,
-        customerPhone: q.customerPhone ?? undefined,
-        customerAddress: q.customerAddress ?? undefined,
-        driverId: q.driverId || undefined,
-        pumperId: q.pumperId || undefined,
+        customerDocument: q.customerDocument ?? null,
+        customerPhone: q.customerPhone ?? null,
+        customerAddress: q.customerAddress ?? null,
+        driverId: q.driverId || null,
+        pumperId: q.pumperId || null,
         discount: q.discount || 0,
         status: "pending",
         date: formatISO(new Date(), { representation: "date" }),
-        items: q.items.map((it: any) => ({
-          productId: it.productId ?? undefined,
+        items: q.items.map((it: QuoteItem) => ({
+          productId: it.productId ?? null,
           productName: it.productName,
-          description: it.description ?? undefined,
-          unit: it.unit ?? undefined,
+          description: it.description ?? null,
+          unit: it.unit ?? null,
           quantity: it.quantity,
           unitPrice: it.unitPrice,
-          fck: it.fck ?? undefined,
-          slump: it.slump ?? undefined,
-          stoneSize: it.stoneSize ?? undefined,
-          mixDesignId: it.mixDesignId ?? undefined,
+          fck: it.fck ?? null,
+          slump: it.slump ?? null,
+          stoneSize: it.stoneSize ?? null,
+          mixDesignId: it.mixDesignId ?? null,
         })),
       };
 
@@ -80,12 +80,11 @@ export const usePromoteQuote = (options?: PromoteQuoteOptions) => {
       if (options?.onSuccess) {
         await options.onSuccess();
       }
-
     } catch (e: any) {
       console.error("[usePromoteQuote] Falha na conversão:", e);
       toast.add({
         title: "Erro na conversão",
-        description: e?.data?.message || "Ocorreu um erro ao converter o orçamento para venda.",
+        description: getApiError(e),
         color: "error",
         icon: "i-heroicons-x-circle",
       });

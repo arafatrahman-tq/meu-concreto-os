@@ -100,7 +100,7 @@ const roleLabel = computed(() => {
                         Meu Perfil
                     </h2>
                     <p class="text-xs text-zinc-400 mt-0.5">
-                        Dados pessoais do seu usuário
+                        Gerencie seus dados pessoais
                     </p>
                 </div>
             </div>

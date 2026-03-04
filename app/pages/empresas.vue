@@ -359,19 +359,34 @@ const ACTIVE_OPTS = [
     <!-- ── Table Card ── -->
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between gap-4">
-          <h3
-            class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-          >
-            Lista de Empresas
-          </h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+            >
+              <UIcon
+                name="i-heroicons-building-office-2"
+                class="w-5 h-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Lista de Empresas
+              </h3>
+              <p class="text-xs text-zinc-400 mt-0.5">
+                Gerencie os registros de empresas parceiras
+              </p>
+            </div>
+          </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <UInput
               v-model="search"
               icon="i-heroicons-magnifying-glass"
               placeholder="Buscar nome, CNPJ, cidade..."
               size="sm"
-              class="w-52 lg:w-64"
+              class="w-full sm:w-56 lg:w-72"
             />
             <USelect
               v-model="activeFilter"
@@ -379,7 +394,7 @@ const ACTIVE_OPTS = [
               value-key="value"
               label-key="label"
               size="sm"
-              class="w-28"
+              class="w-full sm:w-44"
             />
           </div>
         </div>

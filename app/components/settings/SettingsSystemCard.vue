@@ -7,9 +7,19 @@ const props = defineProps<{
 <template>
     <UCard>
         <template #header>
-            <h2 class="text-sm font-black uppercase tracking-widest text-zinc-400">
-                Sistema
-            </h2>
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
+                    <UIcon name="i-heroicons-cpu-chip" class="w-5 h-5 text-primary-500" />
+                </div>
+                <div>
+                    <h2 class="text-sm font-black uppercase tracking-widest text-zinc-400">
+                        Sistema
+                    </h2>
+                    <p class="text-xs text-zinc-400 mt-0.5">
+                        Informações da versão e ambiente
+                    </p>
+                </div>
+            </div>
         </template>
 
         <div class="space-y-3">

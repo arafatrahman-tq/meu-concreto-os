@@ -1,32 +1,33 @@
-import { eq } from 'drizzle-orm'
-import { sales, transactions } from '../../database/schema'
-import { db } from '../../utils/db'
-import { requireCompanyAccess } from '../../utils/session'
+import { eq } from "drizzle-orm";
+import { sales, transactions } from "../../database/schema";
+import { db } from "../../utils/db";
+import { requireCompanyAccess } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) throw createError({ statusCode: 400, statusMessage: 'ID required' })
-  const saleId = parseInt(id)
+  const id = getRouterParam(event, "id");
+  if (!id) throw createError({ statusCode: 400, statusMessage: "ID required" });
+  const saleId = parseInt(id);
 
   const existing = await db
     .select({ companyId: sales.companyId, status: sales.status })
     .from(sales)
     .where(eq(sales.id, saleId))
-    .get()
+    .get();
   if (!existing)
-    throw createError({ statusCode: 404, statusMessage: 'Sale not found' })
-  requireCompanyAccess(event, existing.companyId)
+    throw createError({ statusCode: 404, statusMessage: "Sale not found" });
+  requireCompanyAccess(event, existing.companyId);
 
-  const auth = event.context.auth
+  const auth = event.context.auth;
 
-  // Guard: Cannot delete completed sales (financial/legal trail)
-  // UNLESS user is admin/manager
-  if (existing.status === 'completed') {
-    if (auth?.role !== 'admin' && auth?.role !== 'manager') {
+  // Guard: Cannot delete completed sales (financial integrity).
+  // Only admins are allowed — managers and regular users are blocked.
+  if (existing.status === "completed") {
+    if (auth?.role !== "admin") {
       throw createError({
-        statusCode: 422,
-        statusMessage: 'Vendas concluídas não podem ser excluídas por usuários comuns.'
-      })
+        statusCode: 403,
+        statusMessage:
+          "Apenas administradores podem excluir vendas concluídas.",
+      });
     }
   }
 
@@ -35,32 +36,32 @@ export default defineEventHandler(async (event) => {
     .select({ id: transactions.id })
     .from(transactions)
     .where(eq(transactions.saleId, saleId))
-    .get()
+    .get();
   if (hasBilling) {
     throw createError({
       statusCode: 422,
       statusMessage:
-        'Esta venda já possui transações financeiras e não pode ser excluída.'
-    })
+        "Esta venda já possui transações financeiras e não pode ser excluída.",
+    });
   }
 
   try {
     const [deletedSale] = await db
       .delete(sales)
       .where(eq(sales.id, saleId))
-      .returning()
+      .returning();
 
     if (!deletedSale) {
-      throw createError({ statusCode: 404, statusMessage: 'Sale not found' })
+      throw createError({ statusCode: 404, statusMessage: "Sale not found" });
     }
 
-    return { message: 'Sale deleted', sale: deletedSale }
+    return { message: "Sale deleted", sale: deletedSale };
   } catch (e: unknown) {
-    console.error('Delete Sale Error:', e)
+    console.error("Delete Sale Error:", e);
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      data: { message: e instanceof Error ? e.message : 'Unknown error' }
-    })
+      statusMessage: "Internal Server Error",
+      data: { message: e instanceof Error ? e.message : "Unknown error" },
+    });
   }
-})
+});

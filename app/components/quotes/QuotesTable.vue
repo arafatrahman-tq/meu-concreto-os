@@ -19,6 +19,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: "edit", q: Quote): void;
   (e: "delete", q: Quote): void;
+  (e: "cancel", q: Quote): void;
   (e: "duplicate", q: Quote): void;
   (e: "sendPdf", q: Quote): void;
   (e: "updateStatus", q: Quote, status: QuoteStatus): void;
@@ -54,18 +55,62 @@ const STATUS_ACTIONS: Record<
 const downloadPdf = (id: number) => {
   window.open(`/api/quotes/${id}/download`, "_blank");
 };
+
+const { user } = useAuth();
+const isManagerOrAdmin = computed(
+  () => user.value?.role === "admin" || user.value?.role === "manager",
+);
+
+const isExpired = (date: string | number | null | undefined): boolean => {
+  if (!date) return false;
+  const d = new Date(date);
+  return !isNaN(d.getTime()) && d < new Date();
+};
+
+const canEdit = (status: QuoteStatus): boolean => {
+  if (isManagerOrAdmin.value) return true;
+  return status !== "approved";
+};
+
+const canDelete = (status: QuoteStatus): boolean => {
+  if (isManagerOrAdmin.value) return true;
+  return status !== "approved";
+};
+
+const canCancel = (status: QuoteStatus): boolean => {
+  if (isManagerOrAdmin.value && status === "approved") return true;
+  return status !== "rejected" && status !== "approved";
+};
 </script>
 
 <template>
   <UCard>
     <!-- Toolbar -->
     <template #header>
-      <div class="flex items-center justify-between gap-4">
-        <h3
-          class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-        >
-          Lista de Orçamentos
-        </h3>
+      <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+          >
+            <UIcon
+              name="i-heroicons-document-text"
+              class="w-5 h-5 text-primary-500"
+            />
+          </div>
+          <div>
+            <h3
+              class="text-sm font-black uppercase tracking-widest text-zinc-400"
+            >
+              Orçamentos
+            </h3>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Gerencie suas propostas e orçamentos
+            </p>
+          </div>
+        </div>
+
         <div class="flex items-center gap-2 flex-wrap justify-end">
           <!-- Search -->
           <UInput
@@ -73,7 +118,7 @@ const downloadPdf = (id: number) => {
             icon="i-heroicons-magnifying-glass"
             placeholder="Buscar cliente, nº..."
             size="sm"
-            class="w-44 lg:w-56"
+            class="w-full sm:w-44 lg:w-56"
           />
           <!-- Status filter -->
           <USelect
@@ -82,7 +127,7 @@ const downloadPdf = (id: number) => {
             value-key="value"
             label-key="label"
             size="sm"
-            class="w-36"
+            class="w-full sm:w-36"
           />
         </div>
       </div>
@@ -197,8 +242,7 @@ const downloadPdf = (id: number) => {
                 class="text-xs text-zinc-500"
                 :class="{
                   'text-red-500 font-bold':
-                    new Date(q.validUntil as any) < new Date() &&
-                    q.status !== 'approved',
+                    isExpired(q.validUntil) && q.status !== 'approved',
                 }"
               >
                 {{ formatDate(q.validUntil) }}
@@ -226,8 +270,7 @@ const downloadPdf = (id: number) => {
                   size="sm"
                   :icon="statusConfig[q.status].icon"
                   :class="[
-                    STATUS_ACTIONS[q.status].length &&
-                    isUpdatingStatus !== q.id
+                    STATUS_ACTIONS[q.status].length && isUpdatingStatus !== q.id
                       ? 'cursor-pointer'
                       : 'cursor-default',
                     isUpdatingStatus === q.id && 'opacity-60',
@@ -241,6 +284,15 @@ const downloadPdf = (id: number) => {
                   {{ statusConfig[q.status].label }}
                 </UBadge>
               </UDropdownMenu>
+              <UBadge
+                v-if="isExpired(q.validUntil) && q.status === 'sent'"
+                color="error"
+                variant="subtle"
+                size="xs"
+                class="mt-1 block w-fit"
+              >
+                Expirado
+              </UBadge>
             </td>
             <!-- Total -->
             <td
@@ -261,6 +313,7 @@ const downloadPdf = (id: number) => {
                     size="xs"
                     :loading="isSendingPdf === q.id"
                     :disabled="isSendingPdf !== null"
+                    aria-label="Enviar orçamento via WhatsApp"
                     @click="emit('sendPdf', q)"
                   />
                 </UTooltip>
@@ -270,6 +323,7 @@ const downloadPdf = (id: number) => {
                     variant="ghost"
                     icon="i-heroicons-arrow-down-tray"
                     size="xs"
+                    aria-label="Baixar orçamento em PDF"
                     @click="downloadPdf(q.id)"
                   />
                 </UTooltip>
@@ -279,6 +333,7 @@ const downloadPdf = (id: number) => {
                     variant="ghost"
                     icon="i-heroicons-document-duplicate"
                     size="xs"
+                    aria-label="Duplicar orçamento"
                     @click="emit('duplicate', q)"
                   />
                 </UTooltip>
@@ -291,14 +346,13 @@ const downloadPdf = (id: number) => {
                     variant="ghost"
                     icon="i-heroicons-shopping-cart"
                     size="xs"
+                    aria-label="Converter orçamento em venda"
                     @click="navigateTo(`/vendas?quoteId=${q.id}`)"
                   />
                 </UTooltip>
                 <UTooltip
                   :text="
-                    q.status === 'approved'
-                      ? 'Ver Orçamento'
-                      : 'Editar Orçamento'
+                    canEdit(q.status) ? 'Editar Orçamento' : 'Ver Orçamento'
                   "
                 >
                   <UButton
@@ -306,8 +360,50 @@ const downloadPdf = (id: number) => {
                     variant="ghost"
                     icon="i-heroicons-pencil-square"
                     size="xs"
-                    :disabled="q.status === 'approved'"
-                    @click="q.status !== 'approved' && emit('edit', q)"
+                    :disabled="!canEdit(q.status)"
+                    aria-label="Editar orçamento"
+                    @click="canEdit(q.status) && emit('edit', q)"
+                  />
+                </UTooltip>
+                <UTooltip
+                  v-if="q.status === 'sent' || q.status === 'draft'"
+                  text="Aprovar e Converter em Venda"
+                >
+                  <UButton
+                    color="success"
+                    variant="ghost"
+                    icon="i-heroicons-check"
+                    size="xs"
+                    @click="emit('updateStatus', q, 'approved')"
+                  />
+                </UTooltip>
+                <UTooltip
+                  v-if="q.status === 'sent' || q.status === 'draft'"
+                  text="Rejeitar Orçamento"
+                >
+                  <UButton
+                    color="error"
+                    variant="ghost"
+                    icon="i-heroicons-x-mark"
+                    size="xs"
+                    @click="emit('updateStatus', q, 'rejected')"
+                  />
+                </UTooltip>
+                <UTooltip
+                  :text="
+                    canCancel(q.status)
+                      ? 'Cancelar Orçamento'
+                      : 'Orçamento não pode ser cancelado'
+                  "
+                >
+                  <UButton
+                    color="warning"
+                    variant="ghost"
+                    icon="i-heroicons-no-symbol"
+                    size="xs"
+                    :disabled="!canCancel(q.status)"
+                    aria-label="Cancelar orçamento"
+                    @click="canCancel(q.status) && emit('cancel', q)"
                   />
                 </UTooltip>
                 <UTooltip text="Excluir">
@@ -316,8 +412,9 @@ const downloadPdf = (id: number) => {
                     variant="ghost"
                     icon="i-heroicons-trash"
                     size="xs"
-                    :disabled="q.status === 'approved'"
-                    @click="q.status !== 'approved' && emit('delete', q)"
+                    :disabled="!canDelete(q.status)"
+                    aria-label="Excluir orçamento"
+                    @click="canDelete(q.status) && emit('delete', q)"
                   />
                 </UTooltip>
               </div>

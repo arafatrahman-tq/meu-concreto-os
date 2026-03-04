@@ -361,9 +361,9 @@ const getTypeLabel = (type: ScheduleType) => {
 const getTypeIcon = (type: ScheduleType) => {
   switch (type) {
     case "concrete_delivery":
-      return "i-lucide-truck";
+      return "i-heroicons-truck";
     case "pump_service":
-      return "i-lucide-pipette";
+      return "i-heroicons-wrench-screwdriver";
     case "site_visit":
       return "i-heroicons-map-pin";
     default:
@@ -465,11 +465,26 @@ const getTypeIcon = (type: ScheduleType) => {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-4">
-          <h3
-            class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-          >
-            Lista de Programações
-          </h3>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
+            >
+              <UIcon
+                name="i-heroicons-calendar-days"
+                class="h-5 w-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Lista de Programações
+              </h3>
+              <p class="mt-0.5 text-xs text-zinc-400">
+                Gerencie as entregas e serviços
+              </p>
+            </div>
+          </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <UInput
               v-model="searchTerm"

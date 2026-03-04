@@ -6,8 +6,9 @@ const dateSchema = z
     z.string().datetime(), // Accepts ISO datetime
     z.date(), // Accepts Date objects
     z.literal(""), // Accepts empty string
+    z.null(), // Accepts null
   ])
-  .transform((val) => (val === "" ? undefined : val));
+  .transform((val) => (val === "" || val === null ? undefined : val));
 
 // --- Company Schemas ---
 export const companySchema = z.object({
@@ -18,25 +19,34 @@ export const companySchema = z.object({
     .string()
     .min(11, { message: "O documento deve ser válido (CPF/CNPJ)" })
     .transform((val) => val.replace(/\D/g, "")), // Remove masks
-  email: z.string().email("E-mail inválido").optional().or(z.literal("")),
+  email: z
+    .string()
+    .email("E-mail inválido")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
   phone: z
     .string()
+    .nullable()
     .optional()
-    .transform((val) => val?.replace(/\D/g, "")),
-  address: z.string().optional(),
-  city: z.string().optional(),
+    .transform((val) => (val ? val.replace(/\D/g, "") : val)),
+  address: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
   state: z
     .string()
     .length(2, { message: "O estado deve ter 2 caracteres" })
+    .nullable()
     .optional(),
   zip: z
     .string()
+    .nullable()
     .optional()
-    .transform((val) => val?.replace(/\D/g, "")),
+    .transform((val) => (val ? val.replace(/\D/g, "") : val)),
+  logo: z.string().nullable().optional(),
   active: z.boolean().default(true),
   quickAccessEnabled: z.boolean().default(false),
-  quickAccessPin: z.string().optional().or(z.literal("")),
-  quickAccessCode: z.string().optional().or(z.literal("")),
+  quickAccessPin: z.string().nullable().optional().or(z.literal("")),
+  quickAccessCode: z.string().nullable().optional().or(z.literal("")),
 });
 
 export const companyUpdateSchema = companySchema
@@ -45,7 +55,7 @@ export const companyUpdateSchema = companySchema
 
 // --- User Schemas ---
 export const userSchema = z.object({
-  companyId: z.number().optional(), // Nullable/Optional
+  companyId: z.number().nullable().optional(), // Nullable/Optional
   defaultCompanyId: z.number().optional().nullable(), // Preferred company for login
   name: z
     .string()
@@ -57,14 +67,15 @@ export const userSchema = z.object({
     .transform((val) => val.replace(/\D/g, "")), // Remove masks
   phone: z
     .string()
+    .nullable()
     .optional()
-    .transform((val) => val?.replace(/\D/g, "")), // Remove masks
+    .transform((val) => (val ? val.replace(/\D/g, "") : val)), // Remove masks
   role: z.enum(["admin", "user", "manager"]).default("user"),
   active: z.boolean().default(true),
   password: z
     .string()
     .min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
-  hwid: z.string().optional(),
+  hwid: z.string().nullable().optional(),
 });
 
 export const userUpdateSchema = userSchema
@@ -135,10 +146,10 @@ export const quoteSchema = z.object({
   companyId: z.number({
     required_error: "O ID da empresa é obrigatório e deve ser um número",
   }),
-  userId: z.number().optional(),
-  sellerId: z.number().optional(),
-  driverId: z.number().optional(),
-  pumperId: z.number().optional(),
+  userId: z.number().optional().nullable(),
+  sellerId: z.number().optional().nullable(),
+  driverIds: z.array(z.number()).optional(),
+  pumperId: z.number().optional().nullable(),
 
   customerName: z
     .string()
@@ -146,20 +157,22 @@ export const quoteSchema = z.object({
   customerDocument: z
     .string()
     .optional()
+    .nullable()
     .transform((val) => val?.replace(/\D/g, "")),
   customerPhone: z
     .string()
     .optional()
+    .nullable()
     .transform((val) => val?.replace(/\D/g, "")),
-  customerAddress: z.string().optional(),
+  customerAddress: z.string().optional().nullable(),
 
   status: z
     .enum(["draft", "sent", "approved", "rejected", "expired"])
     .default("draft"),
-  validUntil: dateSchema.optional(),
+  validUntil: dateSchema.optional().nullable(),
 
   discount: z.number().min(0).default(0), // Cents
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
 
   items: z
     .array(quoteItemSchema)
@@ -203,7 +216,7 @@ export const saleSchema = z.object({
   userId: z.number().optional().nullable(),
   quoteId: z.number().optional().nullable(),
   sellerId: z.number().optional().nullable(),
-  driverId: z.number().optional().nullable(),
+  driverIds: z.array(z.number()).optional(),
   pumperId: z.number().optional().nullable(),
 
   customerName: z
@@ -212,23 +225,25 @@ export const saleSchema = z.object({
   customerDocument: z
     .string()
     .optional()
+    .nullable()
     .transform((val) => val?.replace(/\D/g, "")),
   customerPhone: z
     .string()
     .optional()
+    .nullable()
     .transform((val) => val?.replace(/\D/g, "")),
-  customerAddress: z.string().optional(),
+  customerAddress: z.string().optional().nullable(),
 
-  date: dateSchema.optional(),
-  deliveryDate: dateSchema.optional(),
+  date: dateSchema.optional().nullable(),
+  deliveryDate: dateSchema.optional().nullable(),
   status: z
     .enum(["pending", "confirmed", "in_progress", "completed", "cancelled"])
     .optional(),
 
   discount: z.number().min(0).default(0), // Cents
-  paymentMethod: z.string().optional(),
-  paymentMethodId: z.number().int().optional(),
-  notes: z.string().optional(),
+  paymentMethod: z.string().optional().nullable(),
+  paymentMethodId: z.number().int().optional().nullable(),
+  notes: z.string().optional().nullable(),
 
   items: z
     .array(saleItemSchema)
@@ -264,6 +279,7 @@ export const paymentMethodSchema = z.object({
   details: z.record(z.string(), z.any()).optional(), // Flexible JSON object
 
   active: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
 });
 
 export const paymentMethodUpdateSchema = paymentMethodSchema

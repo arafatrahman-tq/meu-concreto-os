@@ -31,7 +31,8 @@ export default defineEventHandler(async (event) => {
           return and(...conds)
         },
         with: {
-          items: true
+          items: true,
+          drivers: true
         },
         orderBy: (quotes, { desc }) => [desc(quotes.createdAt)]
       })

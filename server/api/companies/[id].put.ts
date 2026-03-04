@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { companies } from "../../database/schema";
 import { companyUpdateSchema } from "../../utils/schemas";
 import { db } from "../../utils/db";
-import { requireCompanyAccess } from "../../utils/session";
+import { requireCompanyAccess, requireManager } from "../../utils/session";
 import { createNotification } from "../../utils/notifications";
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
   if (!idParam)
     throw createError({ statusCode: 400, statusMessage: "ID required" });
   const idValue = parseInt(idParam);
+
   requireCompanyAccess(event, idValue);
+  requireManager(event);
 
   const body = await readBody(event);
   const result = companyUpdateSchema.safeParse(body);
@@ -38,7 +40,7 @@ export default defineEventHandler(async (event) => {
       .run();
 
     console.log(
-      `[PUT] Update executed. Rows affected: ${updateRes.rowsAffected}`
+      `[PUT] Update executed. Rows affected: ${updateRes.rowsAffected}`,
     );
 
     updatedCompany = await db

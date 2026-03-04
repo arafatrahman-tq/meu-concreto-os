@@ -24,21 +24,21 @@ const {
 // Also fetch quotes and sales for detail drawer
 const { data: quotesData } = await useFetch(
   () => `/api/quotes?companyId=${companyId.value}`,
-  { default: () => ({ quotes: [] }) }
+  { default: () => ({ quotes: [] }) },
 );
 const { data: salesData } = await useFetch(
   () => `/api/sales?companyId=${companyId.value}`,
-  { default: () => ({ sales: [] }) }
+  { default: () => ({ sales: [] }) },
 );
 
 const customers = computed<Customer[]>(
-  () => (customersData.value as { customers: Customer[] })?.customers ?? []
+  () => (customersData.value as { customers: Customer[] })?.customers ?? [],
 );
 const allQuotes = computed<CustomerQuote[]>(
-  () => (quotesData.value as { quotes: CustomerQuote[] })?.quotes ?? []
+  () => (quotesData.value as { quotes: CustomerQuote[] })?.quotes ?? [],
 );
 const allSales = computed<CustomerSale[]>(
-  () => (salesData.value as { sales: CustomerSale[] })?.sales ?? []
+  () => (salesData.value as { sales: CustomerSale[] })?.sales ?? [],
 );
 
 // ─────────────────────────────────────────────
@@ -71,8 +71,14 @@ const initials = (name: string) => {
 };
 
 const AVATAR_COLORS = [
-  "bg-green-500", "bg-blue-500", "bg-purple-500", "bg-amber-500",
-  "bg-rose-500", "bg-teal-500", "bg-indigo-500", "bg-orange-500",
+  "bg-green-500",
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-teal-500",
+  "bg-indigo-500",
+  "bg-orange-500",
 ];
 const avatarColor = (name: string) => {
   const hash = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -88,7 +94,7 @@ const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 const stats = computed(() => {
   const all = customers.value;
   const newThisMonth = all.filter(
-    (c) => (c.createdAt || c.lastActivityAt) >= startOfMonth
+    (c) => (c.createdAt || c.lastActivityAt) >= startOfMonth,
   ).length;
   const buyers = all.filter((c) => c.totalSpent > 0);
   const totalSpent = buyers.reduce((s, c) => s + c.totalSpent, 0);
@@ -138,7 +144,7 @@ const paginatedCustomers = computed(() => {
 });
 
 const totalPages = computed(() =>
-  Math.ceil(filteredCustomers.value.length / pageSize)
+  Math.ceil(filteredCustomers.value.length / pageSize),
 );
 
 watch([search, activityFilter], () => {
@@ -168,7 +174,7 @@ const customerQuotes = computed(() => {
   const { document, name } = selectedCustomer.value;
   return allQuotes.value.filter(
     (q: CustomerQuote) =>
-      (document && q.customerDocument === document) || q.customerName === name
+      (document && q.customerDocument === document) || q.customerName === name,
   );
 });
 
@@ -177,7 +183,7 @@ const customerSales = computed(() => {
   const { document, name } = selectedCustomer.value;
   return allSales.value.filter(
     (s: CustomerSale) =>
-      (document && s.customerDocument === document) || s.customerName === name
+      (document && s.customerDocument === document) || s.customerName === name,
   );
 });
 
@@ -406,19 +412,36 @@ const _rowActions = (c: Customer) => [
     <!-- ── Table Card ── -->
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between gap-4">
-          <h3
-            class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-          >
-            Clientes
-          </h3>
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+            >
+              <UIcon
+                name="i-heroicons-user-group"
+                class="w-5 h-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Clientes
+              </h3>
+              <p class="text-xs text-zinc-400 mt-0.5">
+                Gerencie sua base de clientes
+              </p>
+            </div>
+          </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <UInput
               v-model="search"
               size="sm"
               placeholder="Buscar por nome, CNPJ ou telefone..."
               icon="i-heroicons-magnifying-glass"
-              class="w-56 lg:w-72"
+              class="w-full sm:w-56 lg:w-72"
             />
             <USelect
               v-model="activityFilter"
@@ -426,7 +449,7 @@ const _rowActions = (c: Customer) => [
               value-key="value"
               label-key="label"
               size="sm"
-              class="w-44"
+              class="w-full sm:w-44"
             />
           </div>
         </div>
@@ -728,7 +751,10 @@ const _rowActions = (c: Customer) => [
       </template>
 
       <template #body>
-        <div v-if="selectedCustomer" class="flex flex-col gap-6 p-6 overflow-y-auto">
+        <div
+          v-if="selectedCustomer"
+          class="flex flex-col gap-6 p-6 overflow-y-auto"
+        >
           <!-- Quick actions -->
           <div class="flex gap-2">
             <UButton
@@ -958,7 +984,9 @@ const _rowActions = (c: Customer) => [
       </template>
 
       <template #footer>
-        <div class="border-t border-zinc-200 dark:border-zinc-800 p-6 flex gap-3">
+        <div
+          class="border-t border-zinc-200 dark:border-zinc-800 p-6 flex gap-3"
+        >
           <UButton
             color="neutral"
             variant="outline"

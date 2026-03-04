@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { sales, saleItems } from "../../database/schema";
+import { sales, saleItems, salesDrivers } from "../../database/schema";
 import { saleUpdateSchema } from "../../utils/schemas";
 import { db, parseDate } from "../../utils/db";
 import { requireCompanyAccess } from "../../utils/session";
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { items, ...saleData } = result.data;
+  const { items, driverIds, ...saleData } = result.data;
 
   try {
     const updatedSale = await db.transaction(async (tx) => {
@@ -99,22 +99,36 @@ export default defineEventHandler(async (event) => {
       const discount = saleData.discount ?? currentSale.discount;
       const total = Math.max(0, newSubtotal - discount);
 
-      // 4. Update Sale
+      // 4. Update Drivers if provided
+      if (driverIds !== undefined) {
+        await tx.delete(salesDrivers).where(eq(salesDrivers.saleId, saleId));
+        if (driverIds.length > 0) {
+          await tx.insert(salesDrivers).values(
+            driverIds.map((driverId) => ({
+              saleId: saleId,
+              driverId,
+            }))
+          );
+        }
+      }
+
+      // 5. Update Sale Header
       await tx
         .update(sales)
         .set({
           ...saleData,
           subtotal: newSubtotal,
+          discount,
           total,
-          updatedAt: new Date(),
           date: parseDate(saleData.date),
           deliveryDate: parseDate(saleData.deliveryDate),
+          updatedAt: new Date(),
         })
         .where(eq(sales.id, saleId));
 
       const updated = await tx.query.sales.findFirst({
         where: eq(sales.id, saleId),
-        with: { items: true, seller: true },
+        with: { items: true, seller: true, drivers: true },
       });
 
       return updated;

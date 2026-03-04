@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import PaymentMethodDrawer from "~/components/payment-methods/PaymentMethodDrawer.vue";
 import KpiCard from "~/components/dashboard/KpiCard.vue";
+import type { PaymentMethod, MethodType } from "~/types/payment-methods";
+import { TYPE_CONFIG as TYPE_CONFIG_MAP } from "~/types/payment-methods";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -9,40 +11,6 @@ useSeoMeta({ title: "Formas de Pagamento | Meu Concreto" });
 
 const { companyId } = useAuth();
 const toast = useToast();
-
-// ---------------------------------------------
-// Types
-// ---------------------------------------------
-type MethodType =
-  | "cash"
-  | "credit_card"
-  | "debit_card"
-  | "pix"
-  | "boleto"
-  | "transfer"
-  | "check"
-  | "other";
-
-interface PaymentMethodDetails {
-  maxInstallments?: number;
-  interestRate?: number;
-  pixKey?: string;
-  pixKeyType?: string;
-  bankName?: string;
-  accountInfo?: string;
-  instructions?: string;
-}
-
-interface PaymentMethod {
-  id: number;
-  companyId: number;
-  name: string;
-  type: MethodType;
-  details?: PaymentMethodDetails | null;
-  active: boolean;
-  createdAt: string | number;
-  updatedAt: string | number;
-}
 
 // ---------------------------------------------
 // Data
@@ -65,61 +33,7 @@ const methodsList = computed<PaymentMethod[]>(
 // ---------------------------------------------
 // Type config
 // ---------------------------------------------
-const TYPE_CONFIG: Record<
-  MethodType,
-  { label: string; icon: string; color: string; bg: string }
-> = {
-  cash: {
-    label: "Dinheiro",
-    icon: "i-heroicons-banknotes",
-    color: "text-green-600 dark:text-green-400",
-    bg: "bg-green-50 dark:bg-green-500/10",
-  },
-  credit_card: {
-    label: "Cartão de Crédito",
-    icon: "i-heroicons-credit-card",
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-50 dark:bg-blue-500/10",
-  },
-  debit_card: {
-    label: "Cartão de Débito",
-    icon: "i-heroicons-credit-card",
-    color: "text-indigo-600 dark:text-indigo-400",
-    bg: "bg-indigo-50 dark:bg-indigo-500/10",
-  },
-  pix: {
-    label: "Pix",
-    icon: "i-simple-icons-pix",
-    color: "text-teal-600 dark:text-teal-400",
-    bg: "bg-teal-50 dark:bg-teal-500/10",
-  },
-  boleto: {
-    label: "Boleto",
-    icon: "i-heroicons-document-text",
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-  },
-  transfer: {
-    label: "Transferência",
-    icon: "i-heroicons-arrows-right-left",
-    color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-50 dark:bg-purple-500/10",
-  },
-  check: {
-    label: "Cheque",
-    icon: "i-heroicons-document-check",
-    color: "text-zinc-600 dark:text-zinc-400",
-    bg: "bg-zinc-100 dark:bg-zinc-800",
-  },
-  other: {
-    label: "Outro",
-    icon: "i-heroicons-ellipsis-horizontal-circle",
-    color: "text-zinc-500 dark:text-zinc-400",
-    bg: "bg-zinc-100 dark:bg-zinc-800",
-  },
-};
-
-const TYPE_OPTS = Object.entries(TYPE_CONFIG).map(([value, cfg]) => ({
+const TYPE_OPTS = Object.entries(TYPE_CONFIG_MAP).map(([value, cfg]) => ({
   value: value as MethodType,
   label: cfg.label,
 }));
@@ -156,7 +70,7 @@ const filteredMethods = computed(() => {
     const matchSearch =
       !q ||
       m.name.toLowerCase().includes(q) ||
-      TYPE_CONFIG[m.type].label.toLowerCase().includes(q);
+      TYPE_CONFIG_MAP[m.type].label.toLowerCase().includes(q);
     return matchType && matchActive && matchSearch;
   });
 });
@@ -249,8 +163,10 @@ const STATUS_FILTER_OPTS = [
 
 const ALL_TYPES_OPT = [{ value: "all", label: "Todos os tipos" }, ...TYPE_OPTS];
 
-const formatDate = (date: string | number | Date) =>
-  format(new Date(date), "dd MMM yyyy", { locale: ptBR });
+const formatDate = (date: string | number | Date | null | undefined) => {
+  if (!date) return "—";
+  return format(new Date(date), "dd MMM yyyy", { locale: ptBR });
+};
 </script>
 
 <template>
@@ -354,7 +270,7 @@ const formatDate = (date: string | number | Date) =>
           v-for="m in filteredMethods"
           :key="m.id"
           :class="[
-            'relative flex flex-col gap-4 rounded-xl ring-1 p-5 transition-all group',
+            'relative flex flex-col gap-4 rounded-xl ring-1 p-6 transition-all group',
             m.active
               ? 'bg-white dark:bg-zinc-900 ring-zinc-200 dark:ring-zinc-800 hover:ring-primary-300 dark:hover:ring-primary-700'
               : 'bg-zinc-50/60 dark:bg-zinc-900/40 ring-zinc-100 dark:ring-zinc-800/50 opacity-70',
@@ -364,24 +280,32 @@ const formatDate = (date: string | number | Date) =>
             <div
               :class="[
                 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                TYPE_CONFIG[m.type].bg,
+                TYPE_CONFIG_MAP[m.type].bg,
               ]"
             >
               <UIcon
-                :name="TYPE_CONFIG[m.type].icon"
-                :class="['w-6 h-6', TYPE_CONFIG[m.type].color]"
+                :name="TYPE_CONFIG_MAP[m.type].icon"
+                :class="['w-6 h-6', TYPE_CONFIG_MAP[m.type].color]"
               />
             </div>
             <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p
+                  class="font-black text-zinc-900 dark:text-white leading-tight truncate"
+                >
+                  {{ m.name }}
+                </p>
+                <UTooltip text="Padrão do Sistema" v-if="m.isDefault">
+                  <UIcon
+                    name="i-heroicons-star"
+                    class="w-4 h-4 text-amber-500 shrink-0"
+                  />
+                </UTooltip>
+              </div>
               <p
-                class="font-black text-zinc-900 dark:text-white leading-tight truncate"
+                class="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-0.5"
               >
-                {{ m.name }}
-              </p>
-              <p
-                class="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5"
-              >
-                {{ TYPE_CONFIG[m.type].label }}
+                {{ TYPE_CONFIG_MAP[m.type].label }}
               </p>
             </div>
             <div class="flex items-center gap-1">
@@ -389,7 +313,7 @@ const formatDate = (date: string | number | Date) =>
                 color="neutral"
                 variant="ghost"
                 icon="i-heroicons-pencil-square"
-                size="xs"
+                size="sm"
                 square
                 @click="openEdit(m)"
               />
@@ -397,7 +321,7 @@ const formatDate = (date: string | number | Date) =>
                 color="error"
                 variant="ghost"
                 icon="i-heroicons-trash"
-                size="xs"
+                size="sm"
                 square
                 @click="confirmDelete(m)"
               />
@@ -414,7 +338,7 @@ const formatDate = (date: string | number | Date) =>
               color="neutral"
               variant="soft"
               size="sm"
-              class="text-[9px] font-black px-2"
+              class="text-xs font-bold px-2"
             >
               {{ m.details.maxInstallments }}x sem juros
             </UBadge>
@@ -423,13 +347,13 @@ const formatDate = (date: string | number | Date) =>
               color="primary"
               variant="soft"
               size="sm"
-              class="text-[9px] font-black px-2 max-w-30 truncate"
+              class="text-xs font-bold px-2 max-w-30 truncate"
             >
               PIX: {{ m.details.pixKey }}
             </UBadge>
             <span
               v-if="m.details.bankName"
-              class="text-[10px] text-zinc-400 font-medium truncate"
+              class="text-xs text-zinc-400 font-medium truncate"
             >
               {{ m.details.bankName }}
             </span>
@@ -448,7 +372,7 @@ const formatDate = (date: string | number | Date) =>
               {{ m.active ? "Ativo" : "Inativo" }}
             </UBadge>
             <span
-              class="text-[9px] text-zinc-400 font-bold uppercase tracking-widest leading-none"
+              class="text-xs text-zinc-400 font-bold uppercase tracking-widest leading-none"
             >
               CRIADO EM {{ formatDate(m.createdAt) }}
             </span>

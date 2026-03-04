@@ -52,7 +52,17 @@ const {
   onCreatePumper,
   handleConfirmCreate,
   mixDesigns,
+  isCancelModalOpen,
+  cancelTarget,
+  cancelReason,
+  loadingCancel,
+  openCancelConfirm,
+  handleCancel,
 } = useSales();
+
+const driverOptions = computed(() => [
+  ...driversList.value.map((d) => ({ label: d.name, value: d.id })),
+]);
 
 // 2. Form logic
 const {
@@ -78,12 +88,14 @@ const {
   onMixDesignSelect,
   sendPdf,
   isSendingPdf,
+  selectedDriver,
 } = useSalesForm({
   refreshSales,
   products,
   companiesList,
   knownCustomers,
   mixDesigns,
+  driverOptions,
 });
 
 const productOptions = computed(() => [
@@ -95,11 +107,6 @@ const productOptions = computed(() => [
 const sellerOptions = computed(() => [
   { label: "Nenhum selecionado", value: 0 },
   ...sellersList.value.map((s) => ({ label: s.name, value: s.id })),
-]);
-
-const driverOptions = computed(() => [
-  { label: "Nenhum selecionado", value: 0 },
-  ...driversList.value.map((d) => ({ label: d.name, value: d.id })),
 ]);
 
 const pumperOptions = computed(() => [
@@ -130,7 +137,7 @@ onMounted(() => {
 
     if (customerDocument) {
       const match = companiesList.value.find(
-        (c) => c.document === String(customerDocument)
+        (c) => c.document === String(customerDocument),
       );
       if (match) {
         selectedCustomer.value = {
@@ -252,6 +259,7 @@ onMounted(() => {
       @edit="openEdit"
       @delete="openDeleteConfirm"
       @bill="openBilling"
+      @cancel="openCancelConfirm"
       @updateStatus="updateStatus"
       :isSendingPdf="isSendingPdf"
       @sendPdf="sendPdf"
@@ -310,6 +318,11 @@ onMounted(() => {
       @bill="handleBill"
       @confirmDelete="handleConfirmDelete(form)"
       @confirmCreate="handleConfirmCreate(form)"
+      v-model:cancelModalOpen="isCancelModalOpen"
+      :cancelTarget="cancelTarget"
+      :loadingCancel="loadingCancel"
+      v-model:cancelReason="cancelReason"
+      @cancel="handleCancel"
     />
   </div>
 </template>

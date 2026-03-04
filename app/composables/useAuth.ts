@@ -61,6 +61,29 @@ export const useAuth = () => {
   )
 
   // ─────────────────────────────────────────────
+  // Cross-Tab Synchronization (Coerência entre abas)
+  // ─────────────────────────────────────────────
+  // Se os cookies mudarem (ex: logout em outra aba), atualizamos o estado reativo
+  watch(_userCookie, (newVal) => {
+    // Verificação simples para evitar loops desnecessários
+    if (JSON.stringify(newVal) !== JSON.stringify(user.value)) {
+      user.value = newVal
+    }
+  }, { deep: true })
+
+  watch(_companiesCookie, (newVal) => {
+    if (JSON.stringify(newVal) !== JSON.stringify(companies.value)) {
+      companies.value = newVal || []
+    }
+  }, { deep: true })
+
+  watch(_activeCompanyCookie, (newVal) => {
+    if (newVal !== activeCompanyId.value) {
+      activeCompanyId.value = newVal
+    }
+  })
+
+  // ─────────────────────────────────────────────
   // Actions
   // ─────────────────────────────────────────────
 

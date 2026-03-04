@@ -27,6 +27,7 @@ const props = defineProps<{
                 icon="i-heroicons-document-text" 
                 :trend="metrics.quotesTrend.value" 
                 icon-color="text-blue-500"
+                icon-bg="bg-blue-50 dark:bg-blue-500/10"
                 :trend-label="trendLabel" 
             />
             <DashboardKpiCard 
@@ -35,6 +36,7 @@ const props = defineProps<{
                 icon="i-heroicons-shopping-cart" 
                 :trend="metrics.salesCountTrend.value" 
                 icon-color="text-amber-500"
+                icon-bg="bg-amber-50 dark:bg-amber-500/10"
                 :trend-label="trendLabel" 
             />
             <DashboardKpiCard 
@@ -43,6 +45,7 @@ const props = defineProps<{
                 icon="i-heroicons-scale" 
                 :trend="null"
                 :icon-color="metrics.balanceFiltered.value >= 0 ? 'text-green-500' : 'text-red-500'" 
+                :icon-bg="metrics.balanceFiltered.value >= 0 ? 'bg-green-50 dark:bg-green-500/10' : 'bg-red-50 dark:bg-red-500/10'"
             />
         </template>
     </div>

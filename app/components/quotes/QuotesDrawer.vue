@@ -1,50 +1,55 @@
 <script setup lang="ts">
-import type { KnownCustomer } from "~/types/sales";
+import type {
+  KnownCustomer,
+  QuoteForm,
+  SelectOption,
+  MixDesign,
+} from "~/types/sales";
 import { formatCurrency, maskPhone, maskDocument } from "~/utils/formatters";
 import { STATUS_OPTS } from "~/composables/useQuotes";
 
 const props = defineProps<{
   isEditing: boolean;
   knownCustomers: KnownCustomer[];
-  productOptions: any[];
-  sellerOptions: any[];
-  driverOptions: any[];
-  pumperOptions: any[];
-  mixDesigns: any[];
+  productOptions: SelectOption[];
+  sellerOptions: SelectOption[];
+  driverOptions: SelectOption[];
+  pumperOptions: SelectOption[];
+  mixDesigns: MixDesign[];
   // Form state and methods
-  form: any;
+  form: QuoteForm;
   isDrawerOpen: boolean;
   loadingSave: boolean;
   subtotalBRL: number;
   totalBRL: number;
   customerSearchTerm: string;
   selectedCustomer: KnownCustomer | undefined;
-  selectedDriver: any;
-  selectedPumper: any;
+  selectedDriver: SelectOption[] | undefined;
+  selectedPumper: SelectOption | undefined;
   useDeliveryAddress: boolean;
   customerRegisteredAddress: string;
   // Methods
-  onCustomerSelect: (c: any) => void;
+  onCustomerSelect: (c: KnownCustomer) => void;
   onProductSelect: (idx: number, id: number | null) => void;
   onMixDesignSelect: (idx: number, id: number | null) => void;
   addItem: () => void;
   removeItem: (idx: number) => void;
   handleSave: () => void;
   onCreateDriver: (name: string) => void;
-  onDeleteDriver: (d: any) => void;
+  onDeleteDriver: (d: { id: number; name: string }) => void;
   onCreatePumper: (name: string) => void;
-  onDeletePumper: (p: any) => void;
+  onDeletePumper: (p: { id: number; name: string }) => void;
   formErrors: Record<string, string>;
 }>();
 
-const emit = defineEmits([
-  "update:isDrawerOpen",
-  "update:customerSearchTerm",
-  "update:selectedCustomer",
-  "update:selectedDriver",
-  "update:selectedPumper",
-  "update:useDeliveryAddress",
-]);
+const emit = defineEmits<{
+  (e: "update:isDrawerOpen", value: boolean): void;
+  (e: "update:customerSearchTerm", value: string): void;
+  (e: "update:selectedCustomer", value: KnownCustomer | undefined): void;
+  (e: "update:selectedDriver", value: SelectOption[] | undefined): void;
+  (e: "update:selectedPumper", value: SelectOption | undefined): void;
+  (e: "update:useDeliveryAddress", value: boolean): void;
+}>();
 
 // We use computed with getter/setter for v-model props
 const isDrawerOpen = computed({
@@ -171,7 +176,9 @@ const useDeliveryAddress = computed({
                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 icon="i-heroicons-identification"
                 class="w-full"
-                @update:model-value="(v) => (form.customerDocument = maskDocument(v))"
+                @update:model-value="
+                  (v) => (form.customerDocument = maskDocument(v))
+                "
               />
             </UFormField>
             <UFormField label="Telefone">
@@ -252,6 +259,7 @@ const useDeliveryAddress = computed({
                 <UInputMenu
                   v-model="selectedDriver"
                   :items="driverOptions"
+                  multiple
                   placeholder="Selecione ou crie..."
                   icon="i-heroicons-truck"
                   class="w-full"
@@ -456,7 +464,10 @@ const useDeliveryAddress = computed({
                   <div
                     class="flex items-center h-9 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 text-sm font-bold text-zinc-700 dark:text-zinc-300 ring-1 ring-zinc-200 dark:ring-zinc-700"
                   >
-                    <UIcon name="i-heroicons-receipt-percent" class="w-4 h-4 mr-2 text-zinc-400" />
+                    <UIcon
+                      name="i-heroicons-receipt-percent"
+                      class="w-4 h-4 mr-2 text-zinc-400"
+                    />
                     {{
                       formatCurrency(
                         Math.round(item.quantity * item.unitPrice * 100)
@@ -467,17 +478,21 @@ const useDeliveryAddress = computed({
               </div>
 
               <!-- Concrete specifics -->
-              <div v-if="item.unit === 'm3'" class="space-y-3 pt-1 border-t border-dashed border-zinc-100 dark:border-zinc-700">
+              <div
+                v-if="item.unit === 'm3'"
+                class="space-y-3 pt-1 border-t border-dashed border-zinc-100 dark:border-zinc-700"
+              >
                 <UFormField label="Traço de Produção (Receita)">
                   <USelectMenu
                     :model-value="item.mixDesignId ?? undefined"
                     :items="mixDesigns"
+                    value-attribute="id"
                     value-key="id"
                     label-key="name"
                     placeholder="Selecione um traço (opcional)"
                     icon="i-heroicons-beaker"
                     class="w-full"
-                    @update:model-value="(v: any) => onMixDesignSelect(idx as number, v ?? null)"
+                    @update:model-value="(v: number | null) => onMixDesignSelect(idx as number, v)"
                   />
                 </UFormField>
 
@@ -537,7 +552,12 @@ const useDeliveryAddress = computed({
               />
             </UFormField>
             <UFormField label="Válido até">
-              <UInput v-model="form.validUntil" type="date" icon="i-heroicons-calendar-days" class="w-full" />
+              <UInput
+                v-model="form.validUntil"
+                type="date"
+                icon="i-heroicons-calendar-days"
+                class="w-full"
+              />
             </UFormField>
             <UFormField label="Desconto (R$)" :error="formErrors.discount">
               <UInput

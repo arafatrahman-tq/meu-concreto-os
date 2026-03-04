@@ -72,7 +72,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     customerPhone: "",
     customerAddress: "",
     sellerId: null as number | null,
-    driverId: null as number | null,
+    driverIds: [] as number[],
     pumperId: null as number | null,
     status: "draft" as QuoteStatus,
     date: formatISO(new Date(), { representation: "date" }),
@@ -84,18 +84,52 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
 
   const customerSearchTerm = ref("");
   const selectedCustomer = ref<KnownCustomer | undefined>(undefined);
-  const selectedDriver = ref<any>(null);
+  const selectedDriver = computed({
+    get: () => {
+      const opts = toValue(options.driverOptions);
+      return opts.filter((d) => form.driverIds.includes(d.value));
+    },
+    set: (val: any[]) => {
+      form.driverIds = val.map((v) => v.value);
+    },
+  });
   const selectedPumper = ref<any>(null);
   const useDeliveryAddress = ref(false);
-
-  // Computed Properties Safe for Destructured Object
-  const customerRegisteredAddress = computed(() => {
-    if (!selectedCustomer.value) return "";
-    return selectedCustomer.value.address || "";
-  });
+  const customerRegisteredAddress = ref("");
 
   // Validation State
   const formErrors = reactive<Record<string, string>>({});
+
+  // ─────────────────────────────────────────────
+  // Watchers
+  // ─────────────────────────────────────────────
+  watch(selectedCustomer, (newVal) => {
+    if (newVal) {
+      form.customerName = newVal.name;
+      form.customerDocument = newVal.document ?? "";
+      form.customerPhone = newVal.phone ?? "";
+
+      // Clear validation error for customer name
+      if (formErrors.customerName) {
+        delete formErrors.customerName;
+      }
+
+      // Update registered address info
+      customerRegisteredAddress.value = newVal.address ?? "";
+
+      // If we're not using a custom delivery address, sync the form address
+      if (!useDeliveryAddress.value) {
+        form.customerAddress = newVal.address ?? "";
+      }
+    }
+  });
+
+  watch(useDeliveryAddress, (val) => {
+    if (!val && selectedCustomer.value) {
+      // If turning off delivery address, revert to registered address
+      form.customerAddress = selectedCustomer.value.address ?? "";
+    }
+  });
 
   const clearErrors = () => {
     for (const key in formErrors) {
@@ -199,12 +233,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
   };
 
   const onCustomerSelect = (kc: KnownCustomer) => {
-    form.customerName = kc.name;
-    form.customerDocument = kc.document || "";
-    form.customerPhone = kc.phone || "";
-    if (useDeliveryAddress.value) {
-      form.customerAddress = kc.address || "";
-    }
+    selectedCustomer.value = kc;
     customerSearchTerm.value = kc.name;
   };
 
@@ -215,7 +244,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     form.customerPhone = "";
     form.customerAddress = "";
     form.sellerId = null;
-    form.driverId = null;
+    form.driverIds = [];
     form.pumperId = null;
     form.status = "draft";
     form.date = formatISO(new Date(), { representation: "date" });
@@ -225,6 +254,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     form.items = [makeNewItem()];
     selectedCustomer.value = undefined;
     customerSearchTerm.value = "";
+    customerRegisteredAddress.value = "";
     useDeliveryAddress.value = false;
     linkedQuoteId.value = null;
   };
@@ -246,16 +276,20 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     form.customerPhone = s.customerPhone ?? "";
     form.customerAddress = s.customerAddress ?? "";
     form.sellerId = s.sellerId ?? null;
-    form.driverId = s.driverId ?? null;
+    form.driverIds = s.drivers?.map((d: any) => d.driverId) ?? [];
     form.pumperId = s.pumperId ?? null;
     form.status = s.status;
 
     // Safety check for date strings
     const dateStr = s.date ? String(s.date) : "";
-    form.date = dateStr.includes("T") ? (dateStr.split("T")[0] ?? dateStr) : dateStr;
+    form.date = dateStr.includes("T")
+      ? dateStr.split("T")[0] ?? dateStr
+      : dateStr;
 
     const validUntilStr = s.validUntil ? String(s.validUntil) : "";
-    form.validUntil = validUntilStr.includes("T") ? (validUntilStr.split("T")[0] ?? validUntilStr) : validUntilStr;
+    form.validUntil = validUntilStr.includes("T")
+      ? validUntilStr.split("T")[0] ?? validUntilStr
+      : validUntilStr;
 
     form.discount = (s.discount ?? 0) / 100; // Cents to Real
     form.notes = s.notes ?? "";
@@ -278,8 +312,9 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     // Find known customer dynamically
     const kList = toValue(options.knownCustomers) || [];
     const match =
-      kList.find((kc) => kc.document === s.customerDocument && kc.name === s.customerName) ||
-      kList.find((kc) => kc.name === s.customerName);
+      kList.find(
+        (kc) => kc.document === s.customerDocument && kc.name === s.customerName
+      ) || kList.find((kc) => kc.name === s.customerName);
 
     if (match) {
       selectedCustomer.value = match;
@@ -289,7 +324,11 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       customerSearchTerm.value = s.customerName;
     }
 
-    useDeliveryAddress.value = !!(s.customerAddress && match && s.customerAddress === match.address);
+    useDeliveryAddress.value = !!(
+      s.customerAddress &&
+      match &&
+      s.customerAddress !== match.address
+    );
     isDrawerOpen.value = true;
   };
 
@@ -306,10 +345,15 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
 
   const handleSave = async () => {
     if (!validateForm()) {
+      const errorList = Object.values(formErrors).filter(Boolean);
       toast.add({
-        title: "Campos inválidos",
-        description: "Verifique os erros em vermelho.",
+        title: "Campos obrigatórios",
+        description:
+          errorList.length > 0
+            ? errorList.join(" | ")
+            : "Verifique os erros em vermelho.",
         color: "error",
+        icon: "i-heroicons-exclamation-triangle",
       });
       return;
     }
@@ -318,29 +362,33 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     try {
       const payload = {
         companyId: companyId.value,
-        quoteId: linkedQuoteId.value || undefined,
+        quoteId: linkedQuoteId.value || null,
         customerName: form.customerName,
-        customerDocument: form.customerDocument ? form.customerDocument.replace(/\D/g, "") : undefined,
-        customerPhone: form.customerPhone ? form.customerPhone.replace(/\D/g, "") : undefined,
-        customerAddress: form.customerAddress || undefined,
-        sellerId: form.sellerId || undefined,
-        driverId: form.driverId || undefined,
-        pumperId: form.pumperId || undefined,
+        customerDocument: form.customerDocument
+          ? form.customerDocument.replace(/\D/g, "")
+          : null,
+        customerPhone: form.customerPhone
+          ? form.customerPhone.replace(/\D/g, "")
+          : null,
+        customerAddress: form.customerAddress || null,
+        sellerId: form.sellerId || null,
+        driverIds: form.driverIds,
+        pumperId: form.pumperId || null,
         status: form.status,
-        validUntil: form.validUntil || undefined,
+        validUntil: form.validUntil || null,
         discount: (form.discount || 0) * 100, // Real to Cents
-        notes: form.notes || undefined,
+        notes: form.notes || null,
         items: form.items.map((it) => ({
-          productId: it.productId || undefined,
+          productId: it.productId || null,
           productName: it.productName,
-          description: it.description || undefined,
-          unit: it.unit || undefined,
+          description: it.description || null,
+          unit: it.unit || null,
           quantity: it.quantity,
           unitPrice: (it.unitPrice || 0) * 100, // Real to Cents
-          fck: it.fck || undefined,
-          slump: it.slump || undefined,
-          stoneSize: it.stoneSize || undefined,
-          mixDesignId: it.mixDesignId || undefined,
+          fck: it.fck || null,
+          slump: it.slump || null,
+          stoneSize: it.stoneSize || null,
+          mixDesignId: it.mixDesignId || null,
         })),
       };
 
@@ -421,7 +469,10 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
 
     isSendingPdf.value = q.id;
     try {
-      const res = await $fetch<{ success: boolean, sent: string[] }>(`/api/quotes/${q.id}/send-pdf`, { method: "POST" });
+      const res = await $fetch<{ success: boolean; sent: string[] }>(
+        `/api/quotes/${q.id}/send-pdf`,
+        { method: "POST" }
+      );
       toast.add({
         title: "PDF Enviado",
         description: `O documento foi enviado para ${res.sent.length} destinatário(s) via WhatsApp.`,

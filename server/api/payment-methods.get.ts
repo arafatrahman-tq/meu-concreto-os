@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { paymentMethods } from "../database/schema";
 import { db } from "../utils/db";
 import { requireCompanyAccess } from "../utils/session";
@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(paymentMethods)
       .where(and(...conditions))
+      .orderBy(desc(paymentMethods.isDefault), desc(paymentMethods.createdAt))
       .all();
 
     return { paymentMethods: result };

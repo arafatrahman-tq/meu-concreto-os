@@ -42,6 +42,14 @@ export default defineEventHandler(async (event) => {
   requireCompanyAccess(event, currentPayment.companyId);
 
   try {
+    // If setting as default, unset previous default
+    if (data.isDefault) {
+      await db
+        .update(paymentMethods)
+        .set({ isDefault: false })
+        .where(eq(paymentMethods.companyId, currentPayment.companyId));
+    }
+
     const [updatedPaymentMethod] = await db
       .update(paymentMethods)
       .set(data)

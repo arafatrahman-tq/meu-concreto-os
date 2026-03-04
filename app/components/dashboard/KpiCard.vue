@@ -6,6 +6,7 @@ interface Props {
   trend?: number | null
   trendLabel?: string
   iconColor?: string
+  iconBg?: string
   sparkline?: number[]
 }
 
@@ -16,6 +17,7 @@ const {
   trend = null,
   trendLabel = 'vs. mês anterior',
   iconColor = 'text-primary-500',
+  iconBg = 'bg-primary-50 dark:bg-primary-500/10',
   sparkline = []
 } = defineProps<Props>()
 
@@ -47,7 +49,8 @@ const sparklinePoints = (values: number[]) => {
         {{ label }}
       </span>
       <div
-        class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+        class="w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+        :class="iconBg"
       >
         <UIcon
           :name="icon"

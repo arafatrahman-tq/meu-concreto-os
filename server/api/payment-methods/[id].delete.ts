@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     }
 
     requireCompanyAccess(event, payment.companyId);
+    requireManager(event); // Restrict deletion to managers/admins
 
     await db
       .delete(paymentMethods)

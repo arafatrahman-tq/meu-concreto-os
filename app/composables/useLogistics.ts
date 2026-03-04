@@ -4,28 +4,44 @@ export const useLogistics = () => {
   const { companyId } = useAuth();
   const toast = useToast();
 
-  const { data: driversData, refresh: refreshDrivers } = useFetch<{
-    drivers: Driver[];
-  }>("/api/drivers", {
-    query: { companyId, active: true },
-  });
+  const { data: driversData, refresh: refreshDrivers } = useAsyncData(
+    `drivers-${companyId.value}`,
+    async () => {
+      if (!companyId.value) return { drivers: [] };
+      return $fetch<{ drivers: Driver[] }>("/api/drivers", {
+        query: { companyId: companyId.value, active: true },
+      });
+    },
+    {
+      watch: [companyId],
+      default: () => ({ drivers: [] }),
+    }
+  );
 
-  const { data: pumpersData, refresh: refreshPumpers } = useFetch<{
-    pumpers: Pumper[];
-  }>("/api/pumpers", {
-    query: { companyId, active: true },
-  });
+  const { data: pumpersData, refresh: refreshPumpers } = useAsyncData(
+    `pumpers-${companyId.value}`,
+    async () => {
+      if (!companyId.value) return { pumpers: [] };
+      return $fetch<{ pumpers: Pumper[] }>("/api/pumpers", {
+        query: { companyId: companyId.value, active: true },
+      });
+    },
+    {
+      watch: [companyId],
+      default: () => ({ pumpers: [] }),
+    }
+  );
 
   const driversList = computed(() => driversData.value?.drivers ?? []);
   const pumpersList = computed(() => pumpersData.value?.pumpers ?? []);
 
   const driverOptions = computed(() => [
-    { label: "Nenhum selecionado", value: 0 },
+    { label: "Nenhum selecionado", value: null },
     ...driversList.value.map((d) => ({ label: d.name, value: d.id })),
   ]);
 
   const pumperOptions = computed(() => [
-    { label: "Nenhum selecionado", value: 0 },
+    { label: "Nenhum selecionado", value: null },
     ...pumpersList.value.map((p) => ({ label: p.name, value: p.id })),
   ]);
 
@@ -75,11 +91,11 @@ export const useLogistics = () => {
       if (confirmDeleteData.value.type === "driver") {
         await refreshDrivers();
         if (currentForm && currentForm.driverId === confirmDeleteData.value.id)
-          currentForm.driverId = 0;
+          currentForm.driverId = null;
       } else {
         await refreshPumpers();
         if (currentForm && currentForm.pumperId === confirmDeleteData.value.id)
-          currentForm.pumperId = 0;
+          currentForm.pumperId = null;
       }
 
       toast.add({

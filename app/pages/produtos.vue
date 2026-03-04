@@ -288,7 +288,7 @@ const TYPE_FORM_OPTS = [
             label: 'Total de Produtos',
             value: stats.total,
             suffix: 'cadastrados',
-            icon: 'i-lucide-package',
+            icon: 'i-heroicons-archive-box',
             color: 'text-primary-500',
             bg: 'bg-primary-50 dark:bg-primary-500/10',
           },
@@ -304,7 +304,7 @@ const TYPE_FORM_OPTS = [
             label: 'Concretos',
             value: stats.concrete,
             suffix: 'traços cadastrados',
-            icon: 'i-lucide-layers',
+            icon: 'i-heroicons-cube',
             color: 'text-blue-500',
             bg: 'bg-blue-50 dark:bg-blue-500/10',
           },
@@ -312,7 +312,7 @@ const TYPE_FORM_OPTS = [
             label: 'Preço Médio',
             value: formatCurrency(stats.avgPrice),
             suffix: 'por produto ativo',
-            icon: 'i-lucide-trending-up',
+            icon: 'i-heroicons-currency-dollar',
             color: 'text-amber-500',
             bg: 'bg-amber-50 dark:bg-amber-500/10',
           },
@@ -350,11 +350,24 @@ const TYPE_FORM_OPTS = [
     <UCard>
       <template #header>
         <div class="flex items-center justify-between gap-4">
-          <h3
-            class="text-sm font-black uppercase tracking-widest text-zinc-400 shrink-0"
-          >
-            Catálogo de Produtos
-          </h3>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
+            >
+              <UIcon
+                name="i-heroicons-archive-box"
+                class="h-5 w-5 text-primary-500"
+              />
+            </div>
+            <div>
+              <h3
+                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+              >
+                Catálogo de Produtos
+              </h3>
+              <p class="mt-0.5 text-xs text-zinc-400">Gerencie seu catálogo</p>
+            </div>
+          </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <UInput
               v-model="search"
@@ -393,7 +406,7 @@ const TYPE_FORM_OPTS = [
         v-else-if="filteredProducts.length === 0"
         class="flex flex-col items-center justify-center py-16 text-zinc-400"
       >
-        <UIcon name="i-lucide-package" class="w-12 h-12 mb-3" />
+        <UIcon name="i-heroicons-archive-box" class="w-12 h-12 mb-3" />
         <p class="text-sm font-bold">Nenhum produto encontrado</p>
         <p class="text-xs mt-1">
           Ajuste os filtros ou cadastre um novo produto
@@ -496,7 +509,7 @@ const TYPE_FORM_OPTS = [
                         text="Possui traço vinculado"
                       >
                         <UIcon
-                          name="i-lucide-flask-conical"
+                          name="i-heroicons-beaker"
                           class="w-3 h-3 text-primary-500"
                         />
                       </UTooltip>

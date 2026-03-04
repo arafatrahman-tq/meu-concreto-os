@@ -1,32 +1,11 @@
 <script setup lang="ts">
-interface PaymentMethodDetails {
-  maxInstallments?: number;
-  interestRate?: number;
-  pixKey?: string;
-  pixKeyType?: string;
-  bankName?: string;
-  accountInfo?: string;
-  instructions?: string;
-}
-
-interface PaymentMethod {
-  id: number;
-  companyId: number;
-  name: string;
-  type: MethodType;
-  details?: PaymentMethodDetails | null;
-  active: boolean;
-}
-
-type MethodType =
-  | "cash"
-  | "credit_card"
-  | "debit_card"
-  | "pix"
-  | "boleto"
-  | "transfer"
-  | "check"
-  | "other";
+import type {
+  PaymentMethod,
+  PaymentMethodDetails,
+  PaymentMethodForm,
+  MethodType,
+} from "~/types/payment-methods";
+import { TYPE_CONFIG, PIX_KEY_TYPES } from "~/types/payment-methods";
 
 const props = defineProps<{
   open: boolean;
@@ -34,8 +13,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:open": [boolean];
-  saved: [];
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
 }>();
 
 const { companyId } = useAuth();
@@ -49,86 +28,22 @@ const isDrawerOpen = computed({
 const isEditing = computed(() => !!props.paymentMethod);
 const loadingSave = ref(false);
 
-// ---------------------------------------------
-// Config
-// ---------------------------------------------
-const TYPE_CONFIG: Record<
-  MethodType,
-  { label: string; icon: string; color: string; bg: string }
-> = {
-  cash: {
-    label: "Dinheiro",
-    icon: "i-heroicons-banknotes",
-    color: "text-green-600 dark:text-green-400",
-    bg: "bg-green-50 dark:bg-green-500/10",
-  },
-  credit_card: {
-    label: "Cartão de Crédito",
-    icon: "i-heroicons-credit-card",
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-50 dark:bg-blue-500/10",
-  },
-  debit_card: {
-    label: "Cartão de Débito",
-    icon: "i-heroicons-credit-card",
-    color: "text-indigo-600 dark:text-indigo-400",
-    bg: "bg-indigo-50 dark:bg-indigo-500/10",
-  },
-  pix: {
-    label: "Pix",
-    icon: "i-simple-icons-pix",
-    color: "text-teal-600 dark:text-teal-400",
-    bg: "bg-teal-50 dark:bg-teal-500/10",
-  },
-  boleto: {
-    label: "Boleto",
-    icon: "i-heroicons-document-text",
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-  },
-  transfer: {
-    label: "Transferência",
-    icon: "i-heroicons-arrows-right-left",
-    color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-50 dark:bg-purple-500/10",
-  },
-  check: {
-    label: "Cheque",
-    icon: "i-heroicons-document-check",
-    color: "text-zinc-600 dark:text-zinc-400",
-    bg: "bg-zinc-100 dark:bg-zinc-800",
-  },
-  other: {
-    label: "Outro",
-    icon: "i-heroicons-ellipsis-horizontal-circle",
-    color: "text-zinc-500 dark:text-zinc-400",
-    bg: "bg-zinc-100 dark:bg-zinc-800",
-  },
-};
-
 const TYPE_OPTS = Object.entries(TYPE_CONFIG).map(([value, cfg]) => ({
   value: value as MethodType,
   label: cfg.label,
   icon: cfg.icon,
 }));
 
-const PIX_KEY_TYPES = [
-  { value: "cpf", label: "CPF" },
-  { value: "cnpj", label: "CNPJ" },
-  { value: "phone", label: "Telefone" },
-  { value: "email", label: "E-mail" },
-  { value: "random", label: "Chave Aleatória" },
-];
-
 // ---------------------------------------------
 // Form State
 // ---------------------------------------------
-const form = reactive({
+const form = reactive<PaymentMethodForm>({
   name: "",
-  type: "other" as MethodType,
+  type: "other",
   active: true,
-  maxInstallments: null as number | null,
-  interestRate: null as number | null,
+  isDefault: false,
+  maxInstallments: null,
+  interestRate: null,
   pixKey: "",
   pixKeyType: "cpf",
   bankName: "",
@@ -137,7 +52,9 @@ const form = reactive({
 });
 
 // 1. Estado Reativo de Erros
-const formErrors = reactive<Record<string, string>>({});
+const formErrors = reactive<Record<keyof PaymentMethodForm | string, string>>(
+  {}
+);
 
 // 2. Limpar Erros
 const clearErrors = () => {
@@ -163,9 +80,9 @@ const validateForm = (): boolean => {
 
   // Optional: Add more specific validation for Pix/Cards/Bank if needed
   if (showPixDetails.value && !form.pixKey && !isEditing.value) {
-      // Example of conditional validation
-      // formErrors.pixKey = "A chave Pix é obrigatória.";
-      // isValid = false;
+    // Example of conditional validation
+    // formErrors.pixKey = "A chave Pix é obrigatória.";
+    // isValid = false;
   }
 
   return isValid;
@@ -183,6 +100,7 @@ function resetForm() {
   form.name = "";
   form.type = "other";
   form.active = true;
+  form.isDefault = false;
   form.maxInstallments = null;
   form.interestRate = null;
   form.pixKey = "";
@@ -202,7 +120,8 @@ watch(
       clearErrors();
       form.name = m.name;
       form.type = m.type;
-      form.active = m.active;
+      form.active = !!m.active;
+      form.isDefault = !!m.isDefault;
       const d = m.details ?? {};
       form.maxInstallments = d.maxInstallments ?? null;
       form.interestRate = d.interestRate ?? null;
@@ -247,6 +166,7 @@ async function handleSave() {
       name: form.name.trim(),
       type: form.type,
       active: form.active,
+      isDefault: form.isDefault,
       details: buildDetails(),
     };
 
@@ -314,11 +234,14 @@ async function handleSave() {
               placeholder="Ex: Pix Empresa / Cartão de Crédito"
               class="w-full"
               size="lg"
-              :ui="{ base: 'h-12' }"
             />
           </UFormField>
 
-          <UFormField label="Tipo de Pagamento" required :error="formErrors.type">
+          <UFormField
+            label="Tipo de Pagamento"
+            required
+            :error="formErrors.type"
+          >
             <USelectMenu
               v-model="form.type"
               :items="TYPE_OPTS"
@@ -326,7 +249,6 @@ async function handleSave() {
               label-key="label"
               class="w-full"
               size="lg"
-              :ui="{ base: 'h-12' }"
             >
               <template #leading>
                 <UIcon
@@ -365,7 +287,7 @@ async function handleSave() {
                 <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Status da Forma
                 </p>
-                <p class="text-[10px] text-zinc-400">
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">
                   {{
                     form.active
                       ? "Disponível para uso nos módulos"
@@ -375,6 +297,42 @@ async function handleSave() {
               </div>
             </div>
             <USwitch v-model="form.active" color="success" />
+          </div>
+
+          <!-- Default Toggle Row -->
+          <div
+            class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                :class="[
+                  'w-8 h-8 rounded-lg flex items-center justify-center',
+                  form.isDefault
+                    ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-500'
+                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
+                ]"
+              >
+                <UIcon
+                  :name="
+                    form.isDefault ? 'i-heroicons-star' : 'i-heroicons-star'
+                  "
+                  class="w-4 h-4"
+                />
+              </div>
+              <div>
+                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Padrão do Sistema
+                </p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                  {{
+                    form.isDefault
+                      ? "Selecionada automaticamente em novas vendas"
+                      : "Não é a forma padrão"
+                  }}
+                </p>
+              </div>
+            </div>
+            <USwitch v-model="form.isDefault" color="success" />
           </div>
 
           <!-- Divider -->
@@ -402,7 +360,7 @@ async function handleSave() {
                     type="number"
                     placeholder="Ex: 12"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Taxa %">
@@ -412,7 +370,7 @@ async function handleSave() {
                     step="0.01"
                     placeholder="Ex: 2.99"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
               </div>
@@ -441,7 +399,7 @@ async function handleSave() {
                     value-key="value"
                     label-key="label"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Chave Pix">
@@ -449,7 +407,7 @@ async function handleSave() {
                     v-model="form.pixKey"
                     placeholder="Informe a chave"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
               </div>
@@ -476,7 +434,7 @@ async function handleSave() {
                     v-model="form.bankName"
                     placeholder="Ex: Banco do Brasil"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Agência / Conta">
@@ -484,7 +442,7 @@ async function handleSave() {
                     v-model="form.accountInfo"
                     placeholder="Ex: Ag 0001 / CC 12345-6"
                     class="w-full"
-                    :ui="{ base: 'h-11' }"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Instruções Adicionais">
@@ -493,6 +451,7 @@ async function handleSave() {
                     placeholder="Opcional: Informe detalhes para o cliente..."
                     :rows="3"
                     class="w-full"
+                    size="lg"
                   />
                 </UFormField>
               </div>

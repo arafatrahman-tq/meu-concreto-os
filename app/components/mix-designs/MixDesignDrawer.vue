@@ -116,7 +116,8 @@ const materialOptions = computed(() =>
   }))
 );
 
-const getMaterialDetails = (id: number) => props.materials.find((m) => m.id === id);
+const getMaterialDetails = (id: number) =>
+  props.materials.find((m) => m.id === id);
 
 const newItem = reactive({
   materialId: undefined as number | undefined,
@@ -218,27 +219,40 @@ const saveMixDesign = async () => {
 <template>
   <USlideover
     v-model:open="isOpen"
-    :title="isEditing ? 'Editar Traço' : 'Novo Traço' "
+    :title="isEditing ? 'Editar Traço' : 'Novo Traço'"
+    :description="
+      isEditing
+        ? 'Atualize a composição do traço'
+        : 'Defina um novo traço de concreto'
+    "
     side="right"
     :ui="{ footer: 'p-0 block' }"
   >
     <template #body>
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
-        <form @submit.prevent="saveMixDesign" class="flex flex-col gap-8" id="mix-design-form">
+        <form
+          @submit.prevent="saveMixDesign"
+          class="flex flex-col gap-8"
+          id="mix-design-form"
+        >
           <!-- ── Section: Identificação ── -->
           <div class="space-y-4">
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon name="i-lucide-package" class="w-4 h-4" />
+              <UIcon name="i-heroicons-cube" class="w-4 h-4 text-primary-500" />
               Identificação
             </h4>
             <div class="grid grid-cols-1 gap-4">
-              <UFormField label="Nome do Traço" required :error="formErrors.name">
+              <UFormField
+                label="Nome do Traço"
+                required
+                :error="formErrors.name"
+              >
                 <UInput
                   v-model="form.name"
                   placeholder="Ex: Traço 25MPa Convencional"
-                  icon="i-lucide-package"
+                  icon="i-heroicons-cube"
                   class="w-full"
                 />
               </UFormField>
@@ -249,7 +263,7 @@ const saveMixDesign = async () => {
                     v-model.number="form.fck"
                     type="number"
                     placeholder="25"
-                    icon="i-lucide-activity"
+                    icon="i-heroicons-chart-bar"
                     class="w-full"
                   />
                 </UFormField>
@@ -258,7 +272,7 @@ const saveMixDesign = async () => {
                     v-model.number="form.slump"
                     type="number"
                     placeholder="10"
-                    icon="i-lucide-move-vertical"
+                    icon="i-heroicons-arrows-up-down"
                     class="w-full"
                   />
                 </UFormField>
@@ -266,7 +280,7 @@ const saveMixDesign = async () => {
                   <UInput
                     v-model="form.stoneSize"
                     placeholder="Brita 1"
-                    icon="i-lucide-hexagon"
+                    icon="i-heroicons-stop"
                     class="w-full"
                   />
                 </UFormField>
@@ -290,7 +304,10 @@ const saveMixDesign = async () => {
               <h4
                 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
               >
-                <UIcon name="i-lucide-flask-conical" class="w-4 h-4" />
+                <UIcon
+                  name="i-heroicons-beaker"
+                  class="w-4 h-4 text-primary-500"
+                />
                 Composição
               </h4>
               <UBadge color="neutral" variant="soft" size="sm">
@@ -302,7 +319,9 @@ const saveMixDesign = async () => {
             <div
               class="p-4 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 space-y-3 shadow-inner"
             >
-              <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              <p
+                class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+              >
                 Adicionar Insumo
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
@@ -329,7 +348,7 @@ const saveMixDesign = async () => {
                   <UButton
                     color="primary"
                     variant="solid"
-                    icon="i-heroicons-plus-16-solid"
+                    icon="i-heroicons-plus"
                     class="w-full flex justify-center py-2"
                     @click="addMaterialToMix"
                   />
@@ -350,16 +369,27 @@ const saveMixDesign = async () => {
                       class="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700"
                     >
                       <UIcon
-                        :name="getMaterialDetails(item.materialId)?.type ? typeConfig[getMaterialDetails(item.materialId)!.type].icon : 'i-lucide-package'"
+                        :name="getMaterialDetails(item.materialId)?.type ? typeConfig[getMaterialDetails(item.materialId)!.type].icon : 'i-heroicons-archive-box'"
                         class="h-5 w-5 text-zinc-500"
                       />
                     </div>
                     <div class="flex flex-col">
-                      <span class="text-sm font-bold text-zinc-900 dark:text-white">
-                        {{ getMaterialDetails(item.materialId)?.name || 'Insumo removido' }}
+                      <span
+                        class="text-sm font-bold text-zinc-900 dark:text-white"
+                      >
+                        {{
+                          getMaterialDetails(item.materialId)?.name ||
+                          "Insumo removido"
+                        }}
                       </span>
-                      <span class="text-[10px] font-black uppercase tracking-widest text-primary-500">
-                        {{ typeConfig[getMaterialDetails(item.materialId)?.type || 'other'].label }}
+                      <span
+                        class="text-[10px] font-black uppercase tracking-widest text-primary-500"
+                      >
+                        {{
+                          typeConfig[
+                            getMaterialDetails(item.materialId)?.type || "other"
+                          ].label
+                        }}
                       </span>
                     </div>
                   </div>
@@ -373,7 +403,12 @@ const saveMixDesign = async () => {
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                  <UFormField label="Insumo" required :error="formErrors[`items_${idx}_materialId`]" class="opacity-50 pointer-events-none">
+                  <UFormField
+                    label="Insumo"
+                    required
+                    :error="formErrors[`items_${idx}_materialId`]"
+                    class="opacity-50 pointer-events-none"
+                  >
                     <USelectMenu
                       v-model="item.materialId"
                       :items="materialOptions"
@@ -410,20 +445,25 @@ const saveMixDesign = async () => {
 
     <template #footer>
       <div
-        class="flex items-center gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+        class="flex items-center gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800"
       >
-        <UButton color="neutral" variant="outline" class="flex-1" @click="isOpen = false">
+        <UButton
+          color="neutral"
+          variant="outline"
+          class="flex-1"
+          @click="isOpen = false"
+        >
           Cancelar
         </UButton>
         <UButton
           color="primary"
           class="flex-1"
           :loading="loadingSave"
-          icon="i-heroicons-check"
+          :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
           type="submit"
           form="mix-design-form"
         >
-          {{ isEditing ? 'Salvar Alterações' : 'Criar Traço' }}
+          {{ isEditing ? "Salvar Alterações" : "Criar Traço" }}
         </UButton>
       </div>
     </template>

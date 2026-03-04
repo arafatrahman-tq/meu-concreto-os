@@ -47,7 +47,8 @@ export interface Sale {
   userId?: number | null;
   quoteId?: number | null;
   sellerId?: number | null;
-  driverId?: number | null;
+  driverIds?: number[];
+  drivers?: { driverId: number }[];
   pumperId?: number | null;
   items: SaleItem[];
   transactions?: any[];
@@ -145,7 +146,8 @@ export interface Quote {
   companyId: number;
   userId?: number | null;
   sellerId?: number | null;
-  driverId?: number | null;
+  driverIds?: number[];
+  drivers?: { driverId: number }[];
   pumperId?: number | null;
   items: QuoteItem[];
   createdAt: string | number;
@@ -163,6 +165,57 @@ export interface FormItem {
   slump: number | null;
   stoneSize: string;
   mixDesignId: number | null;
+}
+
+export interface QuoteForm {
+  id?: number;
+  customerName: string;
+  customerDocument: string | null;
+  customerPhone: string | null;
+  customerAddress: string | null;
+  sellerId: number | null;
+  status: QuoteStatus | string;
+  validUntil: string | null;
+  discount: number;
+  notes: string | null;
+  items: FormItem[];
+  driverIds?: number[];
+  pumperId?: number | null;
+}
+
+export interface SaleForm {
+  id?: number;
+  customerName: string;
+  customerDocument: string | null;
+  customerPhone: string | null;
+  customerAddress: string | null;
+  sellerId: number | null;
+  driverIds: number[];
+  pumperId: number | null;
+  status: SaleStatus;
+  date: string;
+  deliveryDate: string;
+  discount: number;
+  paymentMethod: string;
+  notes: string;
+  items: FormItem[];
+}
+
+export interface SelectOption {
+  label: string;
+  value: string | number | null;
+  [key: string]: any;
+}
+
+export interface ConfirmDeleteData {
+  id: number;
+  name: string;
+  type: "driver" | "pumper";
+}
+
+export interface ConfirmCreateData {
+  name: string;
+  type: "driver" | "pumper";
 }
 
 export type { MixDesign };

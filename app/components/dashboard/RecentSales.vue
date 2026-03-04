@@ -64,10 +64,27 @@ const avatarColor = (name: string) => {
 <template>
   <UCard class="flex flex-col h-full">
     <template #header>
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-black uppercase tracking-widest text-zinc-400">
-          Vendas Recentes
-        </h3>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+          >
+            <UIcon
+              name="i-heroicons-shopping-bag"
+              class="w-5 h-5 text-primary-500"
+            />
+          </div>
+          <div>
+            <h3
+              class="text-sm font-black uppercase tracking-widest text-zinc-400"
+            >
+              Vendas Recentes
+            </h3>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Últimas vendas realizadas
+            </p>
+          </div>
+        </div>
         <UButton
           to="/vendas"
           color="neutral"
