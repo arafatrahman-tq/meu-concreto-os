@@ -78,7 +78,7 @@ export default defineEventHandler(async (event) => {
           .update(companies)
           .set({
             name: data.name,
-            email: data.email ?? existing.email,
+            email: data.email !== undefined ? data.email : existing.email,
             phone: data.phone ?? existing.phone,
             address: data.address ?? existing.address,
             city: data.city ?? existing.city,
