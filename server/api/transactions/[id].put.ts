@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     });
 
   await requireCompanyAccess(event, existing.companyId);
-  requireManager(event); // Only managers can edit transactions
+  // requireManager(event); // REMOVED: Allowance for any user with company access to edit transactions
 
   const body = await readBody(event);
   const result = transactionUpdateSchema.safeParse(body);

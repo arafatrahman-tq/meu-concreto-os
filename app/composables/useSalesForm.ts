@@ -85,7 +85,9 @@ export const useSalesForm = (options: {
   watch(selectedCustomer, (newVal) => {
     if (newVal) {
       form.customerName = newVal.name;
-      form.customerDocument = newVal.document ?? "";
+      // Use unscope if the document has the @companyId suffix
+      const doc = newVal.document ?? "";
+      form.customerDocument = doc.includes("@") ? doc.split("@")[0]! : doc;
       form.customerPhone = newVal.phone ?? "";
 
       // Clear validation error for customer name
@@ -218,7 +220,7 @@ export const useSalesForm = (options: {
     const matchedCustomer = knownCustomers.value.find(
       (c) =>
         (s.customerDocument && c.document === s.customerDocument) ||
-        c.name === s.customerName
+        c.name === s.customerName,
     );
     selectedCustomer.value =
       matchedCustomer ??
@@ -236,7 +238,7 @@ export const useSalesForm = (options: {
     customerSearchTerm.value = "";
 
     const matchedCompany = companiesList.value.find(
-      (c) => c.document === s.customerDocument || c.name === s.customerName
+      (c) => c.document === s.customerDocument || c.name === s.customerName,
     );
     if (matchedCompany) {
       const fullAddr = [
@@ -287,7 +289,7 @@ export const useSalesForm = (options: {
       const matchedCustomer = knownCustomers.value.find(
         (c) =>
           (q.customerDocument && c.document === q.customerDocument) ||
-          c.name === q.customerName
+          c.name === q.customerName,
       );
       if (matchedCustomer) {
         selectedCustomer.value = matchedCustomer;
@@ -366,7 +368,7 @@ export const useSalesForm = (options: {
   const subtotalBRL = computed(() => {
     return form.items.reduce(
       (acc, item) => acc + item.quantity * item.unitPrice,
-      0
+      0,
     );
   });
 
@@ -466,7 +468,7 @@ export const useSalesForm = (options: {
     try {
       const res = await $fetch<{ success: boolean; sent: string[] }>(
         `/api/sales/${s.id}/send-pdf`,
-        { method: "POST" }
+        { method: "POST" },
       );
       toast.add({
         title: "PDF Enviado",

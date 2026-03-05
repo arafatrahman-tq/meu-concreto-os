@@ -106,7 +106,9 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
   watch(selectedCustomer, (newVal) => {
     if (newVal) {
       form.customerName = newVal.name;
-      form.customerDocument = newVal.document ?? "";
+      // Use unscope if the document has the @companyId suffix
+      const doc = newVal.document ?? "";
+      form.customerDocument = doc.includes("@") ? doc.split("@")[0]! : doc;
       form.customerPhone = newVal.phone ?? "";
 
       // Clear validation error for customer name
@@ -175,7 +177,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
   // Computed (Calculated totals)
   // ─────────────────────────────────────────────
   const subtotalBRL = computed(() =>
-    form.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+    form.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
   );
 
   const totalBRL = computed(() => {
@@ -283,12 +285,12 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     // Safety check for date strings
     const dateStr = s.date ? String(s.date) : "";
     form.date = dateStr.includes("T")
-      ? dateStr.split("T")[0] ?? dateStr
+      ? (dateStr.split("T")[0] ?? dateStr)
       : dateStr;
 
     const validUntilStr = s.validUntil ? String(s.validUntil) : "";
     form.validUntil = validUntilStr.includes("T")
-      ? validUntilStr.split("T")[0] ?? validUntilStr
+      ? (validUntilStr.split("T")[0] ?? validUntilStr)
       : validUntilStr;
 
     form.discount = (s.discount ?? 0) / 100; // Cents to Real
@@ -313,7 +315,8 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     const kList = toValue(options.knownCustomers) || [];
     const match =
       kList.find(
-        (kc) => kc.document === s.customerDocument && kc.name === s.customerName
+        (kc) =>
+          kc.document === s.customerDocument && kc.name === s.customerName,
       ) || kList.find((kc) => kc.name === s.customerName);
 
     if (match) {
@@ -471,7 +474,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     try {
       const res = await $fetch<{ success: boolean; sent: string[] }>(
         `/api/quotes/${q.id}/send-pdf`,
-        { method: "POST" }
+        { method: "POST" },
       );
       toast.add({
         title: "PDF Enviado",

@@ -27,6 +27,10 @@ const isOpen = computed({
 const isEditing = computed(() => !!props.transaction);
 const loadingSave = ref(false);
 
+// ── Confirmation Dialog ──
+const isConfirmModalOpen = ref(false);
+const showConfirmDialog = ref(false);
+
 const { data: pmData, pending: loadingPM } = useFetch("/api/payment-methods", {
   query: { companyId, active: "true" },
 });
@@ -121,7 +125,24 @@ watch(
   { immediate: true },
 );
 
-const handleSave = async () => {
+const checkDateChanges = () => {
+  if (!props.transaction) return false;
+
+  const originalDate = props.transaction.date
+    ? new Date(props.transaction.date as string | number).toLocaleDateString(
+        "sv",
+      )
+    : "";
+  const originalDueDate = props.transaction.dueDate
+    ? new Date(props.transaction.dueDate as string | number).toLocaleDateString(
+        "sv",
+      )
+    : "";
+
+  return form.date !== originalDate || form.dueDate !== originalDueDate;
+};
+
+const handlePreSave = () => {
   if (!validateForm()) {
     toast.add({
       title: "Atenção",
@@ -132,7 +153,18 @@ const handleSave = async () => {
     return;
   }
 
+  // If editing and dates changed, show confirmation
+  if (isEditing.value && checkDateChanges()) {
+    showConfirmDialog.value = true;
+    return;
+  }
+
+  handleSave();
+};
+
+const handleSave = async () => {
   loadingSave.value = true;
+  showConfirmDialog.value = false;
   try {
     const payload = {
       companyId: companyId.value,
@@ -182,7 +214,7 @@ const handleSave = async () => {
     <template #body>
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
         <form
-          @submit.prevent="handleSave"
+          @submit.prevent="handlePreSave"
           class="flex flex-col gap-8"
           id="transaction-form"
         >
@@ -328,4 +360,60 @@ const handleSave = async () => {
       </div>
     </template>
   </USlideover>
+
+  <!-- Confirm Date Change Modal -->
+  <UModal v-model:open="showConfirmDialog" title="Confirmar Alteração de Data">
+    <template #body>
+      <div class="px-6 py-4 space-y-4">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+          Você alterou a
+          <span class="font-bold text-zinc-900 dark:text-white"
+            >data da transação</span
+          >
+          ou a
+          <span class="font-bold text-zinc-900 dark:text-white"
+            >data de vencimento</span
+          >. Isso pode afetar os relatórios financeiros do período.
+        </p>
+        <div
+          class="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-4 border border-amber-200 dark:border-amber-500/20"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="w-5 h-5 text-amber-500"
+            />
+            <p
+              class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest"
+            >
+              Atenção
+            </p>
+          </div>
+          <p class="text-xs text-amber-600 dark:text-amber-500 mt-2">
+            Independentemente do status (Pago, Pendente ou Cancelado), a data
+            informada será atualizada no sistema.
+          </p>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-3 px-6 pb-4">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="showConfirmDialog = false"
+        >
+          Revisar
+        </UButton>
+        <UButton
+          color="primary"
+          icon="i-heroicons-check"
+          :loading="loadingSave"
+          @click="handleSave"
+        >
+          Confirmar e Salvar
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>
