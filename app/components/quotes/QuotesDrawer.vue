@@ -568,6 +568,7 @@ const useDeliveryAddress = computed({
                 :items="paymentMethodOptions"
                 value-key="value"
                 label-key="label"
+                placeholder="Selecione uma forma..."
                 icon="i-heroicons-credit-card"
                 class="w-full"
               />

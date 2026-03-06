@@ -114,10 +114,9 @@ const pumperOptions = computed(() => [
   ...pumpersList.value.map((p) => ({ label: p.name, value: p.id })),
 ]);
 
-const paymentMethodOptions = computed(() => [
-  { label: "Não informado", value: undefined },
-  ...paymentMethods.value.map((pm) => ({ label: pm.name, value: pm.name })),
-]);
+const paymentMethodOptions = computed(() =>
+  paymentMethods.value.map((pm) => ({ label: pm.name, value: pm.name })),
+);
 
 // Handle incoming query parameters
 onMounted(() => {

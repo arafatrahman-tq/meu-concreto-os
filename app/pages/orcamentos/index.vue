@@ -49,6 +49,7 @@ const {
   onCreatePumper,
   handleConfirmCreate,
   mixDesigns,
+  paymentMethodsList,
   isCancelModalOpen,
   cancelTarget,
   cancelReason,
@@ -126,13 +127,12 @@ const sellerOptions = computed(() => [
   ...sellersList.value.map((s) => ({ label: s.name, value: s.id })),
 ]);
 
-const paymentMethodOptions = computed(() => [
-  { label: "Nenhum selecionado", value: "" },
-  ...(stats.value.paymentMethods?.map((m: any) => ({
+const paymentMethodOptions = computed(() =>
+  (paymentMethodsList.value || []).map((m: any) => ({
     label: m.name,
     value: m.name,
-  })) || []),
-]);
+  })),
+);
 
 // Handle external calls (e.g. from table actions)
 const handleStatusUpdate = async (q: Quote, next: QuoteStatus) => {

@@ -6,6 +6,7 @@ import type {
   Seller,
   QuoteStatus,
   MixDesign,
+  PaymentMethod,
 } from "~/types/sales";
 import { getApiError } from "~/utils/errors";
 
@@ -66,28 +67,38 @@ export const useQuotes = () => {
           companies: [],
           sellers: [],
           mixDesigns: [],
+          paymentMethods: [],
         };
       }
 
       // $fetch não é reativo, por isso é o correto para usar dentro do useAsyncData
-      const [quotesRes, productsRes, companiesRes, sellersRes, mixRes] =
-        await Promise.all([
-          $fetch<{ quotes: Quote[] }>("/api/quotes", {
-            query: { companyId: companyId.value },
-          }),
-          $fetch<{ products: Product[] }>("/api/products", {
-            query: { companyId: companyId.value },
-          }),
-          $fetch<{ companies: Company[] }>("/api/companies", {
-            query: { companyId: companyId.value },
-          }),
-          $fetch<{ sellers: Seller[] }>("/api/sellers", {
-            query: { companyId: companyId.value, active: "true" },
-          }),
-          $fetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", {
-            query: { companyId: companyId.value },
-          }),
-        ]);
+      const [
+        quotesRes,
+        productsRes,
+        companiesRes,
+        sellersRes,
+        mixRes,
+        paymentMethodsRes,
+      ] = await Promise.all([
+        $fetch<{ quotes: Quote[] }>("/api/quotes", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ products: Product[] }>("/api/products", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ companies: Company[] }>("/api/companies", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ sellers: Seller[] }>("/api/sellers", {
+          query: { companyId: companyId.value, active: "true" },
+        }),
+        $fetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", {
+          query: { companyId: companyId.value },
+        }),
+        $fetch<{ paymentMethods: PaymentMethod[] }>("/api/payment-methods", {
+          query: { companyId: companyId.value, active: "true" },
+        }),
+      ]);
 
       return {
         quotes: quotesRes.quotes || [],
@@ -95,6 +106,7 @@ export const useQuotes = () => {
         companies: companiesRes.companies || [],
         sellers: sellersRes.sellers || [],
         mixDesigns: mixRes.mixDesigns || [],
+        paymentMethods: paymentMethodsRes.paymentMethods || [],
       };
     },
     { watch: [companyId] }, // Refaz o fetch universal se a empresa logada mudar!
@@ -106,6 +118,9 @@ export const useQuotes = () => {
   const companiesList = computed(() => dashboardPayload.value?.companies ?? []);
   const sellersList = computed(() => dashboardPayload.value?.sellers ?? []);
   const mixDesigns = computed(() => dashboardPayload.value?.mixDesigns ?? []);
+  const paymentMethodsList = computed(
+    () => dashboardPayload.value?.paymentMethods ?? [],
+  );
 
   // Integração com composables vizinhos
   const {
@@ -307,6 +322,7 @@ export const useQuotes = () => {
     companiesList,
     sellersList,
     mixDesigns,
+    paymentMethodsList,
     driversList,
     pumpersList,
     knownCustomers,
