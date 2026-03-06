@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
     where: eq(sales.id, saleId),
     with: {
       items: true,
-      paymentMethodReference: true,
     },
   });
 
@@ -30,20 +29,19 @@ export default defineEventHandler(async (event) => {
   await requireCompanyAccess(event, sale.companyId);
 
   // 3. Fetch Context
-  const { company, seller, defaultPaymentMethod } = await getPDFContext(
+  const { company, seller } = await getPDFContext(
     sale.companyId,
     sale.sellerId,
   );
 
-  // Select payment method: sale-specific or default
-  const paymentMethodToUse =
-    sale.paymentMethodReference || defaultPaymentMethod;
+  // Resolve payment methods by stored name (same approach as Quotes)
+  const paymentMethodToUse = await getPaymentMethodDetails(
+    sale.companyId,
+    sale.paymentMethod ?? null,
+  );
 
-  const paymentMethod2ToUse = (sale as any).paymentMethod2
-    ? await getPaymentMethodDetails(
-        sale.companyId,
-        (sale as any).paymentMethod2,
-      )
+  const paymentMethod2ToUse = sale.paymentMethod2
+    ? await getPaymentMethodDetails(sale.companyId, sale.paymentMethod2)
     : null;
 
   // 4. Generate PDF
