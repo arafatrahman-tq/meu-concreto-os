@@ -179,6 +179,7 @@ export interface QuoteForm {
   validUntil: string | null;
   discount: number;
   paymentMethod: string;
+  paymentMethod2: string;
   notes: string | null;
   items: FormItem[];
   driverIds?: number[];
@@ -199,6 +200,7 @@ export interface SaleForm {
   deliveryDate: string;
   discount: number;
   paymentMethod: string;
+  paymentMethod2: string;
   notes: string;
   items: FormItem[];
 }

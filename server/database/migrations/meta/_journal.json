@@ -211,6 +211,20 @@
       "when": 1772800943994,
       "tag": "0029_clever_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1772818188834,
+      "tag": "0030_known_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1772819905994,
+      "tag": "0031_left_mole_man",
+      "breakpoints": true
     }
   ]
 }

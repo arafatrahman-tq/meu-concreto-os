@@ -44,6 +44,11 @@ export interface DocumentPDFData {
     type: string;
     details?: any;
   } | null;
+  paymentMethod2?: {
+    name: string;
+    type: string;
+    details?: any;
+  } | null;
   seller?: {
     name: string;
     phone?: string | null;
@@ -382,6 +387,46 @@ export async function generateDocumentPDF(
     if (d.instructions) {
       const splitInst = doc.splitTextToSize(d.instructions, 100);
       doc.text(splitInst, 15, detailsY);
+      detailsY += splitInst.length * 4;
+    }
+
+    // Payment Method 2 Block — rendered inline if present
+    if (data.paymentMethod2) {
+      detailsY += 4;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(24, 24, 27);
+      doc.text(`${data.paymentMethod2.name}`, 15, detailsY);
+      detailsY += 4;
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(113, 113, 122);
+      const d2 = data.paymentMethod2.details || {};
+
+      if (data.paymentMethod2.type === "pix" && d2.pixKey) {
+        doc.text(`Chave Pix: ${d2.pixKey}`, 15, detailsY);
+        detailsY += 4;
+        if (d2.bankName) {
+          doc.text(`Banco: ${d2.bankName}`, 15, detailsY);
+          detailsY += 4;
+        }
+      } else if (
+        (data.paymentMethod2.type === "transfer" ||
+          data.paymentMethod2.type === "boleto") &&
+        d2.bankName
+      ) {
+        doc.text(`Banco: ${d2.bankName}`, 15, detailsY);
+        detailsY += 4;
+        if (d2.accountInfo) {
+          doc.text(`Ag/Conta: ${d2.accountInfo}`, 15, detailsY);
+          detailsY += 4;
+        }
+      }
+
+      if (d2.instructions) {
+        const splitInst2 = doc.splitTextToSize(d2.instructions, 100);
+        doc.text(splitInst2, 15, detailsY);
+      }
     }
   }
 

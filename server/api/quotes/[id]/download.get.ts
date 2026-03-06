@@ -39,6 +39,10 @@ export default defineEventHandler(async (event) => {
     quote.paymentMethod,
   );
 
+  const targetPaymentMethod2 = quote.paymentMethod2
+    ? await getPaymentMethodDetails(quote.companyId, quote.paymentMethod2)
+    : null;
+
   // 4. Generate PDF
   const pdfBuffer = await generateDocumentPDF({
     id: quote.id,
@@ -78,6 +82,13 @@ export default defineEventHandler(async (event) => {
           name: targetPaymentMethod.name,
           type: targetPaymentMethod.type,
           details: targetPaymentMethod.details,
+        }
+      : null,
+    paymentMethod2: targetPaymentMethod2
+      ? {
+          name: targetPaymentMethod2.name,
+          type: targetPaymentMethod2.type,
+          details: targetPaymentMethod2.details,
         }
       : null,
     seller: seller

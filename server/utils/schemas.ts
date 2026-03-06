@@ -171,6 +171,7 @@ export const quoteSchema = z.object({
     .default("draft"),
   validUntil: dateSchema.optional().nullable(),
   paymentMethod: z.string().optional().nullable(),
+  paymentMethod2: z.string().optional().nullable(),
 
   discount: z.number().min(0).default(0), // Cents
   notes: z.string().optional().nullable(),
@@ -243,6 +244,7 @@ export const saleSchema = z.object({
 
   discount: z.number().min(0).default(0), // Cents
   paymentMethod: z.string().optional().nullable(),
+  paymentMethod2: z.string().optional().nullable(),
   paymentMethodId: z.number().int().optional().nullable(),
   notes: z.string().optional().nullable(),
 
@@ -281,6 +283,7 @@ export const paymentMethodSchema = z.object({
 
   active: z.boolean().default(true),
   isDefault: z.boolean().default(false),
+  isDefault2: z.boolean().default(false),
 });
 
 export const paymentMethodUpdateSchema = paymentMethodSchema

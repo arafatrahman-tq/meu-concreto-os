@@ -50,6 +50,14 @@ export default defineEventHandler(async (event) => {
         .where(eq(paymentMethods.companyId, currentPayment.companyId));
     }
 
+    // If setting as second default, unset previous second default
+    if (data.isDefault2) {
+      await db
+        .update(paymentMethods)
+        .set({ isDefault2: false })
+        .where(eq(paymentMethods.companyId, currentPayment.companyId));
+    }
+
     const [updatedPaymentMethod] = await db
       .update(paymentMethods)
       .set(data)

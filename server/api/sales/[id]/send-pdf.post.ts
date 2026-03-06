@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { sales } from "../../../database/schema";
 import { db } from "../../../utils/db";
-import { generateDocumentPDF, getPDFContext } from "../../../utils/pdf";
+import {
+  generateDocumentPDF,
+  getPDFContext,
+  getPaymentMethodDetails,
+} from "../../../utils/pdf";
 import { sendWhatsappPDF } from "../../../utils/whatsapp";
 import { requireCompanyAccess } from "../../../utils/session";
 import { createNotification } from "../../../utils/notifications";
@@ -42,6 +46,13 @@ export default defineEventHandler(async (event) => {
   const paymentMethodToUse =
     sale.paymentMethodReference || defaultPaymentMethod;
 
+  const paymentMethod2ToUse = (sale as any).paymentMethod2
+    ? await getPaymentMethodDetails(
+        sale.companyId,
+        (sale as any).paymentMethod2,
+      )
+    : null;
+
   // 4. Generate PDF
   const pdfBuffer = await generateDocumentPDF({
     id: sale.id,
@@ -81,6 +92,13 @@ export default defineEventHandler(async (event) => {
           name: paymentMethodToUse.name,
           type: paymentMethodToUse.type,
           details: paymentMethodToUse.details,
+        }
+      : null,
+    paymentMethod2: paymentMethod2ToUse
+      ? {
+          name: paymentMethod2ToUse.name,
+          type: paymentMethod2ToUse.type,
+          details: paymentMethod2ToUse.details,
         }
       : null,
     seller: seller
@@ -145,7 +163,7 @@ export default defineEventHandler(async (event) => {
     recipients,
     pdfBuffer,
     fileName,
-    caption
+    caption,
   );
 
   // 8. System Notification

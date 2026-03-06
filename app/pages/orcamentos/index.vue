@@ -108,6 +108,7 @@ const {
   confirmCreateData,
   isCreating,
   mixDesigns,
+  paymentMethods: paymentMethodsList,
 });
 
 // 3. Promotion logic from usePromoteQuote

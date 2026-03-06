@@ -164,7 +164,11 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                     formErrors.customerName,
                 }"
                 @update:model-value="(v: any) => v && emit('customerSelect', v)"
-                @update:search-term="(v: string) => { form.customerName = v }"
+                @update:search-term="
+                  (v: string) => {
+                    form.customerName = v;
+                  }
+                "
               >
                 <template #item="{ item }">
                   <div class="flex items-center gap-3 py-0.5 w-full min-w-0">
@@ -421,7 +425,9 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                   placeholder="Selecione ou deixe em branco"
                   icon="i-lucide-package"
                   class="w-full"
-                  @update:model-value="(v: any) => emit('productSelect', idx, v ?? null)"
+                  @update:model-value="
+                    (v: any) => emit('productSelect', idx, v ?? null)
+                  "
                 />
               </UFormField>
 
@@ -496,7 +502,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                     />
                     {{
                       formatCurrency(
-                        Math.round(item.quantity * item.unitPrice * 100)
+                        Math.round(item.quantity * item.unitPrice * 100),
                       )
                     }}
                   </div>
@@ -517,7 +523,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                     placeholder="Selecione um traço (opcional)"
                     icon="i-heroicons-beaker"
                     class="w-full"
-                    @update:model-value="(v: any) => emit('mixDesignSelect', idx as number, v ?? null)"
+                    @update:model-value="
+                      (v: any) =>
+                        emit('mixDesignSelect', idx as number, v ?? null)
+                    "
                   />
                 </UFormField>
 
@@ -582,6 +591,17 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 :items="paymentMethodOptions"
                 value-key="value"
                 label-key="label"
+                icon="i-heroicons-credit-card"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="2ª Forma de Pagamento">
+              <USelect
+                v-model="form.paymentMethod2"
+                :items="paymentMethodOptions"
+                value-key="value"
+                label-key="label"
+                placeholder="Opcional..."
                 icon="i-heroicons-credit-card"
                 class="w-full"
               />

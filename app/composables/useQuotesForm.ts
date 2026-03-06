@@ -36,6 +36,7 @@ export interface UseQuotesFormOptions {
   isConfirmCreateModalOpen: MaybeRefOrGetter<boolean>;
   confirmCreateData: MaybeRefOrGetter<any>;
   isCreating: MaybeRefOrGetter<boolean>;
+  paymentMethods?: MaybeRefOrGetter<any[]>;
 }
 
 export const useQuotesForm = (options: UseQuotesFormOptions) => {
@@ -79,6 +80,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     validUntil: "",
     discount: 0, // BRL float
     paymentMethod: "",
+    paymentMethod2: "",
     notes: "",
     items: [makeNewItem()] as FormItem[],
   });
@@ -254,6 +256,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     form.validUntil = "";
     form.discount = 0;
     form.paymentMethod = "";
+    form.paymentMethod2 = "";
     form.notes = "";
     form.items = [makeNewItem()];
     selectedCustomer.value = undefined;
@@ -267,6 +270,12 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     isEditing.value = false;
     editingId.value = null;
     resetForm();
+    // Auto-fill default payment methods if configured
+    const pmList = toValue(options.paymentMethods) || [];
+    const def1 = pmList.find((m: any) => m.isDefault);
+    const def2 = pmList.find((m: any) => m.isDefault2);
+    if (def1) form.paymentMethod = def1.name;
+    if (def2) form.paymentMethod2 = def2.name;
     isDrawerOpen.value = true;
   };
 
@@ -297,6 +306,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
 
     form.discount = (s.discount ?? 0) / 100; // Cents to Real
     form.paymentMethod = (s as any).paymentMethod ?? "";
+    form.paymentMethod2 = (s as any).paymentMethod2 ?? "";
     form.notes = s.notes ?? "";
     linkedQuoteId.value = s.id;
 
@@ -383,6 +393,8 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
         status: form.status,
         validUntil: form.validUntil || null,
         discount: (form.discount || 0) * 100, // Real to Cents
+        paymentMethod: form.paymentMethod || null,
+        paymentMethod2: form.paymentMethod2 || null,
         notes: form.notes || null,
         items: form.items.map((it) => ({
           productId: it.productId || null,

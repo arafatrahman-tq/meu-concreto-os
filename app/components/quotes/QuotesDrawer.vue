@@ -573,6 +573,17 @@ const useDeliveryAddress = computed({
                 class="w-full"
               />
             </UFormField>
+            <UFormField label="2ª Forma de Pagamento">
+              <USelect
+                v-model="form.paymentMethod2"
+                :items="paymentMethodOptions"
+                value-key="value"
+                label-key="label"
+                placeholder="Opcional..."
+                icon="i-heroicons-credit-card"
+                class="w-full"
+              />
+            </UFormField>
             <UFormField label="Desconto (R$)" :error="formErrors.discount">
               <UInput
                 v-model.number="form.discount"

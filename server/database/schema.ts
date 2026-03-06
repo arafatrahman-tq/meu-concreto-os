@@ -217,6 +217,7 @@ export const quotes = sqliteTable("quotes", {
     .default(sql`(unixepoch())`),
   validUntil: integer("valid_until", { mode: "timestamp" }),
   paymentMethod: text("payment_method"),
+  paymentMethod2: text("payment_method_2"),
   sellerId: integer("seller_id").references(() => sellers.id, {
     onDelete: "set null",
   }),
@@ -432,6 +433,7 @@ export const sales = sqliteTable("sales", {
   total: integer("total").notNull().default(0),
 
   paymentMethod: text("payment_method"), // Snapshot/Legacy name
+  paymentMethod2: text("payment_method_2"),
   paymentMethodId: integer("payment_method_id").references(
     () => paymentMethods.id,
   ),
@@ -575,6 +577,7 @@ export const paymentMethods = sqliteTable("payment_methods", {
 
   active: integer("active", { mode: "boolean" }).default(true).notNull(),
   isDefault: integer("is_default", { mode: "boolean" }).default(false),
+  isDefault2: integer("is_default_2", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -18,6 +18,7 @@ export const useSalesForm = (options: {
   knownCustomers: ComputedRef<KnownCustomer[]>;
   mixDesigns: ComputedRef<MixDesign[]>;
   driverOptions: ComputedRef<any[]>;
+  paymentMethods?: ComputedRef<any[]>;
 }) => {
   const {
     refreshSales,
@@ -67,6 +68,7 @@ export const useSalesForm = (options: {
     deliveryDate: "",
     discount: 0, // BRL float
     paymentMethod: "",
+    paymentMethod2: "",
     notes: "",
     items: [makeNewItem()] as FormItem[],
   });
@@ -172,6 +174,7 @@ export const useSalesForm = (options: {
     form.deliveryDate = "";
     form.discount = 0;
     form.paymentMethod = "";
+    form.paymentMethod2 = "";
     form.notes = "";
     form.items = [makeNewItem()];
     customerSearchTerm.value = "";
@@ -200,6 +203,12 @@ export const useSalesForm = (options: {
 
   const openCreate = () => {
     resetForm();
+    // Auto-fill default payment methods if configured
+    const pmList = options.paymentMethods?.value || [];
+    const def1 = pmList.find((m: any) => m.isDefault);
+    const def2 = pmList.find((m: any) => m.isDefault2);
+    if (def1) form.paymentMethod = def1.name;
+    if (def2) form.paymentMethod2 = def2.name;
     isDrawerOpen.value = true;
   };
 
@@ -264,6 +273,7 @@ export const useSalesForm = (options: {
       : "";
     form.discount = s.discount / 100;
     form.paymentMethod = s.paymentMethod ?? "";
+    form.paymentMethod2 = (s as any).paymentMethod2 ?? "";
     form.notes = s.notes ?? "";
     form.items = mapApiItemsToForm(s.items);
     isDrawerOpen.value = true;
@@ -411,6 +421,7 @@ export const useSalesForm = (options: {
         deliveryDate: form.deliveryDate || null,
         discount: Math.round(form.discount * 100),
         paymentMethod: form.paymentMethod || null,
+        paymentMethod2: form.paymentMethod2 || null,
         notes: form.notes || null,
         items: form.items.map((it) => ({
           productId: it.productId || null,

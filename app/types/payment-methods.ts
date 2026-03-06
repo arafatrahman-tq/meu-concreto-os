@@ -26,6 +26,7 @@ export interface PaymentMethod {
   details?: PaymentMethodDetails | null;
   active: boolean;
   isDefault: boolean;
+  isDefault2: boolean;
   createdAt?: string | number;
   updatedAt?: string | number;
 }

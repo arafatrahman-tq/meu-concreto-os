@@ -41,6 +41,10 @@ export default defineEventHandler(async (event) => {
     quote.paymentMethod,
   );
 
+  const targetPaymentMethod2 = quote.paymentMethod2
+    ? await getPaymentMethodDetails(quote.companyId, quote.paymentMethod2)
+    : null;
+
   if (!waConfig?.apiUrl || !waConfig?.phoneNumber) {
     throw createError({
       statusCode: 400,
@@ -88,6 +92,13 @@ export default defineEventHandler(async (event) => {
           name: targetPaymentMethod.name,
           type: targetPaymentMethod.type,
           details: targetPaymentMethod.details,
+        }
+      : null,
+    paymentMethod2: targetPaymentMethod2
+      ? {
+          name: targetPaymentMethod2.name,
+          type: targetPaymentMethod2.type,
+          details: targetPaymentMethod2.details,
         }
       : null,
     seller: seller

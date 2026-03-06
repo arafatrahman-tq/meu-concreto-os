@@ -23,11 +23,11 @@ const {
   "/api/payment-methods",
   {
     query: { companyId },
-  }
+  },
 );
 
 const methodsList = computed<PaymentMethod[]>(
-  () => pmData.value?.paymentMethods ?? []
+  () => pmData.value?.paymentMethods ?? [],
 );
 
 // ---------------------------------------------
@@ -147,6 +147,26 @@ async function toggleActive(m: PaymentMethod) {
       description: `"${m.name}" foi ${m.active ? "desativada" : "ativada"}.`,
       color: m.active ? "warning" : "success",
       icon: m.active ? "i-heroicons-eye-slash" : "i-heroicons-check-circle",
+    });
+    await refresh();
+  } catch (e: any) {
+    const err = (e as any).data?.statusMessage || "Tente novamente.";
+    toast.add({ title: "Erro", description: err, color: "error" });
+  }
+}
+
+async function setDefault2(m: PaymentMethod) {
+  try {
+    await $fetch(`/api/payment-methods/${m.id}`, {
+      method: "PUT",
+      body: { isDefault2: !m.isDefault2 },
+    });
+    toast.add({
+      title: m.isDefault2
+        ? `"${m.name}" removida como 2º padrão`
+        : `"${m.name}" definida como 2º padrão`,
+      color: m.isDefault2 ? "neutral" : "success",
+      icon: m.isDefault2 ? "i-heroicons-star" : "i-heroicons-star",
     });
     await refresh();
   } catch (e: any) {
@@ -295,10 +315,16 @@ const formatDate = (date: string | number | Date | null | undefined) => {
                 >
                   {{ m.name }}
                 </p>
-                <UTooltip text="Padrão do Sistema" v-if="m.isDefault">
+                <UTooltip text="1º Padrão" v-if="m.isDefault">
                   <UIcon
                     name="i-heroicons-star"
                     class="w-4 h-4 text-amber-500 shrink-0"
+                  />
+                </UTooltip>
+                <UTooltip text="2º Padrão" v-if="m.isDefault2">
+                  <UIcon
+                    name="i-heroicons-star"
+                    class="w-4 h-4 text-blue-500 shrink-0"
                   />
                 </UTooltip>
               </div>
@@ -309,6 +335,20 @@ const formatDate = (date: string | number | Date | null | undefined) => {
               </p>
             </div>
             <div class="flex items-center gap-1">
+              <UTooltip
+                :text="
+                  m.isDefault2 ? 'Remover 2º Padrão' : 'Definir como 2º Padrão'
+                "
+              >
+                <UButton
+                  :color="m.isDefault2 ? 'primary' : 'neutral'"
+                  variant="ghost"
+                  icon="i-heroicons-star"
+                  size="sm"
+                  square
+                  @click="setDefault2(m)"
+                />
+              </UTooltip>
               <UButton
                 color="neutral"
                 variant="ghost"
