@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { quotes } from "../../../database/schema";
 import { db } from "../../../utils/db";
-import { generateDocumentPDF, getPDFContext } from "../../../utils/pdf";
+import {
+  generateDocumentPDF,
+  getPDFContext,
+  getPaymentMethodDetails,
+} from "../../../utils/pdf";
 import { sendWhatsappPDF } from "../../../utils/whatsapp";
 import { requireCompanyAccess } from "../../../utils/session";
 import { createNotification } from "../../../utils/notifications";
@@ -27,8 +31,15 @@ export default defineEventHandler(async (event) => {
   requireCompanyAccess(event, quote.companyId);
 
   // 3. Fetch Context
-  const { company, seller, waConfig, defaultPaymentMethod } =
-    await getPDFContext(quote.companyId, quote.sellerId);
+  const { company, seller, waConfig } = await getPDFContext(
+    quote.companyId,
+    quote.sellerId,
+  );
+
+  const targetPaymentMethod = await getPaymentMethodDetails(
+    quote.companyId,
+    quote.paymentMethod,
+  );
 
   if (!waConfig?.apiUrl || !waConfig?.phoneNumber) {
     throw createError({
@@ -72,11 +83,11 @@ export default defineEventHandler(async (event) => {
       slump: i.slump || null,
       stoneSize: i.stoneSize || null,
     })),
-    paymentMethod: defaultPaymentMethod
+    paymentMethod: targetPaymentMethod
       ? {
-          name: defaultPaymentMethod.name,
-          type: defaultPaymentMethod.type,
-          details: defaultPaymentMethod.details,
+          name: targetPaymentMethod.name,
+          type: targetPaymentMethod.type,
+          details: targetPaymentMethod.details,
         }
       : null,
     seller: seller
@@ -141,7 +152,7 @@ export default defineEventHandler(async (event) => {
     recipients,
     pdfBuffer,
     fileName,
-    caption
+    caption,
   );
 
   // 8. Update Quote Status if at least one was sent successfully

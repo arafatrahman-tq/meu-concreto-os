@@ -126,6 +126,14 @@ const sellerOptions = computed(() => [
   ...sellersList.value.map((s) => ({ label: s.name, value: s.id })),
 ]);
 
+const paymentMethodOptions = computed(() => [
+  { label: "Nenhum selecionado", value: "" },
+  ...(stats.value.paymentMethods?.map((m: any) => ({
+    label: m.name,
+    value: m.name,
+  })) || []),
+]);
+
 // Handle external calls (e.g. from table actions)
 const handleStatusUpdate = async (q: Quote, next: QuoteStatus) => {
   if (next === "approved") {
@@ -302,6 +310,7 @@ onMounted(() => {
       :driver-options="driverOptions"
       :pumper-options="pumperOptions"
       :mix-designs="mixDesigns"
+      :payment-method-options="paymentMethodOptions"
       :form="form"
       :form-errors="formErrors"
       :loading-save="loadingSave"

@@ -16,6 +16,7 @@ const props = defineProps<{
   driverOptions: SelectOption[];
   pumperOptions: SelectOption[];
   mixDesigns: MixDesign[];
+  paymentMethodOptions: SelectOption[];
   // Form state and methods
   form: QuoteForm;
   isDrawerOpen: boolean;
@@ -470,7 +471,7 @@ const useDeliveryAddress = computed({
                     />
                     {{
                       formatCurrency(
-                        Math.round(item.quantity * item.unitPrice * 100)
+                        Math.round(item.quantity * item.unitPrice * 100),
                       )
                     }}
                   </div>
@@ -492,7 +493,9 @@ const useDeliveryAddress = computed({
                     placeholder="Selecione um traço (opcional)"
                     icon="i-heroicons-beaker"
                     class="w-full"
-                    @update:model-value="(v: number | null) => onMixDesignSelect(idx as number, v)"
+                    @update:model-value="
+                      (v: number | null) => onMixDesignSelect(idx as number, v)
+                    "
                   />
                 </UFormField>
 
@@ -556,6 +559,16 @@ const useDeliveryAddress = computed({
                 v-model="form.validUntil"
                 type="date"
                 icon="i-heroicons-calendar-days"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Forma de Pagamento">
+              <USelect
+                v-model="form.paymentMethod"
+                :items="paymentMethodOptions"
+                value-key="value"
+                label-key="label"
+                icon="i-heroicons-credit-card"
                 class="w-full"
               />
             </UFormField>

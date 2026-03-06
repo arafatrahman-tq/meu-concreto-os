@@ -53,37 +53,56 @@ export interface DocumentPDFData {
 
 const fmt = (cents: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    cents / 100
+    cents / 100,
   );
 
 /** Fetches common context for PDF generation (Company, Seller, WA Config). */
 export async function getPDFContext(
   companyId: number,
-  sellerId?: number | null
+  sellerId?: number | null,
 ) {
-  const [company, seller, waConfig, defaultPaymentMethod] = await Promise.all([
+  const { company, seller, waConfig } = await Promise.all([
     db.select().from(companies).where(eq(companies.id, companyId)).get(),
     sellerId
       ? db.select().from(sellers).where(eq(sellers.id, sellerId)).get()
       : Promise.resolve(null),
     getWhatsappConfig(companyId),
-    db
-      .select()
-      .from(paymentMethods)
-      .where(
-        and(
-          eq(paymentMethods.companyId, companyId),
-          eq(paymentMethods.isDefault, true)
-        )
-      )
-      .get(),
-  ]);
+  ]).then(([c, s, w]) => ({ company: c, seller: s, waConfig: w }));
 
   if (!company) {
     throw new Error("Company not found");
   }
 
-  return { company, seller, waConfig, defaultPaymentMethod };
+  return { company, seller, waConfig };
+}
+
+export async function getPaymentMethodDetails(
+  companyId: number,
+  methodName: string | null,
+) {
+  if (!methodName) {
+    return db
+      .select()
+      .from(paymentMethods)
+      .where(
+        and(
+          eq(paymentMethods.companyId, companyId),
+          eq(paymentMethods.isDefault, true),
+        ),
+      )
+      .get();
+  }
+
+  return db
+    .select()
+    .from(paymentMethods)
+    .where(
+      and(
+        eq(paymentMethods.companyId, companyId),
+        eq(paymentMethods.name, methodName),
+      ),
+    )
+    .get();
 }
 
 function drawDefaultBranding(doc: any) {
@@ -113,7 +132,7 @@ function drawDefaultBranding(doc: any) {
 }
 
 export async function generateDocumentPDF(
-  data: DocumentPDFData
+  data: DocumentPDFData,
 ): Promise<Buffer> {
   const doc = new jsPDF() as any;
 
@@ -126,10 +145,15 @@ export async function generateDocumentPDF(
   doc.setFont("helvetica", "bold");
   doc.saveGraphicsState();
   doc.setGState(new (doc as any).GState({ opacity: 0.15 }));
-  doc.text((data.company.name || "MEU CONCRETO").toUpperCase(), pageWidth / 2, pageHeight / 2, {
-    align: "center",
-    angle: 45,
-  });
+  doc.text(
+    (data.company.name || "MEU CONCRETO").toUpperCase(),
+    pageWidth / 2,
+    pageHeight / 2,
+    {
+      align: "center",
+      angle: 45,
+    },
+  );
   doc.restoreGraphicsState();
 
   // 2. Header / Logo
@@ -138,7 +162,7 @@ export async function generateDocumentPDF(
       // Add Company Logo
       // Calculate aspect ratio if possible, or fit to a box.
       // Assuming square-ish logo or fit in 20x20 box
-      doc.addImage(data.company.logo, "PNG", 15, 12, 20, 20, undefined, 'FAST');
+      doc.addImage(data.company.logo, "PNG", 15, 12, 20, 20, undefined, "FAST");
     } catch (e) {
       console.error("Error adding logo to PDF", e);
       // Fallback to default branding if logo fails
@@ -159,7 +183,7 @@ export async function generateDocumentPDF(
     20.5,
     {
       align: "right",
-    }
+    },
   );
 
   doc.setFontSize(8);
@@ -173,7 +197,7 @@ export async function generateDocumentPDF(
       `Válido até: ${format(data.validUntil, "dd/MM/yyyy")}`,
       pageWidth - 15,
       30,
-      { align: "right" }
+      { align: "right" },
     );
   } else if (data.deliveryDate) {
     doc.setTextColor(34, 197, 94); // primary-500
@@ -182,7 +206,7 @@ export async function generateDocumentPDF(
       `Entrega prevista: ${format(data.deliveryDate, "dd/MM/yyyy")}`,
       pageWidth - 15,
       30,
-      { align: "right" }
+      { align: "right" },
     );
     doc.setTextColor(113, 113, 122);
     doc.setFont("helvetica", "normal");

@@ -216,6 +216,7 @@ export const quotes = sqliteTable("quotes", {
     .notNull()
     .default(sql`(unixepoch())`),
   validUntil: integer("valid_until", { mode: "timestamp" }),
+  paymentMethod: text("payment_method"),
   sellerId: integer("seller_id").references(() => sellers.id, {
     onDelete: "set null",
   }),

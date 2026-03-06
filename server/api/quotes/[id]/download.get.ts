@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { quotes } from "../../../database/schema";
 import { db } from "../../../utils/db";
-import { generateDocumentPDF, getPDFContext } from "../../../utils/pdf";
+import {
+  generateDocumentPDF,
+  getPDFContext,
+  getPaymentMethodDetails,
+} from "../../../utils/pdf";
 import { requireCompanyAccess } from "../../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -25,9 +29,14 @@ export default defineEventHandler(async (event) => {
   await requireCompanyAccess(event, quote.companyId);
 
   // 3. Fetch Context
-  const { company, seller, defaultPaymentMethod } = await getPDFContext(
+  const { company, seller } = await getPDFContext(
     quote.companyId,
-    quote.sellerId
+    quote.sellerId,
+  );
+
+  const targetPaymentMethod = await getPaymentMethodDetails(
+    quote.companyId,
+    quote.paymentMethod,
   );
 
   // 4. Generate PDF
@@ -64,11 +73,11 @@ export default defineEventHandler(async (event) => {
       slump: i.slump || null,
       stoneSize: i.stoneSize || null,
     })),
-    paymentMethod: defaultPaymentMethod
+    paymentMethod: targetPaymentMethod
       ? {
-          name: defaultPaymentMethod.name,
-          type: defaultPaymentMethod.type,
-          details: defaultPaymentMethod.details,
+          name: targetPaymentMethod.name,
+          type: targetPaymentMethod.type,
+          details: targetPaymentMethod.details,
         }
       : null,
     seller: seller

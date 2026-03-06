@@ -78,6 +78,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     date: formatISO(new Date(), { representation: "date" }),
     validUntil: "",
     discount: 0, // BRL float
+    paymentMethod: "",
     notes: "",
     items: [makeNewItem()] as FormItem[],
   });
@@ -252,6 +253,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     form.date = formatISO(new Date(), { representation: "date" });
     form.validUntil = "";
     form.discount = 0;
+    form.paymentMethod = "";
     form.notes = "";
     form.items = [makeNewItem()];
     selectedCustomer.value = undefined;
@@ -294,6 +296,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       : validUntilStr;
 
     form.discount = (s.discount ?? 0) / 100; // Cents to Real
+    form.paymentMethod = (s as any).paymentMethod ?? "";
     form.notes = s.notes ?? "";
     linkedQuoteId.value = s.id;
 

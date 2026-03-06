@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   // Calculate totals
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
-    0
+    0,
   );
   const total = subtotal - quoteData.discount;
 
@@ -57,6 +57,7 @@ export default defineEventHandler(async (event) => {
           status: "draft", // Always start as draft; becomes 'sent' after WhatsApp push
           date: new Date(),
           validUntil: parseDate(quoteData.validUntil) ?? null,
+          paymentMethod: quoteData.paymentMethod,
           notes: quoteData.notes,
           subtotal,
           discount: quoteData.discount,
@@ -91,7 +92,7 @@ export default defineEventHandler(async (event) => {
           driverIds.map((driverId) => ({
             quoteId: newQuote.id,
             driverId,
-          }))
+          })),
         );
       }
 
@@ -144,8 +145,8 @@ export default defineEventHandler(async (event) => {
           .where(
             and(
               eq(paymentMethods.companyId, quoteData.companyId),
-              eq(paymentMethods.isDefault, true)
-            )
+              eq(paymentMethods.isDefault, true),
+            ),
           )
           .get();
 
@@ -207,7 +208,7 @@ export default defineEventHandler(async (event) => {
 
           const fileName = `Orcamento_${String(result.id).padStart(
             5,
-            "0"
+            "0",
           )}.pdf`;
           const caption = `📄 Orçamento de ${
             fullQuote.customerName
@@ -226,7 +227,7 @@ export default defineEventHandler(async (event) => {
                 [seller.phone],
                 pdfBuffer,
                 fileName,
-                caption
+                caption,
               );
               if (res.sent.length > 0) wasSentResult = true;
             } else {
@@ -253,7 +254,7 @@ export default defineEventHandler(async (event) => {
                 [fullQuote.customerPhone],
                 pdfBuffer,
                 fileName,
-                caption
+                caption,
               );
               if (res.sent.length > 0) wasSentResult = true;
             } else {

@@ -204,6 +204,13 @@
       "when": 1772648483181,
       "tag": "0028_nebulous_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1772800943994,
+      "tag": "0029_clever_zaladane",
+      "breakpoints": true
     }
   ]
 }

@@ -170,6 +170,7 @@ export const quoteSchema = z.object({
     .enum(["draft", "sent", "approved", "rejected", "expired"])
     .default("draft"),
   validUntil: dateSchema.optional().nullable(),
+  paymentMethod: z.string().optional().nullable(),
 
   discount: z.number().min(0).default(0), // Cents
   notes: z.string().optional().nullable(),

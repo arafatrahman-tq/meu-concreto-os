@@ -142,6 +142,7 @@ export interface Quote {
   subtotal: number;
   discount: number;
   total: number;
+  paymentMethod?: string | null;
   notes?: string | null;
   companyId: number;
   userId?: number | null;
@@ -177,6 +178,7 @@ export interface QuoteForm {
   status: QuoteStatus | string;
   validUntil: string | null;
   discount: number;
+  paymentMethod: string;
   notes: string | null;
   items: FormItem[];
   driverIds?: number[];
