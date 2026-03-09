@@ -433,6 +433,7 @@ const handleSendReport = async () => {
             placeholder="http://localhost:3025"
             icon="i-heroicons-globe-alt"
             class="w-full"
+            size="lg"
             :disabled="user?.role !== 'admin'"
           />
         </UFormField>
@@ -445,12 +446,14 @@ const handleSendReport = async () => {
               placeholder="Sua chave de API"
               icon="i-heroicons-key"
               class="w-full"
+              size="lg"
               :disabled="user?.role !== 'admin'"
             />
             <UButton
               color="neutral"
               variant="ghost"
               :disabled="user?.role !== 'admin'"
+              size="sm"
               :icon="showApiKey ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
               @click="showApiKey = !showApiKey"
             />
@@ -463,6 +466,7 @@ const handleSendReport = async () => {
             placeholder="+5511999999999"
             icon="i-heroicons-phone"
             class="w-full"
+            size="lg"
             :disabled="user?.role !== 'admin'"
           />
         </UFormField>
@@ -567,7 +571,7 @@ const handleSendReport = async () => {
                       icon="i-heroicons-phone"
                       placeholder="+55 (00) 00000-0000"
                       class="flex-1"
-                      size="sm"
+                      size="lg"
                     />
                     <UButton
                       color="error"
@@ -649,7 +653,7 @@ const handleSendReport = async () => {
                     value-key="value"
                     label-key="label"
                     class="w-full"
-                    size="sm"
+                    size="lg"
                   />
                 </UFormField>
 
@@ -669,7 +673,7 @@ const handleSendReport = async () => {
                       icon="i-heroicons-phone"
                       placeholder="+55 (00) 00000-0000"
                       class="flex-1"
-                      size="sm"
+                      size="lg"
                     />
                     <UButton
                       color="error"
@@ -839,7 +843,7 @@ const handleSendReport = async () => {
                   <UInput
                     v-model="waForm.schedulesReminderLeadTimeHours"
                     type="number"
-                    size="sm"
+                    size="lg"
                     class="w-24"
                     suffix="horas"
                   />
@@ -861,7 +865,7 @@ const handleSendReport = async () => {
                       icon="i-heroicons-phone"
                       placeholder="+55 (00) 00000-0000"
                       class="flex-1"
-                      size="sm"
+                      size="lg"
                     />
                     <UButton
                       color="error"
@@ -905,12 +909,12 @@ const handleSendReport = async () => {
             v-model="waTestNum"
             placeholder="+55 (00) 00000-0000"
             icon="i-heroicons-chat-bubble-left-right"
-            size="sm"
+            size="lg"
             class="flex-1"
           />
           <UButton
             color="success"
-            size="sm"
+            size="lg"
             icon="i-heroicons-paper-airplane"
             :loading="loadingTestMsg"
             @click="handleTestMessage"

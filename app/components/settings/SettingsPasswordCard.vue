@@ -111,6 +111,7 @@ const handleUpdate = async () => {
           :type="showCurrentPass ? 'text' : 'password'"
           placeholder="Digite sua senha atual"
           class="w-full"
+          size="lg"
           autocomplete="current-password"
         >
           <template #trailing>
@@ -120,7 +121,7 @@ const handleUpdate = async () => {
               "
               color="neutral"
               variant="ghost"
-              size="xs"
+              size="sm"
               @click="showCurrentPass = !showCurrentPass"
             />
           </template>
@@ -134,6 +135,7 @@ const handleUpdate = async () => {
             :type="showNewPass ? 'text' : 'password'"
             placeholder="Mínimo 6 caracteres"
             class="w-full"
+            size="lg"
             autocomplete="new-password"
           >
             <template #trailing>
@@ -143,7 +145,7 @@ const handleUpdate = async () => {
                 "
                 color="neutral"
                 variant="ghost"
-                size="xs"
+                size="sm"
                 @click="showNewPass = !showNewPass"
               />
             </template>
@@ -160,6 +162,7 @@ const handleUpdate = async () => {
             :type="showNewPass ? 'text' : 'password'"
             placeholder="Repita a nova senha"
             class="w-full"
+            size="lg"
             autocomplete="new-password"
           />
         </UFormField>

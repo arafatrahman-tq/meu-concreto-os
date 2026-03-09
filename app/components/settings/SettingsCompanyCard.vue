@@ -385,6 +385,7 @@ const handleSave = async () => {
           placeholder="Nome da empresa"
           icon="i-heroicons-building-office-2"
           class="w-full"
+          size="lg"
         />
       </UFormField>
 
@@ -395,6 +396,7 @@ const handleSave = async () => {
           placeholder="00.000.000/0000-00"
           icon="i-heroicons-identification"
           class="w-full"
+          size="lg"
         />
       </UFormField>
 
@@ -407,6 +409,7 @@ const handleSave = async () => {
             placeholder="contato@empresa.com.br"
             icon="i-heroicons-envelope"
             class="w-full"
+            size="lg"
           />
         </UFormField>
         <UFormField label="Telefone">
@@ -415,6 +418,7 @@ const handleSave = async () => {
             placeholder="(00) 00000-0000"
             icon="i-heroicons-phone"
             class="w-full"
+            size="lg"
           />
         </UFormField>
       </div>
@@ -428,6 +432,7 @@ const handleSave = async () => {
               placeholder="00000-000"
               icon="i-heroicons-map-pin"
               class="w-full"
+              size="lg"
             />
             <div
               v-if="cepStatus === 'loading'"
@@ -456,6 +461,7 @@ const handleSave = async () => {
             v-model="companyForm.city"
             placeholder="São Paulo"
             class="w-full"
+            size="lg"
           />
         </UFormField>
         <UFormField label="Estado" :error="companyErrors.state">
@@ -466,6 +472,7 @@ const handleSave = async () => {
             label-key="label"
             placeholder="UF"
             class="w-full"
+            size="lg"
           />
         </UFormField>
       </div>
@@ -477,6 +484,7 @@ const handleSave = async () => {
           placeholder="Rua, número, bairro"
           icon="i-heroicons-map"
           class="w-full"
+          size="lg"
         />
       </UFormField>
 

@@ -125,6 +125,7 @@ const roleLabel = computed(() => {
             placeholder="Seu nome completo"
             icon="i-heroicons-user"
             class="w-full"
+            size="lg"
           />
         </UFormField>
         <UFormField label="Telefone">
@@ -133,6 +134,7 @@ const roleLabel = computed(() => {
             placeholder="(00) 00000-0000"
             icon="i-heroicons-phone"
             class="w-full"
+            size="lg"
           />
         </UFormField>
       </div>
@@ -145,9 +147,19 @@ const roleLabel = computed(() => {
             disabled
             icon="i-heroicons-envelope"
             class="w-full opacity-60"
+            size="lg"
           />
         </UFormField>
         <UFormField label="Perfil de acesso">
+          <UInput
+            :model-value="roleLabel"
+            disabled
+            icon="i-heroicons-shield-check"
+            class="w-full opacity-60"
+            size="lg"
+          />
+        </UFormField>
+      </div>
           <UInput
             :model-value="roleLabel"
             disabled
