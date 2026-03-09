@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import type { Transaction, TransactionType, TransactionStatus } from "~/types/transactions";
+import type {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+} from "~/types/transactions";
 
-const search = defineModel<string>('search');
-const typeFilter = defineModel<TransactionType | "all">('typeFilter');
-const statusFilter = defineModel<TransactionStatus | "all">('statusFilter');
-const dateStart = defineModel<string>('dateStart');
-const dateEnd = defineModel<string>('dateEnd');
+const search = defineModel<string>("search");
+const typeFilter = defineModel<TransactionType | "all">("typeFilter");
+const statusFilter = defineModel<TransactionStatus | "all">("statusFilter");
+const dateStart = defineModel<string>("dateStart");
+const dateEnd = defineModel<string>("dateEnd");
 
 defineProps<{
   loadingPDF: boolean;
   hasTransactions: boolean;
 }>();
 
-const emit = defineEmits(['download', 'clear']);
+const emit = defineEmits(["download", "clear"]);
 
 const TYPE_OPTS = [
   { label: "Todos os tipos", value: "all" },
@@ -28,7 +32,13 @@ const STATUS_OPTS = [
 ];
 
 const isFiltered = computed(() => {
-  return search.value || typeFilter.value !== 'all' || statusFilter.value !== 'all' || dateStart.value || dateEnd.value;
+  return (
+    search.value ||
+    typeFilter.value !== "all" ||
+    statusFilter.value !== "all" ||
+    dateStart.value ||
+    dateEnd.value
+  );
 });
 </script>
 
@@ -99,11 +109,18 @@ const isFiltered = computed(() => {
         </div>
       </div>
 
-      <div class="flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+      <div
+        class="flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/50"
+      >
         <div class="flex flex-col sm:flex-row items-end gap-4 w-full sm:w-auto">
           <div class="w-full sm:w-40">
             <UFormField label="De:">
-              <UInput v-model="dateStart" type="date" size="lg" class="w-full" />
+              <UInput
+                v-model="dateStart"
+                type="date"
+                size="lg"
+                class="w-full"
+              />
             </UFormField>
           </div>
           <div class="w-full sm:w-40">
@@ -114,7 +131,11 @@ const isFiltered = computed(() => {
         </div>
 
         <div class="flex items-center gap-4 ml-auto pt-4 sm:pt-0">
-          <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400">Exportar</p>
+          <p
+            class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+          >
+            Exportar
+          </p>
           <UButton
             color="neutral"
             variant="outline"
