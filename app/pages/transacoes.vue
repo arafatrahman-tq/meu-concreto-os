@@ -32,6 +32,7 @@ const {
   pending: loadingTx,
 } = await useFetch("/api/transactions", {
   query: { companyId },
+  watch: false,
 });
 
 const { data: companyData } = await useFetch<{ company: Company }>(
