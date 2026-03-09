@@ -160,14 +160,6 @@ const roleLabel = computed(() => {
           />
         </UFormField>
       </div>
-          <UInput
-            :model-value="roleLabel"
-            disabled
-            icon="i-heroicons-shield-check"
-            class="w-full opacity-60"
-          />
-        </UFormField>
-      </div>
 
       <p class="text-xs text-zinc-400">
         E-mail e perfil de acesso só podem ser alterados por um administrador.

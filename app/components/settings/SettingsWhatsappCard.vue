@@ -79,7 +79,7 @@ watch(
     waForm.isGlobal = s.isGlobal ?? false;
     waForm.useGlobal = s.useGlobal ?? false;
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const showApiKey = ref(false);
@@ -106,7 +106,7 @@ const handleSave = async () => {
         quotePdfToCustomer: waForm.quotePdfToCustomer,
         schedulesReminderEnabled: waForm.schedulesReminderEnabled,
         schedulesReminderLeadTimeHours: Number(
-          waForm.schedulesReminderLeadTimeHours
+          waForm.schedulesReminderLeadTimeHours,
         ),
         schedulesReminderRecipients:
           waForm.schedulesReminderRecipients.filter(Boolean),
@@ -142,7 +142,7 @@ const handleConnect = async () => {
   try {
     const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/connect?companyId=${props.companyId}`,
-      { method: "POST" }
+      { method: "POST" },
     );
     toast.add({
       title: res.ok ? "Conectado" : "Atenção",
@@ -198,7 +198,7 @@ const handleTestPing = async () => {
   try {
     const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/test?companyId=${props.companyId}`,
-      { method: "POST", body: { mode: "ping" } }
+      { method: "POST", body: { mode: "ping" } },
     );
     toast.add({
       title: res.ok ? "API acessível" : "Falha",
@@ -238,7 +238,7 @@ const handleTestMessage = async () => {
       {
         method: "POST",
         body: { mode: "message", toNumber: waTestNum.value },
-      }
+      },
     );
     toast.add({
       title: res.ok ? "Mensagem enviada" : "Falha",
@@ -269,7 +269,7 @@ const handleSendReport = async () => {
       {
         method: "POST",
         body: { companyName: props.companyName ?? "Meu Concreto" },
-      }
+      },
     );
     toast.add({
       title: res.ok ? "Relatório enviado" : "Falha",
