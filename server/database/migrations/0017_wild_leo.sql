@@ -1,0 +1,1 @@
+ALTER TABLE `companies` ADD `owner_company_id` integer;

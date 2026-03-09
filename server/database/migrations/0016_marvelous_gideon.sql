@@ -1,0 +1,1 @@
+ALTER TABLE `companies` ADD `is_customer` integer DEFAULT false NOT NULL;

@@ -1,0 +1,18 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded Square Background -->
+  <rect width="64" height="64" rx="16" fill="#00c16a"/>
+  
+  <!-- Subtle Gradient Overlay -->
+  <rect width="64" height="64" rx="16" fill="url(#paint0_linear_logo)" fill-opacity="0.2"/>
+  
+  <!-- Anvil Icon (Lucide-Anvil style) -->
+  <path d="M18 20C18 20 25 18 32 18C39 18 46 20 46 20C48 20 49 21 49 23V25C49 26 48 27 46 27H41L38 42C37.5 44 36 46 32 46C28 46 26.5 44 26 42L23 27H18C16 27 15 26 15 25V23C15 21 16 20 18 20Z" fill="white"/>
+  <path d="M26 42L25 48C24.5 50 26 52 32 52C38 52 39.5 50 39 48L38 42" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <defs>
+    <linearGradient id="paint0_linear_logo" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
