@@ -3,79 +3,79 @@ import type {
   PaymentMethod,
   PaymentMethodDetails,
   PaymentMethodForm,
-  MethodType
-} from '~/types/payment-methods'
-import { TYPE_CONFIG, PIX_KEY_TYPES } from '~/types/payment-methods'
+  MethodType,
+} from "~/types/payment-methods";
+import { TYPE_CONFIG, PIX_KEY_TYPES } from "~/types/payment-methods";
 
 const props = defineProps<{
-  open: boolean
-  paymentMethod: PaymentMethod | null
-}>()
+  open: boolean;
+  paymentMethod: PaymentMethod | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'saved'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
+}>();
 
-const { companyId } = useAuth()
-const toast = useToast()
+const { companyId } = useAuth();
+const toast = useToast();
 
 const isDrawerOpen = computed({
   get: () => props.open,
-  set: val => emit('update:open', val)
-})
+  set: (val) => emit("update:open", val),
+});
 
-const isEditing = computed(() => !!props.paymentMethod)
-const loadingSave = ref(false)
+const isEditing = computed(() => !!props.paymentMethod);
+const loadingSave = ref(false);
 
 const TYPE_OPTS = Object.entries(TYPE_CONFIG).map(([value, cfg]) => ({
   value: value as MethodType,
   label: cfg.label,
-  icon: cfg.icon
-}))
+  icon: cfg.icon,
+}));
 
 // ---------------------------------------------
 // Form State
 // ---------------------------------------------
 const form = reactive<PaymentMethodForm>({
-  name: '',
-  type: 'other',
+  name: "",
+  type: "other",
   active: true,
   isDefault: false,
   maxInstallments: null,
   interestRate: null,
-  pixKey: '',
-  pixKeyType: 'cpf',
-  bankName: '',
-  accountInfo: '',
-  instructions: ''
-})
+  pixKey: "",
+  pixKeyType: "cpf",
+  bankName: "",
+  accountInfo: "",
+  instructions: "",
+});
 
 // 1. Estado Reativo de Erros
 const formErrors = reactive<Record<keyof PaymentMethodForm | string, string>>(
-  {}
-)
+  {},
+);
 
 // 2. Limpar Erros
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
-}
+};
 
 // 3. Função de Validação
 const validateForm = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
-    isValid = false
+    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
+    isValid = false;
   }
 
   if (!form.type) {
-    formErrors.type = 'Selecione o tipo de pagamento.'
-    isValid = false
+    formErrors.type = "Selecione o tipo de pagamento.";
+    isValid = false;
   }
 
   // Optional: Add more specific validation for Pix/Cards/Bank if needed
@@ -85,29 +85,29 @@ const validateForm = (): boolean => {
     // isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const showCardDetails = computed(
-  () => form.type === 'credit_card' || form.type === 'debit_card'
-)
-const showPixDetails = computed(() => form.type === 'pix')
+  () => form.type === "credit_card" || form.type === "debit_card",
+);
+const showPixDetails = computed(() => form.type === "pix");
 const showBankDetails = computed(
-  () => form.type === 'boleto' || form.type === 'transfer'
-)
+  () => form.type === "boleto" || form.type === "transfer",
+);
 
 function resetForm() {
-  form.name = ''
-  form.type = 'other'
-  form.active = true
-  form.isDefault = false
-  form.maxInstallments = null
-  form.interestRate = null
-  form.pixKey = ''
-  form.pixKeyType = 'cpf'
-  form.bankName = ''
-  form.accountInfo = ''
-  form.instructions = ''
+  form.name = "";
+  form.type = "other";
+  form.active = true;
+  form.isDefault = false;
+  form.maxInstallments = null;
+  form.interestRate = null;
+  form.pixKey = "";
+  form.pixKeyType = "cpf";
+  form.bankName = "";
+  form.accountInfo = "";
+  form.instructions = "";
 }
 
 // ---------------------------------------------
@@ -117,98 +117,98 @@ watch(
   () => props.paymentMethod,
   (m) => {
     if (m) {
-      clearErrors()
-      form.name = m.name
-      form.type = m.type
-      form.active = !!m.active
-      form.isDefault = !!m.isDefault
-      const d = m.details ?? {}
-      form.maxInstallments = d.maxInstallments ?? null
-      form.interestRate = d.interestRate ?? null
-      form.pixKey = d.pixKey ?? ''
-      form.pixKeyType = d.pixKeyType ?? 'cpf'
-      form.bankName = d.bankName ?? ''
-      form.accountInfo = d.accountInfo ?? ''
-      form.instructions = d.instructions ?? ''
+      clearErrors();
+      form.name = m.name;
+      form.type = m.type;
+      form.active = !!m.active;
+      form.isDefault = !!m.isDefault;
+      const d = m.details ?? {};
+      form.maxInstallments = d.maxInstallments ?? null;
+      form.interestRate = d.interestRate ?? null;
+      form.pixKey = d.pixKey ?? "";
+      form.pixKeyType = d.pixKeyType ?? "cpf";
+      form.bankName = d.bankName ?? "";
+      form.accountInfo = d.accountInfo ?? "";
+      form.instructions = d.instructions ?? "";
     } else {
-      resetForm()
-      clearErrors()
+      resetForm();
+      clearErrors();
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 // ---------------------------------------------
 // Logic
 // ---------------------------------------------
 function buildDetails() {
-  const d: PaymentMethodDetails = {}
+  const d: PaymentMethodDetails = {};
   if (showCardDetails.value) {
-    if (form.maxInstallments) d.maxInstallments = form.maxInstallments
-    if (form.interestRate !== null) d.interestRate = form.interestRate
+    if (form.maxInstallments) d.maxInstallments = form.maxInstallments;
+    if (form.interestRate !== null) d.interestRate = form.interestRate;
   } else if (showPixDetails.value) {
-    if (form.pixKey) d.pixKey = form.pixKey
-    if (form.pixKeyType) d.pixKeyType = form.pixKeyType
+    if (form.pixKey) d.pixKey = form.pixKey;
+    if (form.pixKeyType) d.pixKeyType = form.pixKeyType;
   } else if (showBankDetails.value) {
-    if (form.bankName) d.bankName = form.bankName
-    if (form.accountInfo) d.accountInfo = form.accountInfo
-    if (form.instructions) d.instructions = form.instructions
+    if (form.bankName) d.bankName = form.bankName;
+    if (form.accountInfo) d.accountInfo = form.accountInfo;
+    if (form.instructions) d.instructions = form.instructions;
   }
-  return Object.keys(d).length ? d : undefined
+  return Object.keys(d).length ? d : undefined;
 }
 
 async function handleSave() {
-  if (!validateForm()) return
+  if (!validateForm()) return;
 
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     const payload = {
       name: form.name.trim(),
       type: form.type,
       active: form.active,
       isDefault: form.isDefault,
-      details: buildDetails()
-    }
+      details: buildDetails(),
+    };
 
     if (isEditing.value && props.paymentMethod?.id) {
       await $fetch(`/api/payment-methods/${props.paymentMethod.id}`, {
-        method: 'PUT',
-        body: payload
-      })
+        method: "PUT",
+        body: payload,
+      });
       toast.add({
-        title: 'Atualizada com sucesso',
+        title: "Atualizada com sucesso",
         description: `"${form.name}" foi atualizada.`,
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
+        color: "success",
+        icon: "i-heroicons-check-circle",
+      });
     } else {
-      await $fetch('/api/payment-methods', {
-        method: 'POST',
-        body: { companyId: companyId.value, ...payload }
-      })
+      await $fetch("/api/payment-methods", {
+        method: "POST",
+        body: { companyId: companyId.value, ...payload },
+      });
       toast.add({
-        title: 'Cadastrada com sucesso',
+        title: "Cadastrada com sucesso",
         description: `"${form.name}" foi adicionada.`,
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
+        color: "success",
+        icon: "i-heroicons-check-circle",
+      });
     }
-    emit('saved')
-    isDrawerOpen.value = false
+    emit("saved");
+    isDrawerOpen.value = false;
   } catch (e: any) {
-    const errorData = e?.data
-    const err
-      = (errorData?.message ?? errorData?.statusMessage)
-        || e?.message
-        || 'Erro desconhecido'
+    const errorData = e?.data;
+    const err =
+      (errorData?.message ?? errorData?.statusMessage) ||
+      e?.message ||
+      "Erro desconhecido";
     toast.add({
-      title: 'Erro ao salvar',
+      title: "Erro ao salvar",
       description: err,
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
 }
 </script>
@@ -220,129 +220,144 @@ async function handleSave() {
     :ui="{ content: 'w-full', footer: 'p-0 block' }"
   >
     <template #body>
-      <div class="space-y-6">
-        <!-- Main Form -->
-        <div class="p-6 space-y-6">
-          <UFormField
-            label="Nome da Forma"
-            required
-            :error="formErrors.name"
-            description="Como será exibida nos orçamentos e vendas"
-          >
-            <UInput
-              v-model="form.name"
-              placeholder="Ex: Pix Empresa / Cartão de Crédito"
-              class="w-full"
-              size="lg"
-            />
-          </UFormField>
-
-          <UFormField
-            label="Tipo de Pagamento"
-            required
-            :error="formErrors.type"
-          >
-            <USelectMenu
-              v-model="form.type"
-              :items="TYPE_OPTS"
-              value-key="value"
-              label-key="label"
-              class="w-full"
-              size="lg"
+      <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
+        <form
+          id="payment-method-form"
+          class="flex flex-col gap-8"
+          @submit.prevent="handleSave"
+        >
+          <!-- ── Section: Geral ── -->
+          <div class="space-y-4">
+            <h4
+              class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <template #leading>
-                <UIcon
-                  :name="TYPE_CONFIG[form.type].icon"
-                  :class="TYPE_CONFIG[form.type].color"
-                />
-              </template>
-            </USelectMenu>
-          </UFormField>
+              <UIcon
+                name="i-heroicons-credit-card"
+                class="w-4 h-4 text-primary-500"
+              />
+              Geral
+            </h4>
+            <UFormField
+              label="Nome da Forma"
+              required
+              :error="formErrors.name"
+              description="Como será exibida nos orçamentos e vendas"
+            >
+              <UInput
+                v-model="form.name"
+                placeholder="Ex: Pix Empresa / Cartão de Crédito"
+                class="w-full"
+                size="lg"
+              />
+            </UFormField>
 
-          <!-- Status Toggle Row (Standard Design System) -->
-          <div
-            class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
-          >
-            <div class="flex items-center gap-3">
-              <!-- Icon Container -->
-              <div
-                :class="[
-                  'w-8 h-8 rounded-lg flex items-center justify-center',
-                  form.active
-                    ? 'bg-primary-100 dark:bg-primary-500/10 text-primary-500'
-                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'
-                ]"
+            <UFormField
+              label="Tipo de Pagamento"
+              required
+              :error="formErrors.type"
+            >
+              <USelectMenu
+                v-model="form.type"
+                :items="TYPE_OPTS"
+                value-key="value"
+                label-key="label"
+                class="w-full"
+                size="lg"
               >
-                <UIcon
-                  :name="
-                    form.active
-                      ? 'i-heroicons-check-circle'
-                      : 'i-heroicons-pause-circle'
-                  "
-                  class="w-4 h-4"
-                />
-              </div>
-              <!-- Label & Desc -->
-              <div>
-                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Status da Forma
-                </p>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                  {{
-                    form.active
-                      ? "Disponível para uso nos módulos"
-                      : "Oculta do sistema temporariamente"
-                  }}
-                </p>
-              </div>
-            </div>
-            <USwitch
-              v-model="form.active"
-              color="success"
-            />
+                <template #leading>
+                  <UIcon
+                    :name="TYPE_CONFIG[form.type].icon"
+                    :class="TYPE_CONFIG[form.type].color"
+                  />
+                </template>
+              </USelectMenu>
+            </UFormField>
           </div>
 
-          <!-- Default Toggle Row -->
+          <USeparator />
+
+          <!-- ── Section: Configurações ── -->
           <div
-            class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
+            class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 flex flex-col gap-6"
           >
-            <div class="flex items-center gap-3">
-              <div
-                :class="[
-                  'w-8 h-8 rounded-lg flex items-center justify-center',
-                  form.isDefault
-                    ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-500'
-                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'
-                ]"
-              >
-                <UIcon
-                  :name="
-                    form.isDefault ? 'i-heroicons-star' : 'i-heroicons-star'
-                  "
-                  class="w-4 h-4"
-                />
+            <h4
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+            >
+              <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
+              Configurações
+            </h4>
+
+            <div
+              class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  :class="[
+                    'w-8 h-8 rounded-lg flex items-center justify-center',
+                    form.active
+                      ? 'bg-primary-100 dark:bg-primary-500/10 text-primary-500'
+                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
+                  ]"
+                >
+                  <UIcon
+                    :name="
+                      form.active
+                        ? 'i-heroicons-check-circle'
+                        : 'i-heroicons-pause-circle'
+                    "
+                    class="w-4 h-4"
+                  />
+                </div>
+                <div>
+                  <p
+                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    Status da Forma
+                  </p>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    {{
+                      form.active
+                        ? "Disponível para uso nos módulos"
+                        : "Oculta do sistema temporariamente"
+                    }}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Padrão do Sistema
-                </p>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                  {{
+              <USwitch v-model="form.active" color="success" />
+            </div>
+
+            <div
+              class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  :class="[
+                    'w-8 h-8 rounded-lg flex items-center justify-center',
                     form.isDefault
-                      ? "Selecionada automaticamente em novas vendas"
-                      : "Não é a forma padrão"
-                  }}
-                </p>
+                      ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-500'
+                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
+                  ]"
+                >
+                  <UIcon name="i-heroicons-star" class="w-4 h-4" />
+                </div>
+                <div>
+                  <p
+                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    Padrão do Sistema
+                  </p>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    {{
+                      form.isDefault
+                        ? "Selecionada automaticamente em novas vendas"
+                        : "Não é a forma padrão"
+                    }}
+                  </p>
+                </div>
               </div>
+              <USwitch v-model="form.isDefault" color="success" />
             </div>
-            <USwitch
-              v-model="form.isDefault"
-              color="success"
-            />
           </div>
-
-          <!-- Divider -->
-          <div class="h-px bg-zinc-100 dark:bg-zinc-800" />
 
           <!-- Dynamic Details Sections (Expansível via Transition) -->
           <Transition
@@ -355,10 +370,10 @@ async function handleSave() {
           >
             <div
               v-if="showCardDetails"
-              class="space-y-4 overflow-hidden"
+              class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-4 overflow-hidden"
             >
               <h3
-                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
               >
                 Configurações do Cartão
               </h3>
@@ -396,10 +411,10 @@ async function handleSave() {
           >
             <div
               v-if="showPixDetails"
-              class="space-y-4 overflow-hidden"
+              class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-4 overflow-hidden"
             >
               <h3
-                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
               >
                 Dados do Pix
               </h3>
@@ -436,10 +451,10 @@ async function handleSave() {
           >
             <div
               v-if="showBankDetails"
-              class="space-y-4 overflow-hidden"
+              class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-4 overflow-hidden"
             >
               <h3
-                class="text-sm font-black uppercase tracking-widest text-zinc-400"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
               >
                 Dados Bancários / Instruções
               </h3>
@@ -472,39 +487,33 @@ async function handleSave() {
               </div>
             </div>
           </Transition>
-        </div>
+        </form>
       </div>
     </template>
 
     <template #footer>
-      <div class="border-t border-zinc-200 dark:border-zinc-800">
-        <div class="flex items-center gap-3 px-6 py-6">
-          <div class="flex-1 min-w-0">
-            <UButton
-              color="neutral"
-              variant="outline"
-              class="w-full"
-              @click="isDrawerOpen = false"
-            >
-              Cancelar
-            </UButton>
-          </div>
-          <div class="flex-1 min-w-0">
-            <UButton
-              color="primary"
-              class="w-full"
-              :loading="loadingSave"
-              :icon="
-                isEditing
-                  ? 'i-heroicons-check-circle'
-                  : 'i-heroicons-plus-circle'
-              "
-              @click="handleSave"
-            >
-              {{ isEditing ? "Salvar Alterações" : "Cadastrar Forma" }}
-            </UButton>
-          </div>
-        </div>
+      <div
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      >
+        <UButton
+          color="neutral"
+          variant="ghost"
+          class="flex-1 font-bold h-12 rounded-2xl"
+          @click="isDrawerOpen = false"
+        >
+          Cancelar
+        </UButton>
+        <UButton
+          color="primary"
+          class="flex-1 font-bold h-12 rounded-2xl shadow-lg shadow-primary-500/20"
+          :loading="loadingSave"
+          :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
+          type="submit"
+          form="payment-method-form"
+          size="lg"
+        >
+          {{ isEditing ? "Salvar Alterações" : "Confirmar Cadastro" }}
+        </UButton>
       </div>
     </template>
   </USlideover>

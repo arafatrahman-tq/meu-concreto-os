@@ -1,166 +1,166 @@
 <script setup lang="ts">
-import type { Material, MaterialType, MaterialUnit } from '~/types/inventory'
+import type { Material, MaterialType, MaterialUnit } from "~/types/inventory";
 
 const props = defineProps<{
-  open: boolean
-  material?: Material | null
-}>()
+  open: boolean;
+  material?: Material | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'saved'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
+}>();
 
-const { companyId } = useAuth()
-const toast = useToast()
+const { companyId } = useAuth();
+const toast = useToast();
 
 const isOpen = computed({
   get: () => props.open,
-  set: val => emit('update:open', val)
-})
+  set: (val) => emit("update:open", val),
+});
 
-const isEditing = computed(() => !!props.material)
-const loadingSave = ref(false)
+const isEditing = computed(() => !!props.material);
+const loadingSave = ref(false);
 
 const form = reactive({
-  name: '',
-  type: 'other' as MaterialType,
-  unit: 'kg' as MaterialUnit,
+  name: "",
+  type: "other" as MaterialType,
+  unit: "kg" as MaterialUnit,
   cost: 0, // BRL float
   stock: 0,
-  active: true
-})
+  active: true,
+});
 
-const formErrors = reactive<Record<string, string>>({})
+const formErrors = reactive<Record<string, string>>({});
 
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
-}
+};
 
 const validateForm = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
-    isValid = false
+    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
+    isValid = false;
   }
 
   if (!form.type) {
-    formErrors.type = 'Selecione o tipo de insumo.'
-    isValid = false
+    formErrors.type = "Selecione o tipo de insumo.";
+    isValid = false;
   }
 
   if (!form.unit) {
-    formErrors.unit = 'Selecione a unidade de medida.'
-    isValid = false
+    formErrors.unit = "Selecione a unidade de medida.";
+    isValid = false;
   }
 
   if (form.cost < 0) {
-    formErrors.cost = 'O custo não pode ser negativo.'
-    isValid = false
+    formErrors.cost = "O custo não pode ser negativo.";
+    isValid = false;
   }
 
   if (form.stock < 0) {
-    formErrors.stock = 'O estoque não pode ser negativo.'
-    isValid = false
+    formErrors.stock = "O estoque não pode ser negativo.";
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const resetForm = () => {
-  form.name = ''
-  form.type = 'other'
-  form.unit = 'kg'
-  form.cost = 0
-  form.stock = 0
-  form.active = true
-  clearErrors()
-}
+  form.name = "";
+  form.type = "other";
+  form.unit = "kg";
+  form.cost = 0;
+  form.stock = 0;
+  form.active = true;
+  clearErrors();
+};
 
 watch(
   () => props.material,
   (m) => {
     if (m) {
-      form.name = m.name
-      form.type = m.type
-      form.unit = m.unit
-      form.cost = m.cost / 100 // Convert cents to float
-      form.stock = m.stock
-      form.active = m.active
-      clearErrors()
+      form.name = m.name;
+      form.type = m.type;
+      form.unit = m.unit;
+      form.cost = m.cost / 100; // Convert cents to float
+      form.stock = m.stock;
+      form.active = m.active;
+      clearErrors();
     } else {
-      resetForm()
+      resetForm();
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const saveMaterial = async () => {
   if (!validateForm()) {
     toast.add({
-      title: 'Atenção',
-      description: 'Corrija os campos destacados em vermelho.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-    return
+      title: "Atenção",
+      description: "Corrija os campos destacados em vermelho.",
+      color: "error",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
   }
 
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     const payload = {
       ...form,
       companyId: companyId.value,
-      cost: Math.round(form.cost * 100) // Convert back to cents
-    }
+      cost: Math.round(form.cost * 100), // Convert back to cents
+    };
 
     if (isEditing.value && props.material) {
       await $fetch(`/api/materials/${props.material.id}`, {
-        method: 'PUT',
-        body: payload
-      })
-      toast.add({ title: 'Insumo atualizado!', color: 'success' })
+        method: "PUT",
+        body: payload,
+      });
+      toast.add({ title: "Insumo atualizado!", color: "success" });
     } else {
-      await $fetch('/api/materials', {
-        method: 'POST',
-        body: payload
-      })
-      toast.add({ title: 'Insumo criado!', color: 'success' })
+      await $fetch("/api/materials", {
+        method: "POST",
+        body: payload,
+      });
+      toast.add({ title: "Insumo criado!", color: "success" });
     }
 
-    isOpen.value = false
-    emit('saved')
+    isOpen.value = false;
+    emit("saved");
   } catch (error: any) {
     toast.add({
-      title: 'Erro ao salvar',
+      title: "Erro ao salvar",
       description: error.data?.message || error.message,
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 
 const TYPE_OPTS = [
-  { label: 'Cimento', value: 'cement' },
-  { label: 'Areia', value: 'sand' },
-  { label: 'Brita', value: 'stone' },
-  { label: 'Aditivo', value: 'additive' },
-  { label: 'Água', value: 'water' },
-  { label: 'Outro', value: 'other' }
-]
+  { label: "Cimento", value: "cement" },
+  { label: "Areia", value: "sand" },
+  { label: "Brita", value: "stone" },
+  { label: "Aditivo", value: "additive" },
+  { label: "Água", value: "water" },
+  { label: "Outro", value: "other" },
+];
 
 const UNIT_OPTS = [
-  { label: 'Quilo (kg)', value: 'kg' },
-  { label: 'Tonelada (ton)', value: 'ton' },
-  { label: 'Litro (l)', value: 'l' },
-  { label: 'Metro Cúbico (m³)', value: 'm3' }
-]
+  { label: "Quilo (kg)", value: "kg" },
+  { label: "Tonelada (ton)", value: "ton" },
+  { label: "Litro (l)", value: "l" },
+  { label: "Metro Cúbico (m³)", value: "m3" },
+];
 </script>
 
 <template>
@@ -179,7 +179,7 @@ const UNIT_OPTS = [
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
         <form
           id="material-form"
-          class="flex flex-col gap-6"
+          class="flex flex-col gap-8"
           @submit.prevent="saveMaterial"
         >
           <!-- ── Section: Identificação ── -->
@@ -187,13 +187,10 @@ const UNIT_OPTS = [
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon
-                name="i-heroicons-cube"
-                class="w-4 h-4 text-primary-500"
-              />
+              <UIcon name="i-heroicons-cube" class="w-4 h-4 text-primary-500" />
               Identificação
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <UFormField
                 label="Nome do Insumo"
                 required
@@ -205,14 +202,11 @@ const UNIT_OPTS = [
                   placeholder="Ex: Cimento CP II"
                   icon="i-heroicons-cube"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
 
-              <UFormField
-                label="Tipo"
-                required
-                :error="formErrors.type"
-              >
+              <UFormField label="Tipo" required :error="formErrors.type">
                 <USelect
                   v-model="form.type"
                   :items="TYPE_OPTS"
@@ -220,14 +214,11 @@ const UNIT_OPTS = [
                   value-key="value"
                   icon="i-heroicons-square-3-stack-3d"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
 
-              <UFormField
-                label="Unidade"
-                required
-                :error="formErrors.unit"
-              >
+              <UFormField label="Unidade" required :error="formErrors.unit">
                 <USelect
                   v-model="form.unit"
                   :items="UNIT_OPTS"
@@ -235,6 +226,7 @@ const UNIT_OPTS = [
                   value-key="value"
                   icon="i-heroicons-scale"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
 
@@ -251,6 +243,7 @@ const UNIT_OPTS = [
                   placeholder="0.00"
                   icon="i-heroicons-banknotes"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
 
@@ -267,6 +260,7 @@ const UNIT_OPTS = [
                   placeholder="0"
                   icon="i-heroicons-cube"
                   class="w-full"
+                  size="lg"
                 >
                   <template #trailing>
                     {{ form.unit }}
@@ -279,20 +273,16 @@ const UNIT_OPTS = [
           <USeparator />
 
           <!-- ── Section: Status ── -->
-          <div class="space-y-4">
+          <div
+            class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 flex flex-col gap-6"
+          >
             <h4
-              class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
             >
-              <UIcon
-                name="i-heroicons-adjustments-horizontal"
-                class="w-4 h-4 text-primary-500"
-              />
+              <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
               Configurações
             </h4>
-            <UFormField
-              label="Status do Insumo"
-              class="col-span-full"
-            >
+            <UFormField label="Status do Insumo" class="col-span-full">
               <div
                 class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
               >
@@ -317,10 +307,7 @@ const UNIT_OPTS = [
                     </p>
                   </div>
                 </div>
-                <USwitch
-                  v-model="form.active"
-                  color="success"
-                />
+                <USwitch v-model="form.active" color="success" />
               </div>
             </UFormField>
           </div>
@@ -329,27 +316,28 @@ const UNIT_OPTS = [
     </template>
 
     <template #footer>
-      <div class="p-6 border-t border-zinc-200 dark:border-zinc-800">
-        <div class="flex items-center gap-3">
-          <UButton
-            color="neutral"
-            variant="outline"
-            class="flex-1"
-            @click="isOpen = false"
-          >
-            Cancelar
-          </UButton>
-          <UButton
-            color="primary"
-            class="flex-1"
-            :loading="loadingSave"
-            :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
-            type="submit"
-            form="material-form"
-          >
-            {{ isEditing ? "Salvar Alterações" : "Criar Insumo" }}
-          </UButton>
-        </div>
+      <div
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      >
+        <UButton
+          color="neutral"
+          variant="ghost"
+          class="flex-1 font-bold h-12 rounded-2xl"
+          @click="isOpen = false"
+        >
+          Cancelar
+        </UButton>
+        <UButton
+          color="primary"
+          class="flex-1 font-bold h-12 rounded-2xl shadow-lg shadow-primary-500/20"
+          :loading="loadingSave"
+          :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
+          type="submit"
+          form="material-form"
+          size="lg"
+        >
+          {{ isEditing ? "Salvar Alterações" : "Confirmar Cadastro" }}
+        </UButton>
       </div>
     </template>
   </USlideover>

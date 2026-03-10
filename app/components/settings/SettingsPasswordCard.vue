@@ -1,82 +1,82 @@
 <script setup lang="ts">
 const props = defineProps<{
-  userId: number | undefined
-}>()
+  userId: number | undefined;
+}>();
 
-const toast = useToast()
+const toast = useToast();
 
 const passwordForm = reactive({
-  current: '',
-  newPass: '',
-  confirm: ''
-})
+  current: "",
+  newPass: "",
+  confirm: "",
+});
 
-const passwordErrors = reactive<Record<string, string>>({})
+const passwordErrors = reactive<Record<string, string>>({});
 
 const clearErrors = () => {
-  for (const key in passwordErrors) delete passwordErrors[key]
-}
+  for (const key in passwordErrors) delete passwordErrors[key];
+};
 
-const showCurrentPass = ref(false)
-const showNewPass = ref(false)
-const loading = ref(false)
+const showCurrentPass = ref(false);
+const showNewPass = ref(false);
+const loading = ref(false);
 
 const validate = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!passwordForm.current) {
-    passwordErrors.current = 'Informe a senha atual.'
-    isValid = false
+    passwordErrors.current = "Informe a senha atual.";
+    isValid = false;
   }
 
   if (passwordForm.newPass.length < 6) {
-    passwordErrors.newPass = 'A nova senha deve ter pelo menos 6 caracteres.'
-    isValid = false
+    passwordErrors.newPass = "A nova senha deve ter pelo menos 6 caracteres.";
+    isValid = false;
   }
 
   if (passwordForm.newPass !== passwordForm.confirm) {
-    passwordErrors.confirm = 'As senhas não conferem.'
-    isValid = false
+    passwordErrors.confirm = "As senhas não conferem.";
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const handleUpdate = async () => {
-  if (!validate()) return
-  if (!props.userId) return
+  if (!validate()) return;
+  if (!props.userId) return;
 
-  loading.value = true
+  loading.value = true;
   try {
     await $fetch<{ ok: boolean }>(`/api/users/${props.userId}/password`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: {
         currentPassword: passwordForm.current,
-        newPassword: passwordForm.newPass
-      }
-    })
+        newPassword: passwordForm.newPass,
+      },
+    });
     toast.add({
-      title: 'Senha alterada',
-      description: 'Sua senha foi atualizada com sucesso.',
-      color: 'success',
-      icon: 'i-heroicons-check-circle'
-    })
-    passwordForm.current = ''
-    passwordForm.newPass = ''
-    passwordForm.confirm = ''
+      title: "Senha alterada",
+      description: "Sua senha foi atualizada com sucesso.",
+      color: "success",
+      icon: "i-heroicons-check-circle",
+    });
+    passwordForm.current = "";
+    passwordForm.newPass = "";
+    passwordForm.confirm = "";
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro ao alterar senha',
-      description: err?.data?.message ?? err?.message ?? 'Tente novamente.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro ao alterar senha",
+      description: err?.data?.message ?? err?.message ?? "Tente novamente.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -105,11 +105,7 @@ const handleUpdate = async () => {
     </template>
 
     <div class="space-y-4">
-      <UFormField
-        label="Senha atual"
-        required
-        :error="passwordErrors.current"
-      >
+      <UFormField label="Senha atual" required :error="passwordErrors.current">
         <UInput
           v-model="passwordForm.current"
           :type="showCurrentPass ? 'text' : 'password'"
@@ -126,6 +122,7 @@ const handleUpdate = async () => {
               color="neutral"
               variant="ghost"
               size="sm"
+              class="h-11 w-11"
               @click="showCurrentPass = !showCurrentPass"
             />
           </template>
@@ -133,11 +130,7 @@ const handleUpdate = async () => {
       </UFormField>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField
-          label="Nova senha"
-          required
-          :error="passwordErrors.newPass"
-        >
+        <UFormField label="Nova senha" required :error="passwordErrors.newPass">
           <UInput
             v-model="passwordForm.newPass"
             :type="showNewPass ? 'text' : 'password'"
@@ -154,6 +147,7 @@ const handleUpdate = async () => {
                 color="neutral"
                 variant="ghost"
                 size="sm"
+                class="h-11 w-11"
                 @click="showNewPass = !showNewPass"
               />
             </template>

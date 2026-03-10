@@ -2,48 +2,55 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus
-} from '~/types/transactions'
+  TransactionStatus,
+} from "~/types/transactions";
 
 const props = defineProps<{
-  transactions: Transaction[]
-  page: number
-  pageSize: number
+  transactions: Transaction[];
+  page: number;
+  pageSize: number;
   statusConfig: Record<
     TransactionStatus,
-    { label: string, color: string, icon: string }
-  >
+    { label: string; color: string; icon: string }
+  >;
   typeConfig: Record<
     TransactionType,
-    { label: string, color: string, icon: string, sign: string }
-  >
+    { label: string; color: string; icon: string; sign: string }
+  >;
   statusActions: Record<
     TransactionStatus,
-    { next: TransactionStatus, label: string }[]
-  >
-}>()
+    { next: TransactionStatus; label: string }[]
+  >;
+}>();
 
-const emit = defineEmits(['edit', 'updateStatus', 'delete', 'update:page'])
+const emit = defineEmits(["edit", "updateStatus", "delete", "update:page"]);
 
 const currentPage = computed({
   get: () => props.page,
-  set: v => emit('update:page', v)
-})
+  set: (v) => emit("update:page", v),
+});
 
 const totalPages = computed(() =>
-  Math.ceil(props.transactions.length / props.pageSize)
-)
+  Math.ceil(props.transactions.length / props.pageSize),
+);
 
 const formatCurrency = (cents: number) =>
-  new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(cents / 100)
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(cents / 100);
 
 const formatDate = (v: string | number | null | undefined) =>
   v
-    ? new Intl.DateTimeFormat('pt-BR').format(new Date(v as string | number))
-    : '—'
+    ? new Intl.DateTimeFormat("pt-BR").format(new Date(v as string | number))
+    : "—";
+
+const getVolume = (sale: any) => {
+  if (!sale || !sale.items) return 0;
+  return sale.items
+    .filter((i: any) => i.unit === "m3")
+    .reduce((acc: number, i: any) => acc + (i.quantity || 0), 0);
+};
 </script>
 
 <template>
@@ -51,7 +58,7 @@ const formatDate = (v: string | number | null | undefined) =>
     :ui="{
       body: 'p-0 sm:p-0',
       header: 'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
+      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
@@ -120,12 +127,14 @@ const formatDate = (v: string | number | null | undefined) =>
               <div class="flex flex-col gap-1">
                 <span
                   class="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-primary-600 transition-colors"
-                >{{ t.description }}</span>
+                  >{{ t.description }}</span
+                >
                 <div class="flex items-center gap-2">
                   <span
                     v-if="t.category"
                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                  >{{ t.category }}</span>
+                    >{{ t.category }}</span
+                  >
                   <span
                     v-if="t.sale"
                     class="text-[11px] font-bold text-zinc-400"
@@ -136,6 +145,19 @@ const formatDate = (v: string | number | null | undefined) =>
                     />
                     {{ t.sale.customerName }}
                   </span>
+                  <div
+                    v-if="t.sale && getVolume(t.sale) > 0"
+                    class="flex items-center gap-1.5"
+                  >
+                    <div
+                      class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"
+                    />
+                    <span
+                      class="text-[10px] font-black uppercase tracking-wider text-primary-500"
+                    >
+                      {{ getVolume(t.sale) }} m³
+                    </span>
+                  </div>
                 </div>
               </div>
             </td>
@@ -146,12 +168,13 @@ const formatDate = (v: string | number | null | undefined) =>
                     typeConfig[t.type].color === 'success'
                       ? 'bg-green-500'
                       : 'bg-red-500',
-                    'w-1.5 h-1.5 rounded-full'
+                    'w-1.5 h-1.5 rounded-full',
                   ]"
                 />
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-400"
-                >{{ typeConfig[t.type].label }}</span>
+                  >{{ typeConfig[t.type].label }}</span
+                >
               </div>
             </td>
             <td class="px-4 py-4 text-right">
@@ -179,30 +202,27 @@ const formatDate = (v: string | number | null | undefined) =>
               <div class="flex flex-col">
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-300"
-                >{{ formatDate(t.date) }}</span>
+                  >{{ formatDate(t.date) }}</span
+                >
                 <span
                   v-if="t.dueDate"
                   class="text-[10px] text-zinc-400 font-medium"
-                >Ven: {{ formatDate(t.dueDate) }}</span>
+                  >Ven: {{ formatDate(t.dueDate) }}</span
+                >
               </div>
             </td>
             <td class="px-4 py-4 hidden xl:table-cell">
-              <div
-                v-if="t.paymentMethod"
-                class="flex items-center gap-2"
-              >
+              <div v-if="t.paymentMethod" class="flex items-center gap-2">
                 <UIcon
                   name="i-lucide-credit-card"
                   class="w-3.5 h-3.5 text-zinc-400"
                 />
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight"
-                >{{ t.paymentMethod }}</span>
+                  >{{ t.paymentMethod }}</span
+                >
               </div>
-              <span
-                v-else
-                class="text-zinc-300 dark:text-zinc-700"
-              >—</span>
+              <span v-else class="text-zinc-300 dark:text-zinc-700">—</span>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-1 transition-all">
@@ -219,16 +239,16 @@ const formatDate = (v: string | number | null | undefined) =>
                     statusActions[t.status].map((a) => ({
                       label: a.label,
                       icon: statusConfig[a.next].icon,
-                      onSelect: () => emit('updateStatus', t, a.next)
+                      onSelect: () => emit('updateStatus', t, a.next),
                     })),
                     [
                       {
                         label: 'Excluir Lançamento',
                         icon: 'i-heroicons-trash',
                         color: 'error' as const,
-                        onSelect: () => emit('delete', t)
-                      }
-                    ]
+                        onSelect: () => emit('delete', t),
+                      },
+                    ],
                   ]"
                 >
                   <UButton
@@ -246,10 +266,7 @@ const formatDate = (v: string | number | null | undefined) =>
       </table>
     </div>
 
-    <template
-      v-if="totalPages > 1"
-      #footer
-    >
+    <template v-if="totalPages > 1" #footer>
       <div class="flex items-center justify-between">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
           Página {{ currentPage }} de {{ totalPages }}

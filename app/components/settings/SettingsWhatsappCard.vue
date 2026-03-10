@@ -1,47 +1,47 @@
 <script setup lang="ts">
 const props = defineProps<{
-  companyId: number | null
-  user: any
-  companyName?: string
-}>()
+  companyId: number | null;
+  user: any;
+  companyName?: string;
+}>();
 
-const toast = useToast()
+const toast = useToast();
 
 const { data: waData, refresh: refreshWA } = await useFetch<{
   settings: {
-    apiUrl: string
-    apiKey?: string | null
-    phoneNumber?: string | null
-    isConnected: boolean
-    alertsEnabled: boolean
-    reportsEnabled: boolean
-    quotePdfToSeller: boolean
-    quotePdfToCustomer: boolean
-    schedulesReminderEnabled: boolean
-    schedulesReminderLeadTimeHours: number
-    schedulesReminderRecipients: string[]
-    alertRecipients: string[]
-    reportRecipients: string[]
-    reportSchedule: 'daily' | 'weekly' | 'monthly'
-    isGlobal: boolean
-    useGlobal: boolean
-  }
-  isUsingGlobal: boolean
-}>(() => `/api/whatsapp/settings?companyId=${props.companyId}`)
+    apiUrl: string;
+    apiKey?: string | null;
+    phoneNumber?: string | null;
+    isConnected: boolean;
+    alertsEnabled: boolean;
+    reportsEnabled: boolean;
+    quotePdfToSeller: boolean;
+    quotePdfToCustomer: boolean;
+    schedulesReminderEnabled: boolean;
+    schedulesReminderLeadTimeHours: number;
+    schedulesReminderRecipients: string[];
+    alertRecipients: string[];
+    reportRecipients: string[];
+    reportSchedule: "daily" | "weekly" | "monthly";
+    isGlobal: boolean;
+    useGlobal: boolean;
+  };
+  isUsingGlobal: boolean;
+}>(() => `/api/whatsapp/settings?companyId=${props.companyId}`);
 
-const waSettings = computed(() => waData.value?.settings ?? null)
-const isUsingGlobal = computed(() => waData.value?.isUsingGlobal ?? false)
+const waSettings = computed(() => waData.value?.settings ?? null);
+const isUsingGlobal = computed(() => waData.value?.isUsingGlobal ?? false);
 
 const REPORT_SCHEDULE_OPTS = [
-  { label: 'Diário', value: 'daily' },
-  { label: 'Semanal', value: 'weekly' },
-  { label: 'Mensal', value: 'monthly' }
-]
+  { label: "Diário", value: "daily" },
+  { label: "Semanal", value: "weekly" },
+  { label: "Mensal", value: "monthly" },
+];
 
 const waForm = reactive({
-  apiUrl: 'http://localhost:3025',
-  apiKey: '',
-  phoneNumber: '',
+  apiUrl: "http://localhost:3025",
+  apiKey: "",
+  phoneNumber: "",
   alertsEnabled: false,
   reportsEnabled: false,
   quotePdfToSeller: false,
@@ -51,51 +51,51 @@ const waForm = reactive({
   schedulesReminderRecipients: [] as string[],
   alertRecipients: [] as string[],
   reportRecipients: [] as string[],
-  reportSchedule: 'daily',
+  reportSchedule: "daily",
   isGlobal: false,
-  useGlobal: false
-})
+  useGlobal: false,
+});
 
 watch(
   waSettings,
   (s) => {
-    if (!s) return
-    waForm.apiUrl = s.apiUrl ?? 'http://localhost:3025'
-    waForm.apiKey = s.apiKey ?? ''
-    waForm.phoneNumber = s.phoneNumber ?? ''
-    waForm.alertsEnabled = s.alertsEnabled ?? false
-    waForm.reportsEnabled = s.reportsEnabled ?? false
-    waForm.quotePdfToSeller = s.quotePdfToSeller ?? false
-    waForm.quotePdfToCustomer = s.quotePdfToCustomer ?? false
-    waForm.schedulesReminderEnabled = s.schedulesReminderEnabled ?? false
-    waForm.schedulesReminderLeadTimeHours
-      = s.schedulesReminderLeadTimeHours ?? 24
+    if (!s) return;
+    waForm.apiUrl = s.apiUrl ?? "http://localhost:3025";
+    waForm.apiKey = s.apiKey ?? "";
+    waForm.phoneNumber = s.phoneNumber ?? "";
+    waForm.alertsEnabled = s.alertsEnabled ?? false;
+    waForm.reportsEnabled = s.reportsEnabled ?? false;
+    waForm.quotePdfToSeller = s.quotePdfToSeller ?? false;
+    waForm.quotePdfToCustomer = s.quotePdfToCustomer ?? false;
+    waForm.schedulesReminderEnabled = s.schedulesReminderEnabled ?? false;
+    waForm.schedulesReminderLeadTimeHours =
+      s.schedulesReminderLeadTimeHours ?? 24;
     waForm.schedulesReminderRecipients = [
-      ...(s.schedulesReminderRecipients ?? [])
-    ]
-    waForm.alertRecipients = [...(s.alertRecipients ?? [])]
-    waForm.reportRecipients = [...(s.reportRecipients ?? [])]
-    waForm.reportSchedule = s.reportSchedule ?? 'daily'
-    waForm.isGlobal = s.isGlobal ?? false
-    waForm.useGlobal = s.useGlobal ?? false
+      ...(s.schedulesReminderRecipients ?? []),
+    ];
+    waForm.alertRecipients = [...(s.alertRecipients ?? [])];
+    waForm.reportRecipients = [...(s.reportRecipients ?? [])];
+    waForm.reportSchedule = s.reportSchedule ?? "daily";
+    waForm.isGlobal = s.isGlobal ?? false;
+    waForm.useGlobal = s.useGlobal ?? false;
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
-const showApiKey = ref(false)
-const waTestNum = ref('')
-const loadingSave = ref(false)
-const loadingConnect = ref(false)
-const loadingDisconnect = ref(false)
-const loadingTestPing = ref(false)
-const loadingTestMsg = ref(false)
-const loadingReport = ref(false)
+const showApiKey = ref(false);
+const waTestNum = ref("");
+const loadingSave = ref(false);
+const loadingConnect = ref(false);
+const loadingDisconnect = ref(false);
+const loadingTestPing = ref(false);
+const loadingTestMsg = ref(false);
+const loadingReport = ref(false);
 
 const handleSave = async () => {
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     await $fetch(`/api/whatsapp/settings?companyId=${props.companyId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: {
         apiUrl: waForm.apiUrl,
         apiKey: waForm.apiKey,
@@ -106,7 +106,7 @@ const handleSave = async () => {
         quotePdfToCustomer: waForm.quotePdfToCustomer,
         schedulesReminderEnabled: waForm.schedulesReminderEnabled,
         schedulesReminderLeadTimeHours: Number(
-          waForm.schedulesReminderLeadTimeHours
+          waForm.schedulesReminderLeadTimeHours,
         ),
         schedulesReminderRecipients:
           waForm.schedulesReminderRecipients.filter(Boolean),
@@ -114,184 +114,184 @@ const handleSave = async () => {
         useGlobal: waForm.useGlobal,
         alertRecipients: waForm.alertRecipients.filter(Boolean),
         reportRecipients: waForm.reportRecipients.filter(Boolean),
-        reportSchedule: waForm.reportSchedule
-      }
-    })
+        reportSchedule: waForm.reportSchedule,
+      },
+    });
     toast.add({
-      title: 'WhatsApp salvo',
-      description: 'Configurações de WhatsApp atualizadas.',
-      color: 'success',
-      icon: 'i-heroicons-check-circle'
-    })
-    await refreshWA()
+      title: "WhatsApp salvo",
+      description: "Configurações de WhatsApp atualizadas.",
+      color: "success",
+      icon: "i-heroicons-check-circle",
+    });
+    await refreshWA();
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro ao salvar',
-      description: err?.data?.message ?? err?.message ?? 'Tente novamente.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro ao salvar",
+      description: err?.data?.message ?? err?.message ?? "Tente novamente.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 
 const handleConnect = async () => {
-  loadingConnect.value = true
+  loadingConnect.value = true;
   try {
-    const res = await $fetch<{ ok: boolean, message: string }>(
+    const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/connect?companyId=${props.companyId}`,
-      { method: 'POST' }
-    )
+      { method: "POST" },
+    );
     toast.add({
-      title: res.ok ? 'Conectado' : 'Atenção',
+      title: res.ok ? "Conectado" : "Atenção",
       description: res.message,
-      color: res.ok ? 'success' : 'warning',
+      color: res.ok ? "success" : "warning",
       icon: res.ok
-        ? 'i-heroicons-check-circle'
-        : 'i-heroicons-exclamation-triangle'
-    })
-    await refreshWA()
+        ? "i-heroicons-check-circle"
+        : "i-heroicons-exclamation-triangle",
+    });
+    await refreshWA();
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro',
-      description: err?.data?.message ?? err?.message ?? 'Falha ao conectar.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro",
+      description: err?.data?.message ?? err?.message ?? "Falha ao conectar.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingConnect.value = false
+    loadingConnect.value = false;
   }
-}
+};
 
 const handleDisconnect = async () => {
-  loadingDisconnect.value = true
+  loadingDisconnect.value = true;
   try {
     await $fetch(`/api/whatsapp/disconnect?companyId=${props.companyId}`, {
-      method: 'POST'
-    })
+      method: "POST",
+    });
     toast.add({
-      title: 'Desconectado',
-      description: 'WhatsApp desconectado com sucesso.',
-      color: 'info',
-      icon: 'i-heroicons-information-circle'
-    })
-    await refreshWA()
+      title: "Desconectado",
+      description: "WhatsApp desconectado com sucesso.",
+      color: "info",
+      icon: "i-heroicons-information-circle",
+    });
+    await refreshWA();
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro',
+      title: "Erro",
       description:
-        err?.data?.message ?? err?.message ?? 'Falha ao desconectar.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+        err?.data?.message ?? err?.message ?? "Falha ao desconectar.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingDisconnect.value = false
+    loadingDisconnect.value = false;
   }
-}
+};
 
 const handleTestPing = async () => {
-  loadingTestPing.value = true
+  loadingTestPing.value = true;
   try {
-    const res = await $fetch<{ ok: boolean, message: string }>(
+    const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/test?companyId=${props.companyId}`,
-      { method: 'POST', body: { mode: 'ping' } }
-    )
+      { method: "POST", body: { mode: "ping" } },
+    );
     toast.add({
-      title: res.ok ? 'API acessível' : 'Falha',
+      title: res.ok ? "API acessível" : "Falha",
       description: res.message,
-      color: res.ok ? 'success' : 'error',
+      color: res.ok ? "success" : "error",
       icon: res.ok
-        ? 'i-heroicons-check-circle'
-        : 'i-heroicons-exclamation-circle'
-    })
+        ? "i-heroicons-check-circle"
+        : "i-heroicons-exclamation-circle",
+    });
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro',
-      description: err?.data?.message ?? err?.message ?? 'Falha ao testar.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro",
+      description: err?.data?.message ?? err?.message ?? "Falha ao testar.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingTestPing.value = false
+    loadingTestPing.value = false;
   }
-}
+};
 
 const handleTestMessage = async () => {
   if (!waTestNum.value || !/^\+\d{5,15}$/.test(waTestNum.value)) {
     toast.add({
-      title: 'Número inválido',
-      description: 'Use o formato +5511999999999',
-      color: 'warning',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-    return
+      title: "Número inválido",
+      description: "Use o formato +5511999999999",
+      color: "warning",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
   }
-  loadingTestMsg.value = true
+  loadingTestMsg.value = true;
   try {
-    const res = await $fetch<{ ok: boolean, message: string }>(
+    const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/test?companyId=${props.companyId}`,
       {
-        method: 'POST',
-        body: { mode: 'message', toNumber: waTestNum.value }
-      }
-    )
+        method: "POST",
+        body: { mode: "message", toNumber: waTestNum.value },
+      },
+    );
     toast.add({
-      title: res.ok ? 'Mensagem enviada' : 'Falha',
+      title: res.ok ? "Mensagem enviada" : "Falha",
       description: res.message,
-      color: res.ok ? 'success' : 'error',
+      color: res.ok ? "success" : "error",
       icon: res.ok
-        ? 'i-heroicons-check-circle'
-        : 'i-heroicons-exclamation-circle'
-    })
+        ? "i-heroicons-check-circle"
+        : "i-heroicons-exclamation-circle",
+    });
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro',
-      description: err?.data?.message ?? err?.message ?? 'Falha ao enviar.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro",
+      description: err?.data?.message ?? err?.message ?? "Falha ao enviar.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingTestMsg.value = false
+    loadingTestMsg.value = false;
   }
-}
+};
 
 const handleSendReport = async () => {
-  loadingReport.value = true
+  loadingReport.value = true;
   try {
-    const res = await $fetch<{ ok: boolean, message: string }>(
+    const res = await $fetch<{ ok: boolean; message: string }>(
       `/api/whatsapp/report?companyId=${props.companyId}`,
       {
-        method: 'POST',
-        body: { companyName: props.companyName ?? 'Meu Concreto' }
-      }
-    )
+        method: "POST",
+        body: { companyName: props.companyName ?? "Meu Concreto" },
+      },
+    );
     toast.add({
-      title: res.ok ? 'Relatório enviado' : 'Falha',
+      title: res.ok ? "Relatório enviado" : "Falha",
       description: res.message,
-      color: res.ok ? 'success' : 'error',
+      color: res.ok ? "success" : "error",
       icon: res.ok
-        ? 'i-heroicons-check-circle'
-        : 'i-heroicons-exclamation-circle'
-    })
+        ? "i-heroicons-check-circle"
+        : "i-heroicons-exclamation-circle",
+    });
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro',
+      title: "Erro",
       description:
-        err?.data?.message ?? err?.message ?? 'Falha ao enviar relatório.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+        err?.data?.message ?? err?.message ?? "Falha ao enviar relatório.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingReport.value = false
+    loadingReport.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -370,11 +370,7 @@ const handleSendReport = async () => {
               </span>
             </p>
           </div>
-          <USwitch
-            v-model="waForm.isGlobal"
-            color="primary"
-            size="md"
-          />
+          <USwitch v-model="waForm.isGlobal" color="primary" size="md" />
         </div>
       </div>
 
@@ -388,10 +384,7 @@ const handleSendReport = async () => {
             <div
               class="p-2 rounded-lg bg-blue-100 dark:bg-blue-800/30 text-blue-600 dark:text-blue-300"
             >
-              <UIcon
-                name="i-heroicons-globe-alt"
-                class="w-5 h-5"
-              />
+              <UIcon name="i-heroicons-globe-alt" class="w-5 h-5" />
             </div>
             <div>
               <p class="text-sm font-bold text-blue-900 dark:text-blue-100">
@@ -405,11 +398,7 @@ const handleSendReport = async () => {
               </p>
             </div>
           </div>
-          <USwitch
-            v-model="waForm.useGlobal"
-            color="primary"
-            size="md"
-          />
+          <USwitch v-model="waForm.useGlobal" color="primary" size="md" />
         </div>
 
         <Transition
@@ -427,10 +416,7 @@ const handleSendReport = async () => {
             <p
               class="text-xs text-blue-800 dark:text-blue-200 flex items-center gap-2"
             >
-              <UIcon
-                name="i-heroicons-information-circle"
-                class="w-4 h-4"
-              />
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
               Configure abaixo a sua conexão própria.
             </p>
           </div>
@@ -441,10 +427,7 @@ const handleSendReport = async () => {
         class="grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity"
         :class="{ 'opacity-40 pointer-events-none': waForm.useGlobal }"
       >
-        <UFormField
-          label="URL da API"
-          class="md:col-span-2"
-        >
+        <UFormField label="URL da API" class="md:col-span-2">
           <UInput
             v-model="waForm.apiUrl"
             placeholder="http://localhost:3025"
@@ -472,6 +455,7 @@ const handleSendReport = async () => {
               :disabled="user?.role !== 'admin'"
               size="sm"
               :icon="showApiKey ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+              class="h-11 w-11"
               @click="showApiKey = !showApiKey"
             />
           </div>
@@ -499,6 +483,7 @@ const handleSendReport = async () => {
           variant="soft"
           icon="i-simple-icons-whatsapp"
           :loading="loadingConnect"
+          class="h-11 px-4"
           @click="handleConnect"
         >
           Conectar
@@ -509,6 +494,7 @@ const handleSendReport = async () => {
           icon="i-heroicons-power"
           :loading="loadingDisconnect"
           :disabled="!waSettings?.isConnected"
+          class="h-11 px-4"
           @click="handleDisconnect"
         >
           Desconectar
@@ -518,6 +504,7 @@ const handleSendReport = async () => {
           variant="ghost"
           icon="i-heroicons-wifi"
           :loading="loadingTestPing"
+          class="h-11 px-4"
           @click="handleTestPing"
         >
           Testar API
@@ -559,10 +546,7 @@ const handleSendReport = async () => {
                 </p>
               </div>
             </div>
-            <USwitch
-              v-model="waForm.alertsEnabled"
-              color="success"
-            />
+            <USwitch v-model="waForm.alertsEnabled" color="success" />
           </div>
 
           <Transition
@@ -573,10 +557,7 @@ const handleSendReport = async () => {
             leave-from-class="opacity-100 translate-y-0 max-h-[800px]"
             leave-to-class="opacity-0 -translate-y-2 max-h-0"
           >
-            <div
-              v-if="waForm.alertsEnabled"
-              class="space-y-3 overflow-hidden"
-            >
+            <div v-if="waForm.alertsEnabled" class="space-y-3 overflow-hidden">
               <div class="px-3 pt-2">
                 <p
                   class="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2"
@@ -601,6 +582,7 @@ const handleSendReport = async () => {
                       variant="ghost"
                       size="sm"
                       icon="i-heroicons-trash"
+                      class="h-11 w-11"
                       @click="waForm.alertRecipients.splice(i, 1)"
                     />
                   </div>
@@ -609,7 +591,7 @@ const handleSendReport = async () => {
                     variant="ghost"
                     size="sm"
                     icon="i-heroicons-plus"
-                    class="w-full justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl py-2"
+                    class="w-full h-11 justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl"
                     @click="waForm.alertRecipients.push('')"
                   >
                     Adicionar número
@@ -656,10 +638,7 @@ const handleSendReport = async () => {
                 </p>
               </div>
             </div>
-            <USwitch
-              v-model="waForm.reportsEnabled"
-              color="success"
-            />
+            <USwitch v-model="waForm.reportsEnabled" color="success" />
           </div>
 
           <Transition
@@ -670,10 +649,7 @@ const handleSendReport = async () => {
             leave-from-class="opacity-100 translate-y-0 max-h-[800px]"
             leave-to-class="opacity-0 -translate-y-2 max-h-0"
           >
-            <div
-              v-if="waForm.reportsEnabled"
-              class="space-y-4 overflow-hidden"
-            >
+            <div v-if="waForm.reportsEnabled" class="space-y-4 overflow-hidden">
               <div class="px-3 pt-2 space-y-4">
                 <UFormField label="Frequência do Envio">
                   <USelect
@@ -709,6 +685,7 @@ const handleSendReport = async () => {
                       variant="ghost"
                       size="sm"
                       icon="i-heroicons-trash"
+                      class="h-11 w-11"
                       @click="waForm.reportRecipients.splice(i, 1)"
                     />
                   </div>
@@ -717,7 +694,7 @@ const handleSendReport = async () => {
                     variant="ghost"
                     icon="i-heroicons-plus"
                     size="sm"
-                    class="w-full justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl py-2"
+                    class="w-full h-11 justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl"
                     @click="waForm.reportRecipients.push('')"
                   >
                     Adicionar número
@@ -729,7 +706,7 @@ const handleSendReport = async () => {
                   variant="soft"
                   icon="i-heroicons-paper-airplane"
                   :loading="loadingReport"
-                  class="w-full"
+                  class="w-full h-11"
                   @click="handleSendReport"
                 >
                   Enviar Relatório Agora
@@ -775,10 +752,7 @@ const handleSendReport = async () => {
                 </p>
               </div>
             </div>
-            <USwitch
-              v-model="waForm.quotePdfToSeller"
-              color="success"
-            />
+            <USwitch v-model="waForm.quotePdfToSeller" color="success" />
           </div>
 
           <div
@@ -802,10 +776,7 @@ const handleSendReport = async () => {
                 </p>
               </div>
             </div>
-            <USwitch
-              v-model="waForm.quotePdfToCustomer"
-              color="success"
-            />
+            <USwitch v-model="waForm.quotePdfToCustomer" color="success" />
           </div>
         </div>
       </div>
@@ -907,6 +878,7 @@ const handleSendReport = async () => {
                       variant="ghost"
                       icon="i-heroicons-trash"
                       size="sm"
+                      class="h-11 w-11"
                       @click="waForm.schedulesReminderRecipients.splice(i, 1)"
                     />
                   </div>
@@ -915,7 +887,7 @@ const handleSendReport = async () => {
                     variant="ghost"
                     icon="i-heroicons-plus"
                     size="sm"
-                    class="w-full justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl py-2"
+                    class="w-full h-11 justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl"
                     @click="waForm.schedulesReminderRecipients.push('')"
                   >
                     Adicionar número
@@ -966,8 +938,8 @@ const handleSendReport = async () => {
         <UButton
           color="primary"
           icon="i-heroicons-check"
-          size="md"
-          class="px-6 shadow-lg shadow-primary-500/20"
+          size="lg"
+          class="h-12 px-6 rounded-2xl font-bold shadow-lg shadow-primary-500/20"
           :loading="loadingSave"
           @click="handleSave"
         >

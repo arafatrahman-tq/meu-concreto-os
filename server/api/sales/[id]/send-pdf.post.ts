@@ -1,57 +1,57 @@
-import { eq } from 'drizzle-orm'
-import { sales } from '../../../database/schema'
-import { db } from '../../../utils/db'
+import { eq } from "drizzle-orm";
+import { sales } from "../../../database/schema";
+import { db } from "../../../utils/db";
 import {
   generateDocumentPDF,
   getPDFContext,
-  getPaymentMethodDetails
-} from '../../../utils/pdf'
-import { sendWhatsappPDF } from '../../../utils/whatsapp'
-import { requireCompanyAccess } from '../../../utils/session'
-import { createNotification } from '../../../utils/notifications'
+  getPaymentMethodDetails,
+} from "../../../utils/pdf";
+import { sendWhatsappPDF } from "../../../utils/whatsapp";
+import { requireCompanyAccess } from "../../../utils/session";
+import { createNotification } from "../../../utils/notifications";
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) throw createError({ statusCode: 400, statusMessage: 'ID required' })
-  const saleId = parseInt(id)
+  const id = getRouterParam(event, "id");
+  if (!id) throw createError({ statusCode: 400, statusMessage: "ID required" });
+  const saleId = parseInt(id);
 
   // 1. Fetch Sale with its items
   const sale = await db.query.sales.findFirst({
     where: eq(sales.id, saleId),
     with: {
-      items: true
-    }
-  })
+      items: true,
+    },
+  });
 
   if (!sale) {
-    throw createError({ statusCode: 404, statusMessage: 'Sale not found' })
+    throw createError({ statusCode: 404, statusMessage: "Sale not found" });
   }
 
   // 2. Auth Check
-  requireCompanyAccess(event, sale.companyId)
+  requireCompanyAccess(event, sale.companyId);
 
   // 3. Fetch Company, Seller, and WA Settings
   const { company, seller, waConfig } = await getPDFContext(
     sale.companyId,
-    sale.sellerId
-  )
+    sale.sellerId,
+  );
 
   if (!waConfig?.apiUrl || !waConfig?.phoneNumber) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'WhatsApp automation not configured'
-    })
+      statusMessage: "WhatsApp automation not configured",
+    });
   }
 
   // Resolve payment methods by stored name (same approach as Quotes)
   const paymentMethodToUse = await getPaymentMethodDetails(
     sale.companyId,
-    sale.paymentMethod ?? null
-  )
+    sale.paymentMethod ?? null,
+  );
 
   const paymentMethod2ToUse = sale.paymentMethod2
     ? await getPaymentMethodDetails(sale.companyId, sale.paymentMethod2)
-    : null
+    : null;
 
   // 4. Generate PDF
   const pdfBuffer = await generateDocumentPDF({
@@ -75,73 +75,74 @@ export default defineEventHandler(async (event) => {
       address: company.address,
       city: company.city,
       state: company.state,
-      logo: company.logo
+      logo: company.logo,
+      pdfNotes: company.pdfNotes,
     },
-    items: sale.items.map(i => ({
+    items: sale.items.map((i) => ({
       productName: i.productName,
       quantity: i.quantity,
-      unit: i.unit || 'm3',
+      unit: i.unit || "m3",
       unitPrice: i.unitPrice,
       totalPrice: i.totalPrice,
       fck: i.fck || null,
       slump: i.slump || null,
-      stoneSize: i.stoneSize || null
+      stoneSize: i.stoneSize || null,
     })),
     paymentMethod: paymentMethodToUse
       ? {
           name: paymentMethodToUse.name,
           type: paymentMethodToUse.type,
-          details: paymentMethodToUse.details
+          details: paymentMethodToUse.details,
         }
       : null,
     paymentMethod2: paymentMethod2ToUse
       ? {
           name: paymentMethod2ToUse.name,
           type: paymentMethod2ToUse.type,
-          details: paymentMethod2ToUse.details
+          details: paymentMethod2ToUse.details,
         }
       : null,
     seller: seller
       ? {
           name: seller.name,
           phone: seller.phone || null,
-          commissionRate: seller.commissionRate
+          commissionRate: seller.commissionRate,
         }
-      : null
-  })
+      : null,
+  });
 
   // 5. Config
   const config = {
     apiUrl: waConfig.apiUrl,
     apiKey: waConfig.apiKey,
-    phoneNumber: waConfig.phoneNumber
-  }
+    phoneNumber: waConfig.phoneNumber,
+  };
 
-  const fileName = `PedidoVenda_${String(sale.id).padStart(5, '0')}.pdf`
+  const fileName = `PedidoVenda_${String(sale.id).padStart(5, "0")}.pdf`;
   const caption = `📄 Pedido de Venda: ${
     sale.customerName
-  }\nTotal: ${new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(sale.total / 100)}`
+  }\nTotal: ${new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(sale.total / 100)}`;
 
   // 6. Collect Recipients based on settings
-  const recipients: string[] = []
-  const notifications: string[] = []
+  const recipients: string[] = [];
+  const notifications: string[] = [];
 
   if (waConfig.quotePdfToSeller) {
     if (seller?.phone) {
-      recipients.push(seller.phone)
+      recipients.push(seller.phone);
     } else {
-      notifications.push('Vendedor sem telefone configurado.')
+      notifications.push("Vendedor sem telefone configurado.");
     }
   }
 
   if (waConfig.quotePdfToCustomer) {
     if (sale.customerPhone) {
-      recipients.push(sale.customerPhone)
+      recipients.push(sale.customerPhone);
     } else {
-      notifications.push('Cliente sem telefone no pedido.')
+      notifications.push("Cliente sem telefone no pedido.");
     }
   }
 
@@ -150,11 +151,11 @@ export default defineEventHandler(async (event) => {
       success: false,
       message:
         notifications.length > 0
-          ? `Não foi possível enviar: ${notifications.join(' ')}`
-          : 'Envio de WhatsApp desativado nas configurações integradas (Vendedor/Cliente)',
+          ? `Não foi possível enviar: ${notifications.join(" ")}`
+          : "Envio de WhatsApp desativado nas configurações integradas (Vendedor/Cliente)",
       sent: [],
-      failed: notifications
-    }
+      failed: notifications,
+    };
   }
 
   // 7. Send
@@ -163,24 +164,24 @@ export default defineEventHandler(async (event) => {
     recipients,
     pdfBuffer,
     fileName,
-    caption
-  )
+    caption,
+  );
 
   // 8. System Notification
   if (results.sent.length > 0) {
     await createNotification({
       companyId: sale.companyId,
-      type: 'sale',
-      title: 'PDF de Pedido Enviado',
-      body: `Pedido #${sale.id} enviado para: ${results.sent.join(', ')}`,
-      icon: 'i-heroicons-paper-airplane',
-      link: '/vendas'
-    })
+      type: "sale",
+      title: "PDF de Pedido Enviado",
+      body: `Pedido #${sale.id} enviado para: ${results.sent.join(", ")}`,
+      icon: "i-heroicons-paper-airplane",
+      link: "/vendas",
+    });
   }
 
   return {
     success: results.sent.length > 0,
     sent: results.sent,
-    failed: results.failed
-  }
-})
+    failed: results.failed,
+  };
+});

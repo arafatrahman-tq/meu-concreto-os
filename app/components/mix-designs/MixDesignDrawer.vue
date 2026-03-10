@@ -1,179 +1,179 @@
 <script setup lang="ts">
-import type { MixDesign, MixDesignItem } from '~/types/mix-designs'
-import type { Material } from '~/types/inventory'
-import { typeConfig } from '~/types/inventory'
+import type { MixDesign, MixDesignItem } from "~/types/mix-designs";
+import type { Material } from "~/types/inventory";
+import { typeConfig } from "~/types/inventory";
 
 const props = defineProps<{
-  open: boolean
-  mixDesign?: MixDesign | null
-  materials: Material[]
-}>()
+  open: boolean;
+  mixDesign?: MixDesign | null;
+  materials: Material[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'saved'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
+}>();
 
-const { companyId } = useAuth()
-const toast = useToast()
+const { companyId } = useAuth();
+const toast = useToast();
 
 const isOpen = computed({
   get: () => props.open,
-  set: val => emit('update:open', val)
-})
+  set: (val) => emit("update:open", val),
+});
 
-const isEditing = computed(() => !!props.mixDesign)
-const loadingSave = ref(false)
+const isEditing = computed(() => !!props.mixDesign);
+const loadingSave = ref(false);
 
 const form = reactive({
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   fck: undefined as number | undefined,
   slump: undefined as number | undefined,
-  stoneSize: '',
-  items: [] as { materialId: number, quantity: number, tempId: string }[]
-})
+  stoneSize: "",
+  items: [] as { materialId: number; quantity: number; tempId: string }[],
+});
 
-const formErrors = reactive<Record<string, string>>({})
+const formErrors = reactive<Record<string, string>>({});
 
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
-}
+};
 
 const validateForm = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
-    isValid = false
+    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
+    isValid = false;
   }
 
   if (form.items.length === 0) {
     toast.add({
-      title: 'Traço Vazio',
-      description: 'Adicione pelo menos um insumo ao traço.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
-    isValid = false
+      title: "Traço Vazio",
+      description: "Adicione pelo menos um insumo ao traço.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
+    isValid = false;
   }
 
   form.items.forEach((item, index) => {
     if (!item.materialId) {
-      formErrors[`items_${index}_materialId`] = 'Selecione um insumo.'
-      isValid = false
+      formErrors[`items_${index}_materialId`] = "Selecione um insumo.";
+      isValid = false;
     }
     if (item.quantity <= 0) {
-      formErrors[`items_${index}_quantity`] = 'A Qtd deve ser maior que zero.'
-      isValid = false
+      formErrors[`items_${index}_quantity`] = "A Qtd deve ser maior que zero.";
+      isValid = false;
     }
-  })
+  });
 
-  return isValid
-}
+  return isValid;
+};
 
 const resetForm = () => {
-  form.name = ''
-  form.description = ''
-  form.fck = undefined
-  form.slump = undefined
-  form.stoneSize = ''
-  form.items = []
-  clearErrors()
-}
+  form.name = "";
+  form.description = "";
+  form.fck = undefined;
+  form.slump = undefined;
+  form.stoneSize = "";
+  form.items = [];
+  clearErrors();
+};
 
 watch(
   () => props.mixDesign,
   (m) => {
     if (m) {
-      form.name = m.name
-      form.description = m.description || ''
-      form.fck = m.fck || undefined
-      form.slump = m.slump || undefined
-      form.stoneSize = m.stoneSize || ''
-      form.items = m.items.map(i => ({
+      form.name = m.name;
+      form.description = m.description || "";
+      form.fck = m.fck || undefined;
+      form.slump = m.slump || undefined;
+      form.stoneSize = m.stoneSize || "";
+      form.items = m.items.map((i) => ({
         materialId: i.materialId,
         quantity: i.quantity,
-        tempId: Math.random().toString(36).substr(2, 9)
-      }))
-      clearErrors()
+        tempId: Math.random().toString(36).substr(2, 9),
+      }));
+      clearErrors();
     } else {
-      resetForm()
+      resetForm();
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const materialOptions = computed(() =>
-  props.materials.map(m => ({
+  props.materials.map((m) => ({
     label: m.name,
     value: m.id,
     materialType: m.type,
-    unit: m.unit
-  }))
-)
+    unit: m.unit,
+  })),
+);
 
 const getMaterialDetails = (id: number) =>
-  props.materials.find(m => m.id === id)
+  props.materials.find((m) => m.id === id);
 
 const newItem = reactive({
   materialId: undefined as number | undefined,
-  quantity: 0
-})
+  quantity: 0,
+});
 
 const addMaterialToMix = () => {
   if (!newItem.materialId || newItem.quantity <= 0) {
     toast.add({
-      title: 'Atenção',
-      description: 'Selecione um material e informe a quantidade.',
-      color: 'warning'
-    })
-    return
+      title: "Atenção",
+      description: "Selecione um material e informe a quantidade.",
+      color: "warning",
+    });
+    return;
   }
 
-  const existing = form.items.find(i => i.materialId === newItem.materialId)
+  const existing = form.items.find((i) => i.materialId === newItem.materialId);
   if (existing) {
-    existing.quantity += newItem.quantity
-    toast.add({ title: 'Quantidade atualizada', color: 'info' })
+    existing.quantity += newItem.quantity;
+    toast.add({ title: "Quantidade atualizada", color: "info" });
   } else {
     form.items.push({
       materialId: newItem.materialId,
       quantity: newItem.quantity,
-      tempId: Math.random().toString(36).substr(2, 9)
-    })
+      tempId: Math.random().toString(36).substr(2, 9),
+    });
   }
 
-  newItem.materialId = undefined
-  newItem.quantity = 0
-}
+  newItem.materialId = undefined;
+  newItem.quantity = 0;
+};
 
 const removeMaterialFromMix = (index: number) => {
-  form.items.splice(index, 1)
-}
+  form.items.splice(index, 1);
+};
 
 const calculateTotalCost = () => {
   return form.items.reduce((acc, item) => {
-    const mat = getMaterialDetails(item.materialId)
-    if (!mat) return acc
-    return acc + item.quantity * mat.cost
-  }, 0)
-}
+    const mat = getMaterialDetails(item.materialId);
+    if (!mat) return acc;
+    return acc + item.quantity * mat.cost;
+  }, 0);
+};
 
 const saveMixDesign = async () => {
   if (!validateForm()) {
     toast.add({
-      title: 'Atenção',
-      description: 'Corrija os campos destacados em vermelho.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-    return
+      title: "Atenção",
+      description: "Corrija os campos destacados em vermelho.",
+      color: "error",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
   }
 
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     const payload = {
       companyId: companyId.value,
@@ -182,38 +182,38 @@ const saveMixDesign = async () => {
       fck: form.fck,
       slump: form.slump,
       stoneSize: form.stoneSize,
-      items: form.items.map(i => ({
+      items: form.items.map((i) => ({
         materialId: i.materialId,
-        quantity: i.quantity
-      }))
-    }
+        quantity: i.quantity,
+      })),
+    };
 
     if (isEditing.value && props.mixDesign) {
       await $fetch(`/api/mix-designs/${props.mixDesign.id}`, {
-        method: 'PUT',
-        body: payload
-      })
-      toast.add({ title: 'Traço atualizado!', color: 'success' })
+        method: "PUT",
+        body: payload,
+      });
+      toast.add({ title: "Traço atualizado!", color: "success" });
     } else {
-      await $fetch('/api/mix-designs', {
-        method: 'POST',
-        body: payload
-      })
-      toast.add({ title: 'Traço criado!', color: 'success' })
+      await $fetch("/api/mix-designs", {
+        method: "POST",
+        body: payload,
+      });
+      toast.add({ title: "Traço criado!", color: "success" });
     }
 
-    isOpen.value = false
-    emit('saved')
+    isOpen.value = false;
+    emit("saved");
   } catch (error: any) {
     toast.add({
-      title: 'Erro ao salvar',
+      title: "Erro ao salvar",
       description: error.data?.message || error.message,
-      color: 'error'
-    })
+      color: "error",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -240,10 +240,7 @@ const saveMixDesign = async () => {
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon
-                name="i-heroicons-cube"
-                class="w-4 h-4 text-primary-500"
-              />
+              <UIcon name="i-heroicons-cube" class="w-4 h-4 text-primary-500" />
               Identificação
             </h4>
             <div class="grid grid-cols-1 gap-4">
@@ -257,10 +254,11 @@ const saveMixDesign = async () => {
                   placeholder="Ex: Traço 25MPa Convencional"
                   icon="i-heroicons-cube"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
 
-              <div class="grid grid-cols-3 gap-4">
+              <div class="grid grid-cols-3 gap-5">
                 <UFormField label="FCK (MPa)">
                   <UInput
                     v-model.number="form.fck"
@@ -268,6 +266,7 @@ const saveMixDesign = async () => {
                     placeholder="25"
                     icon="i-heroicons-chart-bar"
                     class="w-full"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Slump (cm)">
@@ -277,6 +276,7 @@ const saveMixDesign = async () => {
                     placeholder="10"
                     icon="i-heroicons-arrows-up-down"
                     class="w-full"
+                    size="lg"
                   />
                 </UFormField>
                 <UFormField label="Brita">
@@ -285,6 +285,7 @@ const saveMixDesign = async () => {
                     placeholder="Brita 1"
                     icon="i-heroicons-stop"
                     class="w-full"
+                    size="lg"
                   />
                 </UFormField>
               </div>
@@ -294,6 +295,7 @@ const saveMixDesign = async () => {
                   placeholder="Observações sobre a aplicação, características..."
                   :rows="3"
                   class="w-full"
+                  size="lg"
                 />
               </UFormField>
             </div>
@@ -302,21 +304,21 @@ const saveMixDesign = async () => {
           <USeparator />
 
           <!-- ── Section: Composição ── -->
-          <div class="space-y-4">
+          <div
+            class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 flex flex-col gap-6"
+          >
             <div class="flex items-center justify-between">
               <h4
-                class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
               >
-                <UIcon
-                  name="i-heroicons-beaker"
-                  class="w-4 h-4 text-primary-500"
-                />
+                <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
                 Composição
               </h4>
               <UBadge
                 color="neutral"
-                variant="soft"
+                variant="subtle"
                 size="sm"
+                class="font-black uppercase tracking-wider"
               >
                 Custo Est.: {{ formatCurrency(calculateTotalCost()) }}
               </UBadge>
@@ -324,7 +326,7 @@ const saveMixDesign = async () => {
 
             <!-- Add new item -->
             <div
-              class="p-4 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 space-y-3 shadow-inner"
+              class="p-4 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-white dark:bg-zinc-900 space-y-3"
             >
               <p
                 class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
@@ -340,6 +342,7 @@ const saveMixDesign = async () => {
                     label-key="label"
                     placeholder="Selecione um insumo..."
                     class="w-full"
+                    size="lg"
                   />
                 </div>
                 <div class="sm:col-span-3">
@@ -349,6 +352,7 @@ const saveMixDesign = async () => {
                     step="0.01"
                     placeholder="Qtd"
                     class="w-full"
+                    size="lg"
                   />
                 </div>
                 <div class="sm:col-span-2">
@@ -356,7 +360,7 @@ const saveMixDesign = async () => {
                     color="primary"
                     variant="solid"
                     icon="i-heroicons-plus"
-                    class="w-full flex justify-center py-2"
+                    class="w-full h-11 flex justify-center"
                     @click="addMaterialToMix"
                   />
                 </div>
@@ -364,14 +368,11 @@ const saveMixDesign = async () => {
             </div>
 
             <!-- List of added items -->
-            <div
-              v-if="form.items.length > 0"
-              class="flex flex-col gap-2"
-            >
+            <div v-if="form.items.length > 0" class="flex flex-col gap-2">
               <div
                 v-for="(item, idx) in form.items"
                 :key="item.tempId"
-                class="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 group hover:border-primary-200 dark:hover:border-primary-800 transition-colors relative"
+                class="flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/80 dark:bg-zinc-900 group hover:border-primary-200 dark:hover:border-primary-800 transition-colors relative"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-3">
@@ -379,7 +380,13 @@ const saveMixDesign = async () => {
                       class="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700"
                     >
                       <UIcon
-                        :name="getMaterialDetails(item.materialId)?.type ? typeConfig[getMaterialDetails(item.materialId)!.type].icon : 'i-heroicons-archive-box'"
+                        :name="
+                          getMaterialDetails(item.materialId)?.type
+                            ? typeConfig[
+                                getMaterialDetails(item.materialId)!.type
+                              ].icon
+                            : 'i-heroicons-archive-box'
+                        "
                         class="h-5 w-5 text-zinc-500"
                       />
                     </div>
@@ -388,8 +395,8 @@ const saveMixDesign = async () => {
                         class="text-sm font-bold text-zinc-900 dark:text-white"
                       >
                         {{
-                          getMaterialDetails(item.materialId)?.name
-                            || "Insumo removido"
+                          getMaterialDetails(item.materialId)?.name ||
+                          "Insumo removido"
                         }}
                       </span>
                       <span
@@ -407,7 +414,8 @@ const saveMixDesign = async () => {
                     color="error"
                     variant="ghost"
                     icon="i-heroicons-trash"
-                    size="xs"
+                    size="md"
+                    class="rounded-xl w-11 h-11 flex items-center justify-center p-0"
                     @click="removeMaterialFromMix(idx)"
                   />
                 </div>
@@ -426,6 +434,7 @@ const saveMixDesign = async () => {
                       value-key="value"
                       disabled
                       class="w-full"
+                      size="lg"
                     />
                   </UFormField>
                   <UFormField
@@ -439,6 +448,7 @@ const saveMixDesign = async () => {
                       step="0.01"
                       min="0"
                       class="w-full"
+                      size="lg"
                     >
                       <template #trailing>
                         {{ getMaterialDetails(item.materialId)?.unit }}
@@ -455,25 +465,26 @@ const saveMixDesign = async () => {
 
     <template #footer>
       <div
-        class="flex items-center gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800"
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
       >
         <UButton
           color="neutral"
-          variant="outline"
-          class="flex-1"
+          variant="ghost"
+          class="flex-1 font-bold h-12 rounded-2xl"
           @click="isOpen = false"
         >
           Cancelar
         </UButton>
         <UButton
           color="primary"
-          class="flex-1"
+          class="flex-1 font-bold h-12 rounded-2xl shadow-lg shadow-primary-500/20"
           :loading="loadingSave"
           :icon="isEditing ? 'i-heroicons-check' : 'i-heroicons-plus'"
           type="submit"
           form="mix-design-form"
+          size="lg"
         >
-          {{ isEditing ? "Salvar Alterações" : "Criar Traço" }}
+          {{ isEditing ? "Salvar Alterações" : "Confirmar Cadastro" }}
         </UButton>
       </div>
     </template>

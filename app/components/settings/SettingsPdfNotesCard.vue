@@ -1,96 +1,97 @@
 <script setup lang="ts">
 const props = defineProps<{
-  companyId: number | null
-}>()
+  companyId: number | null;
+}>();
 
-const emit = defineEmits(['updated'])
+const emit = defineEmits(["updated"]);
 
-const toast = useToast()
+const toast = useToast();
 
 const {
   data: companyData,
   pending: loadingCompany,
-  refresh: refreshCompany
+  refresh: refreshCompany,
 } = await useFetch<{
   company: {
-    pdfNotes?: string | null
-  }
-}>(() => `/api/companies/${props.companyId}`)
+    pdfNotes?: string | null;
+  };
+}>(() => `/api/companies/${props.companyId}`);
 
-const companyRaw = computed(() => companyData.value?.company ?? null)
+const companyRaw = computed(() => companyData.value?.company ?? null);
 
 const pdfNotesForm = reactive({
-  pdfNotes: ''
-})
+  pdfNotes: "",
+});
 
-const companyErrors = reactive<Record<string, string>>({})
+const companyErrors = reactive<Record<string, string>>({});
 
 const clearErrors = () => {
-  for (const key in companyErrors) delete companyErrors[key]
-}
+  for (const key in companyErrors) delete companyErrors[key];
+};
 
 watch(
   companyRaw,
   (c) => {
-    if (!c) return
-    pdfNotesForm.pdfNotes = c.pdfNotes ?? ''
+    if (!c) return;
+    pdfNotesForm.pdfNotes = c.pdfNotes ?? "";
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const validate = (): boolean => {
-  clearErrors()
+  clearErrors();
   // Validação opcional - campo pode ser vazio
   if (pdfNotesForm.pdfNotes && pdfNotesForm.pdfNotes.length > 5000) {
-    companyErrors.pdfNotes = 'As observações não podem ultrapassar 5000 caracteres.'
-    return false
+    companyErrors.pdfNotes =
+      "As observações não podem ultrapassar 5000 caracteres.";
+    return false;
   }
-  return true
-}
+  return true;
+};
 
-const loadingSave = ref(false)
+const loadingSave = ref(false);
 
 const handleSave = async () => {
-  if (!validate()) return
+  if (!validate()) return;
 
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     await $fetch(`/api/companies/${props.companyId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: {
-        pdfNotes: pdfNotesForm.pdfNotes.trim() || null
-      }
-    })
+        pdfNotes: pdfNotesForm.pdfNotes.trim() || null,
+      },
+    });
     toast.add({
-      title: 'Observações salvas',
-      description: 'As observações do PDF foram atualizadas com sucesso.',
-      color: 'success',
-      icon: 'i-heroicons-check-circle'
-    })
-    await refreshCompany()
-    emit('updated')
+      title: "Observações salvas",
+      description: "As observações do PDF foram atualizadas com sucesso.",
+      color: "success",
+      icon: "i-heroicons-check-circle",
+    });
+    await refreshCompany();
+    emit("updated");
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }, message?: string }
+    const err = e as { data?: { message?: string }; message?: string };
     toast.add({
-      title: 'Erro ao salvar',
-      description: err?.data?.message ?? err?.message ?? 'Tente novamente.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro ao salvar",
+      description: err?.data?.message ?? err?.message ?? "Tente novamente.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 
 // Preview do conteúdo em HTML
-const showPreview = ref(false)
+const showPreview = ref(false);
 </script>
 
 <template>
   <UCard
     :ui="{
       header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      body: 'p-4 sm:p-6'
+      body: 'p-4 sm:p-6',
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
   >
@@ -98,7 +99,9 @@ const showPreview = ref(false)
       <div class="flex items-center gap-3">
         <div class="w-2 h-6 bg-primary-500 rounded-full" />
         <div>
-          <h2 class="font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+          <h2
+            class="font-black text-zinc-900 dark:text-white uppercase tracking-tight"
+          >
             Observações do PDF
           </h2>
           <p class="text-xs text-zinc-400 mt-0.5">
@@ -108,17 +111,11 @@ const showPreview = ref(false)
       </div>
     </template>
 
-    <div
-      v-if="loadingCompany"
-      class="space-y-4 p-1"
-    >
+    <div v-if="loadingCompany" class="space-y-4 p-1">
       <USkeleton class="h-32 rounded-xl" />
     </div>
 
-    <div
-      v-else
-      class="space-y-4"
-    >
+    <div v-else class="space-y-4">
       <!-- Info alert -->
       <UAlert
         color="info"
@@ -152,11 +149,12 @@ const showPreview = ref(false)
         <UButton
           color="neutral"
           variant="ghost"
-          size="xs"
+          size="lg"
           :icon="showPreview ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+          class="rounded-xl px-6 font-bold"
           @click="showPreview = !showPreview"
         >
-          {{ showPreview ? 'Ocultar preview' : 'Ver preview' }}
+          {{ showPreview ? "Ocultar preview" : "Ver preview" }}
         </UButton>
       </div>
 
@@ -173,23 +171,29 @@ const showPreview = ref(false)
           v-if="showPreview"
           class="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700"
         >
-          <p class="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2">
+          <p
+            class="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2"
+          >
             Preview no PDF:
           </p>
-          <div class="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono">
-            {{ pdfNotesForm.pdfNotes || '(Sem observações)' }}
+          <div
+            class="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono"
+          >
+            {{ pdfNotesForm.pdfNotes || "(Sem observações)" }}
           </div>
         </div>
       </Transition>
 
       <!-- Save -->
-      <div class="flex justify-end pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800">
+      <div
+        class="flex justify-end pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800"
+      >
         <UButton
           color="primary"
           size="lg"
           icon="i-heroicons-check"
           :loading="loadingSave"
-          class="h-12 rounded-2xl font-bold shadow-lg shadow-primary-500/20"
+          class="rounded-xl px-6 font-bold shadow-lg shadow-primary-500/20"
           @click="handleSave"
         >
           Salvar Observações

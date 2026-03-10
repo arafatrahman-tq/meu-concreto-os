@@ -1,26 +1,27 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
-useSeoMeta({ title: 'Configurações | Meu Concreto' })
+definePageMeta({ layout: "default" });
+useSeoMeta({ title: "Configurações | Meu Concreto" });
 
-const { user, companyId } = useAuth()
+const { user, companyId } = useAuth();
 
 // Small fetch to get company name for the account card
-const { data: companyBasicData, refresh: refreshBasicCompany } = await useFetch<{
-  company: { name: string, city: string | null, state: string | null }
-}>(() => `/api/companies/${companyId.value}`)
+const { data: companyBasicData, refresh: refreshBasicCompany } =
+  await useFetch<{
+    company: { name: string; city: string | null; state: string | null };
+  }>(() => `/api/companies/${companyId.value}`);
 
-const companyBasic = computed(() => companyBasicData.value?.company ?? null)
+const companyBasic = computed(() => companyBasicData.value?.company ?? null);
 </script>
 
 <template>
-  <div class="p-6 lg:p-8 space-y-6">
+  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
     <!-- ── Page Header ── -->
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-2xl font-black text-zinc-900 dark:text-white">
           Configurações
         </h1>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
           Gerencie os dados da empresa, seu perfil e preferências do sistema.
         </p>
       </div>
@@ -37,14 +38,10 @@ const companyBasic = computed(() => companyBasicData.value?.company ?? null)
         />
 
         <!-- ── 2. Meu Perfil ── -->
-        <SettingsProfileCard
-          :user="user"
-        />
+        <SettingsProfileCard :user="user" />
 
         <!-- ── 2b. Alterar Senha ── -->
-        <SettingsPasswordCard
-          :user-id="user?.id"
-        />
+        <SettingsPasswordCard :user-id="user?.id" />
 
         <!-- ── 3. Observações do PDF ── -->
         <SettingsPdfNotesCard
@@ -74,9 +71,7 @@ const companyBasic = computed(() => companyBasicData.value?.company ?? null)
         <SettingsAppearanceCard />
 
         <!-- ── 5. Info do Sistema ── -->
-        <SettingsSystemCard
-          :company-id="companyId"
-        />
+        <SettingsSystemCard :company-id="companyId" />
       </div>
     </div>
   </div>
