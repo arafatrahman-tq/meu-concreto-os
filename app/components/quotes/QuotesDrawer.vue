@@ -88,19 +88,28 @@ const isManagerOrAdmin = computed(
   () => user.value?.role === "admin" || user.value?.role === "manager",
 );
 const isRestrictedEdit = computed(
-  () => props.isEditing && !isManagerOrAdmin.value,
+  () =>
+    props.isEditing && !isManagerOrAdmin.value && props.form.status !== "draft",
 );
 </script>
 
 <template>
   <USlideover
+const statusLabel = computed(() => {
+  const status = STATUS_OPTS.find((s: any) => s.value === props.form.status);
+  return status?.label || props.form.status;
+});
+
+const restrictedStatusMessage = computed(() =>
+  `No status ${statusLabel.value}, você pode editar apenas dados operacionais (cliente, logística, validade, pagamento e observações). Itens, desconto e status exigem perfil gerente/admin.`,
+);
     v-model:open="isDrawerOpen"
     :title="isEditing ? 'Editar Orçamento' : 'Novo Orçamento'"
     side="right"
     :ui="{ footer: 'p-0 block' }"
   >
     <template #body>
-      <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
+            :description="restrictedStatusMessage"
         <!-- ── Section: Cliente ── -->
         <div class="space-y-4">
           <h4

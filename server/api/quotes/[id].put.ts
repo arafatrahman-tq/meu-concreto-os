@@ -45,10 +45,12 @@ export default defineEventHandler(async (event) => {
   const isManagerOrAdmin =
     event.context.auth?.role === "admin" ||
     event.context.auth?.role === "manager";
+  const canEditSensitiveFields =
+    isManagerOrAdmin || existing.status === "draft";
 
-  const normalizedItems = isManagerOrAdmin ? items : undefined;
+  const normalizedItems = canEditSensitiveFields ? items : undefined;
   const normalizedQuoteData = { ...quoteData };
-  if (!isManagerOrAdmin) {
+  if (!canEditSensitiveFields) {
     delete normalizedQuoteData.status;
     delete normalizedQuoteData.discount;
   }

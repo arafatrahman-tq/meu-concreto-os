@@ -45,6 +45,11 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
   const isManagerOrAdmin = computed(
     () => user.value?.role === "admin" || user.value?.role === "manager",
   );
+  const canEditSensitiveFields = computed(
+    () =>
+      isManagerOrAdmin.value ||
+      restrictedEditBaseline.value?.status === "draft",
+  );
 
   // ─────────────────────────────────────────────
   // State
@@ -457,7 +462,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       };
 
       if (isEditing.value && editingId.value) {
-        if (!isManagerOrAdmin.value && restrictedEditBaseline.value) {
+        if (!canEditSensitiveFields.value && restrictedEditBaseline.value) {
           const hasRestrictedChanges =
             form.status !== restrictedEditBaseline.value.status ||
             form.discount !== restrictedEditBaseline.value.discount ||
@@ -468,7 +473,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
             toast.add({
               title: "Alguns campos não foram aplicados",
               description:
-                "Itens, desconto e status só podem ser alterados por gerente ou administrador.",
+                "Para orçamentos fora de rascunho, itens, desconto e status só podem ser alterados por gerente ou administrador.",
               color: "warning",
               icon: "i-heroicons-lock-closed",
             });
@@ -477,7 +482,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
 
         await $fetch(`/api/quotes/${editingId.value}`, {
           method: "PUT",
-          body: isManagerOrAdmin.value ? payload : restrictedEditPayload,
+          body: canEditSensitiveFields.value ? payload : restrictedEditPayload,
         });
         toast.add({
           title: "Orçamento Atualizado",
