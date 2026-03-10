@@ -3,8 +3,7 @@ import { useSales } from "~/composables/useSales";
 import { useSalesForm } from "~/composables/useSalesForm";
 import { formatCurrency } from "~/utils/formatters";
 
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Vendas | Meu Concreto" });
+label: ("Em Entrega", useSeoMeta({ title: "Vendas | Meu Concreto" }));
 
 const route = useRoute();
 
@@ -168,6 +167,7 @@ onMounted(() => {
     typeof status === "string" &&
     [
       "all",
+      "billed",
       "pending",
       "confirmed",
       "in_progress",
