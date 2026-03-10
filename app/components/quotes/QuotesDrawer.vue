@@ -91,25 +91,27 @@ const isRestrictedEdit = computed(
   () =>
     props.isEditing && !isManagerOrAdmin.value && props.form.status !== "draft",
 );
-</script>
 
-<template>
-  <USlideover
 const statusLabel = computed(() => {
   const status = STATUS_OPTS.find((s: any) => s.value === props.form.status);
   return status?.label || props.form.status;
 });
 
-const restrictedStatusMessage = computed(() =>
-  `No status ${statusLabel.value}, você pode editar apenas dados operacionais (cliente, logística, validade, pagamento e observações). Itens, desconto e status exigem perfil gerente/admin.`,
+const restrictedStatusMessage = computed(
+  () =>
+    `No status ${statusLabel.value}, você pode editar apenas dados operacionais (cliente, logística, validade, pagamento e observações). Itens, desconto e status exigem perfil gerente/admin.`,
 );
+</script>
+
+<template>
+  <USlideover
     v-model:open="isDrawerOpen"
     :title="isEditing ? 'Editar Orçamento' : 'Novo Orçamento'"
     side="right"
     :ui="{ footer: 'p-0 block' }"
   >
     <template #body>
-            :description="restrictedStatusMessage"
+      <div class="space-y-6 p-6">
         <!-- ── Section: Cliente ── -->
         <div class="space-y-4">
           <h4
@@ -399,7 +401,7 @@ const restrictedStatusMessage = computed(() =>
             color="warning"
             variant="soft"
             icon="i-heroicons-lock-closed"
-            description="Neste perfil, itens e valores não podem ser alterados durante edição."
+            :description="restrictedStatusMessage"
           />
 
           <div class="space-y-4">
