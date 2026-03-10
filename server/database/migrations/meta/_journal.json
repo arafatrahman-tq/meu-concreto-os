@@ -1,0 +1,237 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1771352825781,
+      "tag": "0000_big_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771353254981,
+      "tag": "0001_clear_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771353638070,
+      "tag": "0002_last_pandemic",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771354501377,
+      "tag": "0003_moaning_kinsey_walden",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771354920810,
+      "tag": "0004_eager_prodigy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1771358780198,
+      "tag": "0005_true_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771459200000,
+      "tag": "0006_user_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1740009600000,
+      "tag": "0007_sellers",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1740096000000,
+      "tag": "0007_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771528073762,
+      "tag": "0009_slow_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1771551262014,
+      "tag": "0010_gifted_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1771552133241,
+      "tag": "0011_tiny_lila_cheney",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1771553923408,
+      "tag": "0012_nice_screwball",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1771593019233,
+      "tag": "0013_peaceful_micromax",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1771676071089,
+      "tag": "0014_tan_layla_miller",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1771809600000,
+      "tag": "0015_customer_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1771791391573,
+      "tag": "0016_marvelous_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1771843911386,
+      "tag": "0017_wild_leo",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1771866789499,
+      "tag": "0018_mixed_ultron",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1771953984288,
+      "tag": "0019_goofy_frank_castle",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1772020050347,
+      "tag": "0020_fixed_aqueduct",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1772021876442,
+      "tag": "0021_wooden_shadow_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1772025382802,
+      "tag": "0022_flat_scorpion",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1772028719375,
+      "tag": "0023_short_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1772540108078,
+      "tag": "0024_milky_red_wolf",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1772540961606,
+      "tag": "0025_aberrant_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1772544033109,
+      "tag": "0026_damp_lily_hollister",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1772625658387,
+      "tag": "0027_typical_liz_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1772648483181,
+      "tag": "0028_nebulous_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1772800943994,
+      "tag": "0029_clever_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1772818188834,
+      "tag": "0030_known_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1772819905994,
+      "tag": "0031_left_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1773110240818,
+      "tag": "0032_broken_earthquake",
+      "breakpoints": true
+    }
+  ]
+}

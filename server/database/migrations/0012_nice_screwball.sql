@@ -1,0 +1,1 @@
+ALTER TABLE `whatsapp_settings` ADD `is_global` integer DEFAULT false NOT NULL;

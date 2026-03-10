@@ -1,0 +1,1 @@
+ALTER TABLE `whatsapp_settings` ADD `schedules_reminder_lead_time_hours` integer DEFAULT 24 NOT NULL;

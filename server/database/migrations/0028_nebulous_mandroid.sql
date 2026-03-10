@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `sellers_company_id_document_unique` ON `sellers` (`company_id`,`document`);

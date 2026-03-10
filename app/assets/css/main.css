@@ -1,0 +1,53 @@
+/* Bahnschrift is a built-in Windows system font — no external import needed.
+   Full cross-platform fallback chain below. */
+
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  /* Fonts — Bahnschrift primary, condensed geometric fallbacks for macOS/Linux/mobile */
+  --font-sans:
+    "Bahnschrift", "DIN Alternate", "Franklin Gothic Medium", "Arial Narrow",
+    Arial, sans-serif;
+  --font-display:
+    "Bahnschrift", "DIN Alternate", "Franklin Gothic Medium", "Arial Narrow",
+    Arial, sans-serif;
+
+  /* Primary = Green */
+  --color-primary-50: var(--color-green-50);
+  --color-primary-100: var(--color-green-100);
+  --color-primary-200: var(--color-green-200);
+  --color-primary-300: var(--color-green-300);
+  --color-primary-400: var(--color-green-400);
+  --color-primary-500: var(--color-green-500);
+  --color-primary-600: var(--color-green-600);
+  --color-primary-700: var(--color-green-700);
+  --color-primary-800: var(--color-green-800);
+  --color-primary-900: var(--color-green-900);
+  --color-primary-950: var(--color-green-950);
+
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+
+  /* Green palette (used by primary) */
+  --color-green-50: #effdf5;
+  --color-green-100: #d9fbe8;
+  --color-green-200: #b3f5d1;
+  --color-green-300: #75edae;
+  --color-green-400: #00dc82;
+  --color-green-500: #00c16a;
+  --color-green-600: #00a155;
+  --color-green-700: #007f45;
+  --color-green-800: #016538;
+  --color-green-900: #0a5331;
+  --color-green-950: #052e16;
+}
