@@ -3,85 +3,93 @@ import type {
   KnownCustomer,
   QuoteForm,
   SelectOption,
-  MixDesign
-} from '~/types/sales'
-import { formatCurrency, maskPhone, maskDocument } from '~/utils/formatters'
-import { STATUS_OPTS } from '~/composables/useQuotes'
+  MixDesign,
+} from "~/types/sales";
+import { formatCurrency, maskPhone, maskDocument } from "~/utils/formatters";
+import { STATUS_OPTS } from "~/composables/useQuotes";
 
 const props = defineProps<{
-  isEditing: boolean
-  knownCustomers: KnownCustomer[]
-  productOptions: SelectOption[]
-  sellerOptions: SelectOption[]
-  driverOptions: SelectOption[]
-  pumperOptions: SelectOption[]
-  mixDesigns: MixDesign[]
-  paymentMethodOptions: SelectOption[]
+  isEditing: boolean;
+  knownCustomers: KnownCustomer[];
+  productOptions: SelectOption[];
+  sellerOptions: SelectOption[];
+  driverOptions: SelectOption[];
+  pumperOptions: SelectOption[];
+  mixDesigns: MixDesign[];
+  paymentMethodOptions: SelectOption[];
   // Form state and methods
-  form: QuoteForm
-  isDrawerOpen: boolean
-  loadingSave: boolean
-  subtotalBRL: number
-  totalBRL: number
-  customerSearchTerm: string
-  selectedCustomer: KnownCustomer | undefined
-  selectedDriver: SelectOption[] | undefined
-  selectedPumper: SelectOption | undefined
-  useDeliveryAddress: boolean
-  customerRegisteredAddress: string
+  form: QuoteForm;
+  isDrawerOpen: boolean;
+  loadingSave: boolean;
+  subtotalBRL: number;
+  totalBRL: number;
+  customerSearchTerm: string;
+  selectedCustomer: KnownCustomer | undefined;
+  selectedDriver: SelectOption[] | undefined;
+  selectedPumper: SelectOption | undefined;
+  useDeliveryAddress: boolean;
+  customerRegisteredAddress: string;
   // Methods
-  onCustomerSelect: (c: KnownCustomer) => void
-  onProductSelect: (idx: number, id: number | null) => void
-  onMixDesignSelect: (idx: number, id: number | null) => void
-  addItem: () => void
-  removeItem: (idx: number) => void
-  handleSave: () => void
-  onCreateDriver: (name: string) => void
-  onDeleteDriver: (d: { id: number, name: string }) => void
-  onCreatePumper: (name: string) => void
-  onDeletePumper: (p: { id: number, name: string }) => void
-  formErrors: Record<string, string>
-}>()
+  onCustomerSelect: (c: KnownCustomer) => void;
+  onProductSelect: (idx: number, id: number | null) => void;
+  onMixDesignSelect: (idx: number, id: number | null) => void;
+  addItem: () => void;
+  removeItem: (idx: number) => void;
+  handleSave: () => void;
+  onCreateDriver: (name: string) => void;
+  onDeleteDriver: (d: { id: number; name: string }) => void;
+  onCreatePumper: (name: string) => void;
+  onDeletePumper: (p: { id: number; name: string }) => void;
+  formErrors: Record<string, string>;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:isDrawerOpen', value: boolean): void
-  (e: 'update:customerSearchTerm', value: string): void
-  (e: 'update:selectedCustomer', value: KnownCustomer | undefined): void
-  (e: 'update:selectedDriver', value: SelectOption[] | undefined): void
-  (e: 'update:selectedPumper', value: SelectOption | undefined): void
-  (e: 'update:useDeliveryAddress', value: boolean): void
-}>()
+  (e: "update:isDrawerOpen", value: boolean): void;
+  (e: "update:customerSearchTerm", value: string): void;
+  (e: "update:selectedCustomer", value: KnownCustomer | undefined): void;
+  (e: "update:selectedDriver", value: SelectOption[] | undefined): void;
+  (e: "update:selectedPumper", value: SelectOption | undefined): void;
+  (e: "update:useDeliveryAddress", value: boolean): void;
+}>();
 
 // We use computed with getter/setter for v-model props
 const isDrawerOpen = computed({
   get: () => props.isDrawerOpen,
-  set: val => emit('update:isDrawerOpen', val)
-})
+  set: (val) => emit("update:isDrawerOpen", val),
+});
 
 const customerSearchTerm = computed({
   get: () => props.customerSearchTerm,
-  set: val => emit('update:customerSearchTerm', val)
-})
+  set: (val) => emit("update:customerSearchTerm", val),
+});
 
 const selectedCustomer = computed({
   get: () => props.selectedCustomer,
-  set: val => emit('update:selectedCustomer', val)
-})
+  set: (val) => emit("update:selectedCustomer", val),
+});
 
 const selectedDriver = computed({
   get: () => props.selectedDriver,
-  set: val => emit('update:selectedDriver', val)
-})
+  set: (val) => emit("update:selectedDriver", val),
+});
 
 const selectedPumper = computed({
   get: () => props.selectedPumper,
-  set: val => emit('update:selectedPumper', val)
-})
+  set: (val) => emit("update:selectedPumper", val),
+});
 
 const useDeliveryAddress = computed({
   get: () => props.useDeliveryAddress,
-  set: val => emit('update:useDeliveryAddress', val)
-})
+  set: (val) => emit("update:useDeliveryAddress", val),
+});
+
+const { user } = useAuth();
+const isManagerOrAdmin = computed(
+  () => user.value?.role === "admin" || user.value?.role === "manager",
+);
+const isRestrictedEdit = computed(
+  () => props.isEditing && !isManagerOrAdmin.value,
+);
 </script>
 
 <template>
@@ -95,11 +103,10 @@ const useDeliveryAddress = computed({
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
         <!-- ── Section: Cliente ── -->
         <div class="space-y-4">
-          <h4 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-            <UIcon
-              name="i-heroicons-user"
-              class="w-4 h-4"
-            />
+          <h4
+            class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+          >
+            <UIcon name="i-heroicons-user" class="w-4 h-4" />
             Dados do Cliente
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -121,7 +128,7 @@ const useDeliveryAddress = computed({
                 size="lg"
                 :class="{
                   'bg-red-50 dark:bg-red-500/10 transition-colors':
-                    formErrors.customerName
+                    formErrors.customerName,
                 }"
                 :reset-search-term-on-blur="false"
                 :reset-search-term-on-select="false"
@@ -137,13 +144,19 @@ const useDeliveryAddress = computed({
               >
                 <template #item="{ item }">
                   <div class="flex items-center gap-3 py-0.5 w-full min-w-0">
-                    <div class="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
-                      <span class="text-[10px] font-black text-primary-600 dark:text-primary-400">
+                    <div
+                      class="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+                    >
+                      <span
+                        class="text-[10px] font-black text-primary-600 dark:text-primary-400"
+                      >
                         {{ item.name.charAt(0).toUpperCase() }}
                       </span>
                     </div>
                     <div class="min-w-0">
-                      <p class="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                      <p
+                        class="text-sm font-bold text-zinc-900 dark:text-white truncate"
+                      >
                         {{ item.name }}
                       </p>
                       <p
@@ -174,7 +187,9 @@ const useDeliveryAddress = computed({
                 icon="i-heroicons-identification"
                 class="w-full"
                 size="lg"
-                @update:model-value="(v) => (form.customerDocument = maskDocument(v))"
+                @update:model-value="
+                  (v) => (form.customerDocument = maskDocument(v))
+                "
               />
             </UFormField>
             <UFormField label="Telefone">
@@ -200,7 +215,9 @@ const useDeliveryAddress = computed({
                   class="w-4 h-4 text-zinc-400 mt-0.5 shrink-0"
                 />
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5">
+                  <p
+                    class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5"
+                  >
                     Endereço Cadastrado
                   </p>
                   <p class="text-sm text-zinc-700 dark:text-zinc-300">
@@ -225,7 +242,7 @@ const useDeliveryAddress = computed({
                     : 'Endereço de Entrega'
                 "
                 :class="{
-                  hidden: customerRegisteredAddress && !useDeliveryAddress
+                  hidden: customerRegisteredAddress && !useDeliveryAddress,
                 }"
               >
                 <UInput
@@ -263,7 +280,9 @@ const useDeliveryAddress = computed({
                   size="lg"
                 >
                   <template #item="{ item }">
-                    <div class="flex items-center justify-between w-full group/item">
+                    <div
+                      class="flex items-center justify-between w-full group/item"
+                    >
                       <span>{{ item.label }}</span>
                       <UButton
                         v-if="item.value !== 0"
@@ -275,7 +294,7 @@ const useDeliveryAddress = computed({
                         @click="
                           onDeleteDriver({
                             id: item.value,
-                            name: item.label
+                            name: item.label,
                           })
                         "
                       />
@@ -305,7 +324,9 @@ const useDeliveryAddress = computed({
                   size="lg"
                 >
                   <template #item="{ item }">
-                    <div class="flex items-center justify-between w-full group/item">
+                    <div
+                      class="flex items-center justify-between w-full group/item"
+                    >
                       <span>{{ item.label }}</span>
                       <UButton
                         v-if="item.value !== 0"
@@ -317,7 +338,7 @@ const useDeliveryAddress = computed({
                         @click="
                           onDeletePumper({
                             id: item.value,
-                            name: item.label
+                            name: item.label,
                           })
                         "
                       />
@@ -346,11 +367,10 @@ const useDeliveryAddress = computed({
         <!-- ── Section: Itens ── -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-              <UIcon
-                name="i-lucide-package"
-                class="w-4 h-4"
-              />
+            <h4
+              class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+            >
+              <UIcon name="i-lucide-package" class="w-4 h-4" />
               Itens do Orçamento
             </h4>
             <UButton
@@ -358,11 +378,20 @@ const useDeliveryAddress = computed({
               variant="soft"
               icon="i-heroicons-plus"
               size="xs"
+              :disabled="isRestrictedEdit"
               @click="() => addItem()"
             >
               Adicionar
             </UButton>
           </div>
+
+          <UAlert
+            v-if="isRestrictedEdit"
+            color="warning"
+            variant="soft"
+            icon="i-heroicons-lock-closed"
+            description="Neste perfil, itens e valores não podem ser alterados durante edição."
+          />
 
           <div class="space-y-4">
             <div
@@ -374,12 +403,10 @@ const useDeliveryAddress = computed({
               <button
                 v-if="form.items.length > 1"
                 class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                :disabled="isRestrictedEdit"
                 @click="removeItem(idx as number)"
               >
-                <UIcon
-                  name="i-heroicons-trash"
-                  class="w-4 h-4"
-                />
+                <UIcon name="i-heroicons-trash" class="w-4 h-4" />
               </button>
 
               <!-- Product select -->
@@ -393,7 +420,10 @@ const useDeliveryAddress = computed({
                   icon="i-lucide-package"
                   class="w-full"
                   size="lg"
-                  @update:model-value="(v: any) => onProductSelect(idx as number, v ?? null)"
+                  :disabled="isRestrictedEdit"
+                  @update:model-value="
+                    (v: any) => onProductSelect(idx as number, v ?? null)
+                  "
                 />
               </UFormField>
 
@@ -410,6 +440,7 @@ const useDeliveryAddress = computed({
                     icon="i-heroicons-tag"
                     class="w-full"
                     size="lg"
+                    :disabled="isRestrictedEdit"
                   />
                 </UFormField>
                 <UFormField label="Unidade">
@@ -419,6 +450,7 @@ const useDeliveryAddress = computed({
                     icon="i-heroicons-scale"
                     class="w-full"
                     size="lg"
+                    :disabled="isRestrictedEdit"
                   />
                 </UFormField>
               </div>
@@ -429,6 +461,7 @@ const useDeliveryAddress = computed({
                   icon="i-heroicons-pencil"
                   class="w-full"
                   size="lg"
+                  :disabled="isRestrictedEdit"
                 />
               </UFormField>
 
@@ -446,6 +479,7 @@ const useDeliveryAddress = computed({
                     icon="i-heroicons-calculator"
                     class="w-full"
                     size="lg"
+                    :disabled="isRestrictedEdit"
                   />
                 </UFormField>
                 <UFormField
@@ -461,15 +495,22 @@ const useDeliveryAddress = computed({
                     icon="i-heroicons-banknotes"
                     class="w-full"
                     size="lg"
+                    :disabled="isRestrictedEdit"
                   />
                 </UFormField>
                 <UFormField label="Total">
-                  <div class="flex items-center h-12 px-4 rounded-2xl bg-white dark:bg-zinc-900 text-sm font-black text-zinc-700 dark:text-zinc-300 ring-1 ring-zinc-200 dark:ring-zinc-700">
+                  <div
+                    class="flex items-center h-12 px-4 rounded-2xl bg-white dark:bg-zinc-900 text-sm font-black text-zinc-700 dark:text-zinc-300 ring-1 ring-zinc-200 dark:ring-zinc-700"
+                  >
                     <UIcon
                       name="i-heroicons-receipt-percent"
                       class="w-4 h-4 mr-2 text-zinc-400"
                     />
-                    {{ formatCurrency(Math.round(item.quantity * item.unitPrice * 100)) }}
+                    {{
+                      formatCurrency(
+                        Math.round(item.quantity * item.unitPrice * 100),
+                      )
+                    }}
                   </div>
                 </UFormField>
               </div>
@@ -490,7 +531,10 @@ const useDeliveryAddress = computed({
                     icon="i-heroicons-beaker"
                     class="w-full"
                     size="lg"
-                    @update:model-value="(v: number | null) => onMixDesignSelect(idx as number, v)"
+                    :disabled="isRestrictedEdit"
+                    @update:model-value="
+                      (v: number | null) => onMixDesignSelect(idx as number, v)
+                    "
                   />
                 </UFormField>
 
@@ -503,16 +547,18 @@ const useDeliveryAddress = computed({
                       icon="i-heroicons-beaker"
                       class="w-full"
                       size="lg"
+                      :disabled="isRestrictedEdit"
                     />
                   </UFormField>
                   <UFormField label="Slump (cm)">
                     <UInput
-                      v-model.number="item.slump"
-                      type="number"
+                      v-model="item.slump"
+                      type="text"
                       placeholder="10"
                       icon="i-heroicons-adjustments-horizontal"
                       class="w-full"
                       size="lg"
+                      :disabled="isRestrictedEdit"
                     />
                   </UFormField>
                   <UFormField label="Brita">
@@ -522,6 +568,7 @@ const useDeliveryAddress = computed({
                       icon="i-heroicons-circle-stack"
                       class="w-full"
                       size="lg"
+                      :disabled="isRestrictedEdit"
                     />
                   </UFormField>
                 </div>
@@ -533,8 +580,12 @@ const useDeliveryAddress = computed({
         <USeparator />
 
         <!-- ── Section: Detalhes ── -->
-        <div class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-6">
-          <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+        <div
+          class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-6"
+        >
+          <h4
+            class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+          >
             <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
             Detalhes do Orçamento
           </h4>
@@ -549,6 +600,7 @@ const useDeliveryAddress = computed({
                 icon="i-heroicons-signal"
                 class="w-full"
                 size="lg"
+                :disabled="isRestrictedEdit"
               />
             </UFormField>
             <UFormField label="Válido até">
@@ -584,10 +636,7 @@ const useDeliveryAddress = computed({
                 size="lg"
               />
             </UFormField>
-            <UFormField
-              label="Desconto (R$)"
-              :error="formErrors.discount"
-            >
+            <UFormField label="Desconto (R$)" :error="formErrors.discount">
               <UInput
                 v-model.number="form.discount"
                 type="number"
@@ -596,14 +645,14 @@ const useDeliveryAddress = computed({
                 icon="i-heroicons-minus"
                 class="w-full"
                 size="lg"
+                :disabled="isRestrictedEdit"
               />
             </UFormField>
             <UFormField label="Total Final">
-              <div class="flex items-center h-12 px-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-sm font-black text-primary-600 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-500/20">
-                <UIcon
-                  name="i-heroicons-banknotes"
-                  class="w-4 h-4 mr-2"
-                />
+              <div
+                class="flex items-center h-12 px-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-sm font-black text-primary-600 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-500/20"
+              >
+                <UIcon name="i-heroicons-banknotes" class="w-4 h-4 mr-2" />
                 {{ formatCurrency(Math.round(totalBRL * 100)) }}
               </div>
             </UFormField>
@@ -623,7 +672,9 @@ const useDeliveryAddress = computed({
 
     <!-- Footer with save actions -->
     <template #footer>
-      <div class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <div
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      >
         <UButton
           color="neutral"
           variant="ghost"

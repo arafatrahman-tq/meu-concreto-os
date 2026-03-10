@@ -1,171 +1,173 @@
 <script setup lang="ts">
-import type {
-  Product,
-  ProductForm,
-  MixDesign
-} from '~/types/products'
+import type { Product, ProductForm, MixDesign } from "~/types/products";
 
 const props = defineProps<{
-  open: boolean
-  product?: Product | null
-  mixDesigns: MixDesign[]
-}>()
+  open: boolean;
+  product?: Product | null;
+  mixDesigns: MixDesign[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'saved'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
+}>();
 
-const { companyId } = useAuth()
-const toast = useToast()
+const { companyId } = useAuth();
+const toast = useToast();
 
 const isOpen = computed({
   get: () => props.open,
-  set: val => emit('update:open', val)
-})
+  set: (val) => emit("update:open", val),
+});
 
-const isEditing = computed(() => !!props.product)
-const loadingSave = ref(false)
+const isEditing = computed(() => !!props.product);
+const loadingSave = ref(false);
 
 const form = reactive<ProductForm>({
-  name: '',
-  description: '',
-  type: 'concrete',
-  unit: 'm3',
+  name: "",
+  description: "",
+  type: "concrete",
+  unit: "m3",
   price: 0, // display in BRL float
-  sku: '',
+  sku: "",
   fck: undefined,
   slump: undefined,
-  stoneSize: '',
+  stoneSize: "",
   mixDesignId: undefined,
-  active: true
-})
+  active: true,
+});
 
-const formErrors = reactive<Record<keyof ProductForm | string, string>>({})
+const formErrors = reactive<Record<keyof ProductForm | string, string>>({});
 
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
-}
+};
 
 const validateForm = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
-    isValid = false
+    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
+    isValid = false;
   }
 
   if (form.price < 0) {
-    formErrors.price = 'O preço não pode ser negativo.'
-    isValid = false
+    formErrors.price = "O preço não pode ser negativo.";
+    isValid = false;
   }
 
   if (!form.type) {
-    formErrors.type = 'Selecione o tipo do produto.'
-    isValid = false
+    formErrors.type = "Selecione o tipo do produto.";
+    isValid = false;
   }
 
   if (!form.unit) {
-    formErrors.unit = 'Selecione a unidade de medida.'
-    isValid = false
+    formErrors.unit = "Selecione a unidade de medida.";
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
+
+const toOptionalInt = (value: unknown): number | undefined => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : Math.trunc(parsed);
+};
 
 const resetForm = () => {
-  form.name = ''
-  form.description = ''
-  form.type = 'concrete'
-  form.unit = 'm3'
-  form.price = 0
-  form.sku = ''
-  form.fck = undefined
-  form.slump = undefined
-  form.stoneSize = ''
-  form.mixDesignId = undefined
-  form.active = true
-  clearErrors()
-}
+  form.name = "";
+  form.description = "";
+  form.type = "concrete";
+  form.unit = "m3";
+  form.price = 0;
+  form.sku = "";
+  form.fck = undefined;
+  form.slump = undefined;
+  form.stoneSize = "";
+  form.mixDesignId = undefined;
+  form.active = true;
+  clearErrors();
+};
 
 watch(
   () => props.product,
   (p) => {
     if (p) {
-      form.name = p.name
-      form.description = p.description ?? ''
-      form.type = p.type
-      form.unit = p.unit
-      form.price = p.price / 100
-      form.sku = p.sku ?? ''
-      form.active = p.active
-      form.mixDesignId = p.mixDesignId ?? undefined
+      form.name = p.name;
+      form.description = p.description ?? "";
+      form.type = p.type;
+      form.unit = p.unit;
+      form.price = p.price / 100;
+      form.sku = p.sku ?? "";
+      form.active = p.active;
+      form.mixDesignId = p.mixDesignId ?? undefined;
 
       // Restore specific fields after mix design auto-fill
       nextTick(() => {
-        form.fck = p.fck ?? undefined
-        form.slump = p.slump ?? undefined
-        form.stoneSize = p.stoneSize ?? ''
-      })
+        form.fck = p.fck ?? undefined;
+        form.slump = p.slump ?? undefined;
+        form.stoneSize = p.stoneSize ?? "";
+      });
 
-      clearErrors()
+      clearErrors();
     } else {
-      resetForm()
+      resetForm();
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 // Auto-fill FCK, Slump, StoneSize from Mix Design
 watch(
   () => form.mixDesignId,
   (newId) => {
-    if (!newId || form.type !== 'concrete') return
-    const mix = props.mixDesigns.find(m => m.id === newId)
+    if (!newId || form.type !== "concrete") return;
+    const mix = props.mixDesigns.find((m) => m.id === newId);
     if (mix) {
-      if (mix.fck) form.fck = mix.fck
-      if (mix.slump) form.slump = mix.slump
-      if (mix.stoneSize) form.stoneSize = mix.stoneSize
+      if (mix.fck !== null && mix.fck !== undefined) form.fck = mix.fck;
+      if (mix.slump !== null && mix.slump !== undefined) form.slump = mix.slump;
+      if (mix.stoneSize) form.stoneSize = mix.stoneSize;
     }
-  }
-)
+  },
+);
 
 // Reset concrete-specific fields when type changes
 watch(
   () => form.type,
   (newType) => {
-    if (newType !== 'concrete') {
-      form.fck = undefined
-      form.slump = undefined
-      form.stoneSize = ''
-      if (newType !== 'pump' && newType !== 'rental') {
-        form.unit = 'un'
-      } else if (newType === 'pump') {
-        form.unit = 'm3'
-      } else if (newType === 'rental') {
-        form.unit = 'hr'
+    if (newType !== "concrete") {
+      form.fck = undefined;
+      form.slump = undefined;
+      form.stoneSize = "";
+      if (newType !== "pump" && newType !== "rental") {
+        form.unit = "un";
+      } else if (newType === "pump") {
+        form.unit = "m3";
+      } else if (newType === "rental") {
+        form.unit = "hr";
       }
     } else {
-      form.unit = 'm3'
+      form.unit = "m3";
     }
-  }
-)
+  },
+);
 
 const handleSave = async () => {
   if (!validateForm()) {
     toast.add({
-      title: 'Atenção',
-      description: 'Corrija os campos destacados em vermelho.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-    return
+      title: "Atenção",
+      description: "Corrija os campos destacados em vermelho.",
+      color: "error",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
   }
 
-  loadingSave.value = true
+  loadingSave.value = true;
   try {
     const payload = {
       ...(isEditing.value ? {} : { companyId: companyId.value }),
@@ -175,67 +177,67 @@ const handleSave = async () => {
       unit: form.unit,
       price: Math.round(form.price * 100),
       sku: form.sku.trim() || undefined,
-      fck: form.fck ?? undefined,
-      slump: form.slump ?? undefined,
+      fck: toOptionalInt(form.fck),
+      slump: toOptionalInt(form.slump),
       stoneSize: form.stoneSize.trim() || undefined,
-      mixDesignId: form.mixDesignId ?? undefined,
-      active: form.active
-    }
+      mixDesignId: toOptionalInt(form.mixDesignId),
+      active: form.active,
+    };
 
     if (isEditing.value && props.product) {
       await $fetch(`/api/products/${props.product.id}`, {
-        method: 'PUT',
-        body: payload
-      })
+        method: "PUT",
+        body: payload,
+      });
       toast.add({
-        title: 'Produto atualizado',
+        title: "Produto atualizado",
         description: `"${form.name}" foi atualizado com sucesso.`,
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
+        color: "success",
+        icon: "i-heroicons-check-circle",
+      });
     } else {
-      await $fetch('/api/products', { method: 'POST', body: payload })
+      await $fetch("/api/products", { method: "POST", body: payload });
       toast.add({
-        title: 'Produto criado',
+        title: "Produto criado",
         description: `"${form.name}" foi adicionado ao catálogo.`,
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
+        color: "success",
+        icon: "i-heroicons-check-circle",
+      });
     }
 
-    isOpen.value = false
-    emit('saved')
+    isOpen.value = false;
+    emit("saved");
   } catch (e: any) {
     toast.add({
-      title: 'Erro ao salvar',
-      description: e?.data?.message || 'Erro ao salvar produto.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro ao salvar",
+      description: e?.data?.message || "Erro ao salvar produto.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 
 const mixDesignOptions = computed(() =>
-  props.mixDesigns.map(m => ({ label: m.name, value: m.id }))
-)
+  props.mixDesigns.map((m) => ({ label: m.name, value: m.id })),
+);
 
 const UNIT_OPTS = [
-  { label: 'm³ — metros cúbicos', value: 'm3' },
-  { label: 'un — unidade', value: 'un' },
-  { label: 'hr — hora', value: 'hr' },
-  { label: 'kg — quilograma', value: 'kg' },
-  { label: 'ton — tonelada', value: 'ton' }
-]
+  { label: "m³ — metros cúbicos", value: "m3" },
+  { label: "un — unidade", value: "un" },
+  { label: "hr — hora", value: "hr" },
+  { label: "kg — quilograma", value: "kg" },
+  { label: "ton — tonelada", value: "ton" },
+];
 
 const TYPE_FORM_OPTS = [
-  { label: 'Concreto', value: 'concrete' },
-  { label: 'Bombeamento', value: 'pump' },
-  { label: 'Aditivo', value: 'additive' },
-  { label: 'Locação', value: 'rental' },
-  { label: 'Outro', value: 'other' }
-]
+  { label: "Concreto", value: "concrete" },
+  { label: "Bombeamento", value: "pump" },
+  { label: "Aditivo", value: "additive" },
+  { label: "Locação", value: "rental" },
+  { label: "Outro", value: "other" },
+];
 </script>
 
 <template>
@@ -248,8 +250,12 @@ const TYPE_FORM_OPTS = [
     <template #body>
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
         <!-- ── Section: Informações Básicas ── -->
-        <div class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-5">
-          <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+        <div
+          class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-5"
+        >
+          <h4
+            class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+          >
             <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
             Identificação e Preço
           </h4>
@@ -339,10 +345,7 @@ const TYPE_FORM_OPTS = [
             </UFormField>
 
             <!-- Descrição -->
-            <UFormField
-              label="Descrição"
-              class="col-span-full"
-            >
+            <UFormField label="Descrição" class="col-span-full">
               <UTextarea
                 v-model="form.description"
                 placeholder="Detalhes, características técnicas, condições de uso..."
@@ -367,7 +370,9 @@ const TYPE_FORM_OPTS = [
             v-if="form.type === 'concrete'"
             class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-5"
           >
-            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <h4
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+            >
               <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
               Especificações do Concreto
             </h4>
@@ -423,7 +428,9 @@ const TYPE_FORM_OPTS = [
             </div>
 
             <!-- Concrete hint card -->
-            <div class="rounded-xl bg-blue-50 dark:bg-blue-500/10 ring-1 ring-blue-200 dark:ring-blue-500/20 p-3 flex items-start gap-3">
+            <div
+              class="rounded-xl bg-blue-50 dark:bg-blue-500/10 ring-1 ring-blue-200 dark:ring-blue-500/20 p-3 flex items-start gap-3"
+            >
               <UIcon
                 name="i-heroicons-information-circle"
                 class="w-4 h-4 text-blue-500 mt-0.5 shrink-0"
@@ -438,14 +445,20 @@ const TYPE_FORM_OPTS = [
         </Transition>
 
         <!-- ── Section: Configurações ── -->
-        <div class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-5">
-          <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+        <div
+          class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 space-y-5"
+        >
+          <h4
+            class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+          >
             <div class="w-1.5 h-1.5 rounded-full bg-primary-500" />
             Configurações
           </h4>
 
           <!-- Active toggle -->
-          <div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-700">
+          <div
+            class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-700"
+          >
             <div>
               <p class="text-sm font-bold text-zinc-900 dark:text-white">
                 Produto Ativo
@@ -454,17 +467,16 @@ const TYPE_FORM_OPTS = [
                 Produtos inativos não aparecem na seleção de orçamentos e vendas
               </p>
             </div>
-            <USwitch
-              v-model="form.active"
-              size="md"
-            />
+            <USwitch v-model="form.active" size="md" />
           </div>
         </div>
       </div>
     </template>
 
     <template #footer>
-      <div class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <div
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      >
         <UButton
           color="neutral"
           variant="ghost"

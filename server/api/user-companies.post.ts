@@ -1,22 +1,42 @@
-import { eq } from 'drizzle-orm'
-import { userCompanies, users } from '#server/database/schema'
-import { userCompanySchema } from '#server/utils/schemas'
-import { db } from '#server/utils/db'
-import { createNotification } from '#server/utils/notifications'
+import { eq } from "drizzle-orm";
+import { userCompanies, users } from "#server/database/schema";
+import { userCompanySchema } from "#server/utils/schemas";
+import { db } from "#server/utils/db";
+import { createNotification } from "#server/utils/notifications";
+import { requireCompanyAccess } from "#server/utils/session";
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const result = userCompanySchema.safeParse(body)
+  const body = await readBody(event);
+  const result = userCompanySchema.safeParse(body);
 
   if (!result.success) {
     throw createError({
       statusCode: 400,
-      message: 'Falha na validação',
-      data: result.error.flatten()
-    })
+      message: "Falha na validação",
+      data: result.error.flatten(),
+    });
   }
 
-  const { userId, companyId, role } = result.data
+  const { userId, companyId, role } = result.data;
+
+  const auth = event.context.auth;
+  if (!auth) {
+    throw createError({
+      statusCode: 401,
+      message: "Não autorizado",
+    });
+  }
+
+  if (auth.role !== "admin") {
+    requireCompanyAccess(event, companyId);
+
+    if (role === "admin") {
+      throw createError({
+        statusCode: 403,
+        message: "Apenas administradores podem conceder perfil administrador",
+      });
+    }
+  }
 
   try {
     const [entry] = await db
@@ -24,43 +44,43 @@ export default defineEventHandler(async (event) => {
       .values({
         userId,
         companyId,
-        role: role as 'admin' | 'user' | 'manager',
-        createdAt: new Date()
+        role: role as "admin" | "user" | "manager",
+        createdAt: new Date(),
       })
-      .returning()
+      .returning();
 
     // Notification
     const user = await db
       .select()
       .from(users)
       .where(eq(users.id, userId))
-      .get()
+      .get();
     if (user) {
       await createNotification({
         companyId,
-        type: 'user',
-        title: 'Usuário vinculado à empresa',
+        type: "user",
+        title: "Usuário vinculado à empresa",
         body: `${user.name} foi adicionado como ${role}`,
-        link: '/usuarios',
-        icon: 'i-heroicons-user-plus'
-      })
+        link: "/usuarios",
+        icon: "i-heroicons-user-plus",
+      });
     }
 
-    return { entry }
+    return { entry };
   } catch (e: any) {
     if (
-      e.message?.includes('UNIQUE constraint')
-      || e.message?.includes('constraint failed')
+      e.message?.includes("UNIQUE constraint") ||
+      e.message?.includes("constraint failed")
     ) {
       throw createError({
         statusCode: 409,
-        message: 'O usuário já pertence a esta empresa',
-        data: { message: 'Entrada duplicada' }
-      })
+        message: "O usuário já pertence a esta empresa",
+        data: { message: "Entrada duplicada" },
+      });
     }
     throw createError({
       statusCode: 500,
-      message: 'Erro interno do servidor'
-    })
+      message: "Erro interno do servidor",
+    });
   }
-})
+});

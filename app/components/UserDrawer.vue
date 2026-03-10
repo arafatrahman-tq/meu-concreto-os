@@ -1,211 +1,220 @@
 <script setup lang="ts">
-import type { User, UserRole, UserCompanyEntry } from '~/types/users'
-import { USER_ROLE_OPTS } from '~/types/users'
-import type { AuthUser } from '~/composables/useAuth'
+import type { User, UserRole, UserCompanyEntry } from "~/types/users";
+import { USER_ROLE_OPTS } from "~/types/users";
+import type { AuthUser } from "~/composables/useAuth";
 
 const props = defineProps<{
-  open: boolean
-  editMode: boolean
-  editingId: number | null
-  initialData?: User | null
-  allCompanies: any[]
-  authUser: AuthUser | null
-  currentCompanyId: number | null
-}>()
+  open: boolean;
+  editMode: boolean;
+  editingId: number | null;
+  initialData?: User | null;
+  allCompanies: any[];
+  authUser: AuthUser | null;
+  currentCompanyId: number | null;
+}>();
 
-const emit = defineEmits(['update:open', 'saved'])
+const emit = defineEmits(["update:open", "saved"]);
 
-const { user } = useAuth()
-const toast = useToast()
+const { user } = useAuth();
+const toast = useToast();
+const canEditAccessRole = computed(() => props.authUser?.role === "admin");
 
 function roleColor(role: string) {
-  if (role === 'admin') return 'error'
-  if (role === 'manager') return 'warning'
-  return 'neutral'
+  if (role === "admin") return "error";
+  if (role === "manager") return "warning";
+  return "neutral";
 }
 
 function roleLabel(role: string) {
-  return USER_ROLE_OPTS.find(r => r.value === role)?.label ?? role
+  return USER_ROLE_OPTS.find((r) => r.value === role)?.label ?? role;
 }
 
 // ─── Form State ───────────────────────────────────────────────────────────────
 const form = reactive({
   companyId: null as number | null,
   defaultCompanyId: null as number | null,
-  name: '',
-  email: '',
-  document: '',
-  phone: '',
-  role: 'user' as UserRole,
+  name: "",
+  email: "",
+  document: "",
+  phone: "",
+  role: "user" as UserRole,
   active: true,
-  password: ''
-})
+  password: "",
+});
 
-const saving = ref(false)
-const formErrors = reactive<Record<string, string>>({})
+const saving = ref(false);
+const formErrors = reactive<Record<string, string>>({});
 
 function clearErrors() {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
 }
 
 function validateForm(): boolean {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (form.name.trim().length < 3) {
-    formErrors.name = 'Nome deve ter no mínimo 3 caracteres.'
-    isValid = false
+    formErrors.name = "Nome deve ter no mínimo 3 caracteres.";
+    isValid = false;
   }
 
   if (!props.editMode) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!form.email || !emailRegex.test(form.email)) {
-      formErrors.email = 'Insira um e-mail válido.'
-      isValid = false
+      formErrors.email = "Insira um e-mail válido.";
+      isValid = false;
     }
 
-    const cpfDigits = form.document.replace(/\D/g, '')
+    const cpfDigits = form.document.replace(/\D/g, "");
     if (cpfDigits.length < 11) {
-      formErrors.document = 'CPF deve ter 11 dígitos.'
-      isValid = false
+      formErrors.document = "CPF deve ter 11 dígitos.";
+      isValid = false;
     }
 
     if (form.password.length < 6) {
-      formErrors.password = 'Senha deve ter no mínimo 6 caracteres.'
-      isValid = false
+      formErrors.password = "Senha deve ter no mínimo 6 caracteres.";
+      isValid = false;
     }
 
     if (!form.companyId && props.allCompanies.length > 0) {
-      formErrors.companyId = 'Selecione a empresa principal.'
-      isValid = false
+      formErrors.companyId = "Selecione a empresa principal.";
+      isValid = false;
     }
   }
 
-  return isValid
+  return isValid;
 }
 
 // ─── Company Management ───────────────────────────────────────────────────────
-const userCompanyList = ref<UserCompanyEntry[]>([])
-const companiesLoading = ref(false)
-const addCompanySearch = ref('')
-const selectedCompanyToAdd = ref<{ id: number, name: string } | null>(null)
-const addCompanyRole = ref<UserRole>('user')
-const addingCompany = ref(false)
-const removingCompanyId = ref<number | null>(null)
+const userCompanyList = ref<UserCompanyEntry[]>([]);
+const companiesLoading = ref(false);
+const addCompanySearch = ref("");
+const selectedCompanyToAdd = ref<{ id: number; name: string } | null>(null);
+const addCompanyRole = ref<UserRole>("user");
+const addingCompany = ref(false);
+const removingCompanyId = ref<number | null>(null);
 
 const filteredCompaniesForAdd = computed(() => {
-  const q = addCompanySearch.value.toLowerCase()
-  const already = new Set(userCompanyList.value.map(uc => uc.companyId))
+  const q = addCompanySearch.value.toLowerCase();
+  const already = new Set(userCompanyList.value.map((uc) => uc.companyId));
   return props.allCompanies
     .filter(
-      (c: any) => !already.has(c.id) && (!q || c.name.toLowerCase().includes(q))
+      (c: any) =>
+        !already.has(c.id) && (!q || c.name.toLowerCase().includes(q)),
     )
-    .slice(0, 8)
-})
+    .slice(0, 8);
+});
 
 // ─── Password Reset (Admin only) ─────────────────────────────────────────────
-const adminPasswordForm = reactive({ newPass: '', confirm: '' })
-const showAdminPass = ref(false)
-const savingPassword = ref(false)
+const adminPasswordForm = reactive({ newPass: "", confirm: "" });
+const showAdminPass = ref(false);
+const savingPassword = ref(false);
 
 // Synchronize with initial data when editing
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      clearErrors()
+      clearErrors();
       if (props.editMode && props.initialData) {
-        form.name = props.initialData.name
-        form.email = props.initialData.email
-        form.defaultCompanyId = props.initialData.defaultCompanyId || null
-        form.document = props.initialData.document || ''
-        form.phone = props.initialData.phone || ''
-        form.role = props.initialData.role
-        form.active = props.initialData.active
-        if (props.editingId) loadUserCompanies(props.editingId)
+        form.name = props.initialData.name;
+        form.email = props.initialData.email;
+        form.defaultCompanyId = props.initialData.defaultCompanyId || null;
+        form.document = props.initialData.document || "";
+        form.phone = props.initialData.phone || "";
+        form.role = props.initialData.role;
+        form.active = props.initialData.active;
+        if (props.editingId) loadUserCompanies(props.editingId);
       } else {
-        resetForm()
+        resetForm();
       }
     }
-  }
-)
+  },
+);
 
 function resetForm() {
-  form.companyId = props.currentCompanyId
-  form.defaultCompanyId = null
-  form.name = ''
-  form.email = ''
-  form.document = ''
-  form.phone = ''
-  form.role = 'user'
-  form.active = true
-  form.password = ''
-  userCompanyList.value = []
-  selectedCompanyToAdd.value = null
-  addCompanySearch.value = ''
-  addCompanyRole.value = 'user'
-  adminPasswordForm.newPass = ''
-  adminPasswordForm.confirm = ''
-  showAdminPass.value = false
+  form.companyId = props.currentCompanyId;
+  form.defaultCompanyId = null;
+  form.name = "";
+  form.email = "";
+  form.document = "";
+  form.phone = "";
+  form.role = "user";
+  form.active = true;
+  form.password = "";
+  userCompanyList.value = [];
+  selectedCompanyToAdd.value = null;
+  addCompanySearch.value = "";
+  addCompanyRole.value = "user";
+  adminPasswordForm.newPass = "";
+  adminPasswordForm.confirm = "";
+  showAdminPass.value = false;
 }
 
 async function loadUserCompanies(userId: number) {
-  companiesLoading.value = true
+  companiesLoading.value = true;
   try {
     const data = await $fetch<{ userCompanies: UserCompanyEntry[] }>(
-      `/api/user-companies?userId=${userId}`
-    )
-    userCompanyList.value = data.userCompanies
+      `/api/user-companies?userId=${userId}`,
+    );
+    userCompanyList.value = data.userCompanies;
   } catch {
-    userCompanyList.value = []
+    userCompanyList.value = [];
   } finally {
-    companiesLoading.value = false
+    companiesLoading.value = false;
   }
 }
 
 async function handleSave() {
   if (!validateForm()) {
     toast.add({
-      title: 'Atenção',
-      description: 'Corrija os campos destacados em vermelho.',
-      color: 'error'
-    })
-    return
+      title: "Atenção",
+      description: "Corrija os campos destacados em vermelho.",
+      color: "error",
+    });
+    return;
   }
 
-  saving.value = true
+  saving.value = true;
   try {
     if (props.editMode && props.editingId) {
+      const updateBody: Record<string, unknown> = {
+        name: form.name.trim(),
+        phone: form.phone,
+        active: form.active,
+        defaultCompanyId: form.defaultCompanyId,
+      };
+
+      if (canEditAccessRole.value) {
+        updateBody.role = form.role;
+      }
+
       const updated = await $fetch(`/api/users/${props.editingId}`, {
-        method: 'PUT',
-        body: {
-          name: form.name.trim(),
-          phone: form.phone,
-          role: form.role,
-          active: form.active,
-          defaultCompanyId: form.defaultCompanyId
-        }
-      })
+        method: "PUT",
+        body: updateBody,
+      });
 
       // Update local session if editing self
       if (user.value && props.editingId === user.value.id) {
-        const u = (updated as any).user
+        const u = (updated as any).user;
         if (u) {
-          user.value.defaultCompanyId = u.defaultCompanyId
-          user.value.name = u.name
+          user.value.defaultCompanyId = u.defaultCompanyId;
+          user.value.name = u.name;
+          user.value.role = u.role;
+          user.value.companyId = u.companyId;
         }
       }
 
       toast.add({
-        title: 'Usuário atualizado',
+        title: "Usuário atualizado",
         description: `${form.name} foi atualizado com sucesso.`,
-        color: 'success'
-      })
+        color: "success",
+      });
     } else {
-      await $fetch('/api/users', {
-        method: 'POST',
+      await $fetch("/api/users", {
+        method: "POST",
         body: {
           companyId: form.companyId,
           name: form.name.trim(),
@@ -214,131 +223,133 @@ async function handleSave() {
           phone: form.phone,
           role: form.role,
           active: form.active,
-          password: form.password
-        }
-      })
+          password: form.password,
+        },
+      });
       toast.add({
-        title: 'Usuário criado',
+        title: "Usuário criado",
         description: `${form.name} foi cadastrado com sucesso.`,
-        color: 'success'
-      })
+        color: "success",
+      });
     }
-    emit('update:open', false)
-    emit('saved')
+    emit("update:open", false);
+    emit("saved");
   } catch (e: any) {
-    const errMsg
-      = e.statusCode === 409
-        ? 'E-mail ou CPF já cadastrado para outro usuário.'
-        : e.data?.message ?? 'Erro ao salvar. Tente novamente.'
+    const errMsg =
+      e.statusCode === 409
+        ? "E-mail ou CPF já cadastrado para outro usuário."
+        : e.statusCode === 403
+          ? "Somente administradores podem alterar o perfil de acesso."
+          : (e.data?.message ?? "Erro ao salvar. Tente novamente.");
     toast.add({
-      title: 'Erro ao salvar',
+      title: "Erro ao salvar",
       description: errMsg,
-      color: 'error'
-    })
+      color: "error",
+    });
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function handleAdminResetPassword() {
   if (adminPasswordForm.newPass.length < 6) {
     toast.add({
-      title: 'Senha inválida',
-      description: 'A nova senha deve ter pelo menos 6 caracteres.',
-      color: 'warning'
-    })
-    return
+      title: "Senha inválida",
+      description: "A nova senha deve ter pelo menos 6 caracteres.",
+      color: "warning",
+    });
+    return;
   }
   if (adminPasswordForm.newPass !== adminPasswordForm.confirm) {
     toast.add({
-      title: 'Senhas não conferem',
-      description: 'A confirmação não corresponde à nova senha.',
-      color: 'warning'
-    })
-    return
+      title: "Senhas não conferem",
+      description: "A confirmação não corresponde à nova senha.",
+      color: "warning",
+    });
+    return;
   }
-  if (!props.editingId) return
-  savingPassword.value = true
+  if (!props.editingId) return;
+  savingPassword.value = true;
   try {
     await $fetch(`/api/users/${props.editingId}/password`, {
-      method: 'PATCH',
-      body: { newPassword: adminPasswordForm.newPass }
-    })
+      method: "PATCH",
+      body: { newPassword: adminPasswordForm.newPass },
+    });
     toast.add({
-      title: 'Senha redefinida',
-      description: 'A senha do usuário foi alterada com sucesso.',
-      color: 'success'
-    })
-    adminPasswordForm.newPass = ''
-    adminPasswordForm.confirm = ''
+      title: "Senha redefinida",
+      description: "A senha do usuário foi alterada com sucesso.",
+      color: "success",
+    });
+    adminPasswordForm.newPass = "";
+    adminPasswordForm.confirm = "";
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
+      title: "Erro",
       description:
-        e?.data?.message
-        ?? e?.data?.statusMessage
-        ?? 'Não foi possível redefinir a senha.',
-      color: 'error'
-    })
+        e?.data?.message ??
+        e?.data?.statusMessage ??
+        "Não foi possível redefinir a senha.",
+      color: "error",
+    });
   } finally {
-    savingPassword.value = false
+    savingPassword.value = false;
   }
 }
 
 async function addCompanyToUser() {
-  if (!selectedCompanyToAdd.value || !props.editingId) return
-  addingCompany.value = true
+  if (!selectedCompanyToAdd.value || !props.editingId) return;
+  addingCompany.value = true;
   try {
-    await $fetch('/api/user-companies', {
-      method: 'POST',
+    await $fetch("/api/user-companies", {
+      method: "POST",
       body: {
         userId: props.editingId,
         companyId: selectedCompanyToAdd.value.id,
-        role: addCompanyRole.value
-      }
-    })
+        role: addCompanyRole.value,
+      },
+    });
     toast.add({
-      title: 'Empresa vinculada',
+      title: "Empresa vinculada",
       description: `${selectedCompanyToAdd.value.name} adicionada ao usuário.`,
-      color: 'success'
-    })
-    selectedCompanyToAdd.value = null
-    addCompanySearch.value = ''
-    addCompanyRole.value = 'user'
-    await loadUserCompanies(props.editingId)
+      color: "success",
+    });
+    selectedCompanyToAdd.value = null;
+    addCompanySearch.value = "";
+    addCompanyRole.value = "user";
+    await loadUserCompanies(props.editingId);
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
-      description: e.data?.message ?? 'Não foi possível vincular a empresa.',
-      color: 'error'
-    })
+      title: "Erro",
+      description: e.data?.message ?? "Não foi possível vincular a empresa.",
+      color: "error",
+    });
   } finally {
-    addingCompany.value = false
+    addingCompany.value = false;
   }
 }
 
 async function removeCompanyFromUser(entry: UserCompanyEntry) {
-  if (!props.editingId) return
-  removingCompanyId.value = entry.id
+  if (!props.editingId) return;
+  removingCompanyId.value = entry.id;
   try {
-    await $fetch(`/api/user-companies/${entry.id}`, { method: 'DELETE' })
+    await $fetch(`/api/user-companies/${entry.id}`, { method: "DELETE" });
     toast.add({
-      title: 'Empresa removida',
+      title: "Empresa removida",
       description: `${entry.companyName} desvinculada do usuário.`,
-      color: 'warning'
-    })
+      color: "warning",
+    });
     if (form.defaultCompanyId === entry.companyId) {
-      form.defaultCompanyId = null
+      form.defaultCompanyId = null;
     }
-    await loadUserCompanies(props.editingId)
+    await loadUserCompanies(props.editingId);
   } catch {
     toast.add({
-      title: 'Erro',
-      description: 'Não foi possível remover a empresa.',
-      color: 'error'
-    })
+      title: "Erro",
+      description: "Não foi possível remover a empresa.",
+      color: "error",
+    });
   } finally {
-    removingCompanyId.value = null
+    removingCompanyId.value = null;
   }
 }
 </script>
@@ -355,7 +366,9 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
       <div class="flex flex-col gap-6 p-6 overflow-y-auto h-full pb-24">
         <!-- Dados pessoais -->
         <div class="space-y-4">
-          <h4 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+          <h4
+            class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+          >
             <UIcon name="i-heroicons-user" class="w-4 h-4" />
             Dados Pessoais
           </h4>
@@ -389,7 +402,9 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
                 :disabled="editMode"
               />
               <template v-if="editMode" #hint>
-                <span class="text-xs text-zinc-400">E-mail não pode ser alterado</span>
+                <span class="text-xs text-zinc-400"
+                  >E-mail não pode ser alterado</span
+                >
               </template>
             </UFormField>
 
@@ -406,7 +421,9 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
                   @update:model-value="(v) => (form.document = maskDocument(v))"
                 />
                 <template v-if="editMode" #hint>
-                  <span class="text-xs text-zinc-400">CPF não pode ser alterado</span>
+                  <span class="text-xs text-zinc-400"
+                    >CPF não pode ser alterado</span
+                  >
                 </template>
               </UFormField>
 
@@ -429,7 +446,9 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
 
         <!-- Acesso e permissões -->
         <div class="space-y-4">
-          <h4 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+          <h4
+            class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+          >
             <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
             Acesso e Permissões
           </h4>
@@ -441,13 +460,19 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
             >
               <USelectMenu
                 v-model="form.role"
-                :items="(USER_ROLE_OPTS as any)"
+                :items="USER_ROLE_OPTS as any"
                 value-key="value"
                 label-key="label"
                 icon="i-heroicons-shield-check"
                 class="w-full"
                 size="lg"
+                :disabled="!canEditAccessRole"
               />
+              <template v-if="!canEditAccessRole" #hint>
+                <span class="text-xs text-zinc-400">
+                  Apenas administradores podem alterar o perfil de acesso.
+                </span>
+              </template>
             </UFormField>
 
             <UFormField
@@ -468,23 +493,31 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
 
             <!-- Status Toggle Row (Standard Design System) -->
             <UFormField label="Status" class="col-span-full">
-              <div class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+              <div
+                class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50"
+              >
                 <div class="flex items-center gap-3">
                   <div
                     :class="[
                       'w-8 h-8 rounded-lg flex items-center justify-center',
                       form.active
                         ? 'bg-primary-100 dark:bg-primary-500/10 text-primary-500'
-                        : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'
+                        : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
                     ]"
                   >
                     <UIcon
-                      :name="form.active ? 'i-heroicons-check-circle' : 'i-heroicons-pause-circle'"
+                      :name="
+                        form.active
+                          ? 'i-heroicons-check-circle'
+                          : 'i-heroicons-pause-circle'
+                      "
                       class="w-4 h-4"
                     />
                   </div>
                   <div>
-                    <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <p
+                      class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    >
                       {{ form.active ? "Usuário ativo" : "Usuário inativo" }}
                     </p>
                     <p class="text-[10px] text-zinc-400">
@@ -521,7 +554,10 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
               >
                 <template #item="{ item }">
                   <div class="flex items-center gap-2 py-0.5">
-                    <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-zinc-400" />
+                    <UIcon
+                      name="i-heroicons-building-office-2"
+                      class="w-4 h-4 text-zinc-400"
+                    />
                     <span class="text-sm font-medium">{{ item.name }}</span>
                   </div>
                 </template>
@@ -533,13 +569,18 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
         <!-- Admin Password Reset -->
         <template v-if="editMode && authUser?.role === 'admin'">
           <USeparator />
-          <div class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 flex flex-col gap-6">
-            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+          <div
+            class="rounded-3xl bg-zinc-50 dark:bg-zinc-800/20 p-6 border border-zinc-200/50 dark:border-zinc-700/30 flex flex-col gap-6"
+          >
+            <h4
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2"
+            >
               <div class="w-1.5 h-1.5 rounded-full bg-orange-500" />
               Redefinir Senha
             </h4>
             <p class="text-xs text-zinc-500 dark:text-zinc-400 -mt-2">
-              Como administrador, você pode definir uma nova senha sem precisar da senha atual.
+              Como administrador, você pode definir uma nova senha sem precisar
+              da senha atual.
             </p>
             <div class="grid grid-cols-1 gap-3">
               <UFormField label="Nova senha">
@@ -552,7 +593,11 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
                 >
                   <template #trailing>
                     <UButton
-                      :icon="showAdminPass ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      :icon="
+                        showAdminPass
+                          ? 'i-heroicons-eye-slash'
+                          : 'i-heroicons-eye'
+                      "
                       color="neutral"
                       variant="ghost"
                       size="xs"
@@ -591,12 +636,19 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
           <USeparator />
           <div class="space-y-4">
             <div class="flex items-center justify-between">
-              <h4 class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+              <h4
+                class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
+              >
                 <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
                 Empresas com Acesso
               </h4>
-              <span v-if="!companiesLoading" class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                {{ userCompanyList.length }} empresa{{ userCompanyList.length !== 1 ? 's' : '' }}
+              <span
+                v-if="!companiesLoading"
+                class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
+              >
+                {{ userCompanyList.length }} empresa{{
+                  userCompanyList.length !== 1 ? "s" : ""
+                }}
               </span>
             </div>
 
@@ -608,7 +660,10 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
               v-else-if="userCompanyList.length === 0"
               class="flex flex-col items-center justify-center py-6 text-zinc-400 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
             >
-              <UIcon name="i-heroicons-building-office-2" class="w-8 h-8 mb-2" />
+              <UIcon
+                name="i-heroicons-building-office-2"
+                class="w-8 h-8 mb-2"
+              />
               <p class="text-xs font-bold">Nenhuma empresa vinculada</p>
             </div>
 
@@ -618,19 +673,39 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
                 :key="entry.id"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-white dark:bg-zinc-900 group/entry"
               >
-                <div class="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
-                  <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-primary-500" />
+                <div
+                  class="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+                >
+                  <UIcon
+                    name="i-heroicons-building-office-2"
+                    class="w-4 h-4 text-primary-500"
+                  />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <span class="text-sm font-bold text-zinc-900 dark:text-white truncate block">{{ entry.companyName }}</span>
-                  <UBadge :color="roleColor(entry.role)" variant="soft" size="xs">
+                  <span
+                    class="text-sm font-bold text-zinc-900 dark:text-white truncate block"
+                    >{{ entry.companyName }}</span
+                  >
+                  <UBadge
+                    :color="roleColor(entry.role)"
+                    variant="soft"
+                    size="xs"
+                  >
                     {{ roleLabel(entry.role) }}
                   </UBadge>
                 </div>
                 <UTooltip text="Definir como empresa padrão">
                   <UButton
-                    :icon="form.defaultCompanyId === entry.companyId ? 'i-heroicons-star-20-solid' : 'i-heroicons-star'"
-                    :color="form.defaultCompanyId === entry.companyId ? 'warning' : 'neutral'"
+                    :icon="
+                      form.defaultCompanyId === entry.companyId
+                        ? 'i-heroicons-star-20-solid'
+                        : 'i-heroicons-star'
+                    "
+                    :color="
+                      form.defaultCompanyId === entry.companyId
+                        ? 'warning'
+                        : 'neutral'
+                    "
                     variant="ghost"
                     size="xs"
                     class="shrink-0"
@@ -650,8 +725,12 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
             </div>
 
             <!-- Add company row -->
-            <div class="rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-3 space-y-3">
-              <p class="text-xs font-bold text-zinc-500">Vincular nova empresa</p>
+            <div
+              class="rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-3 space-y-3"
+            >
+              <p class="text-xs font-bold text-zinc-500">
+                Vincular nova empresa
+              </p>
               <div class="flex gap-2">
                 <USelectMenu
                   v-model="selectedCompanyToAdd"
@@ -666,14 +745,17 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
                 >
                   <template #item="{ item }">
                     <div class="flex items-center gap-2 py-0.5">
-                      <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-zinc-400" />
+                      <UIcon
+                        name="i-heroicons-building-office-2"
+                        class="w-4 h-4 text-zinc-400"
+                      />
                       <span class="text-sm font-medium">{{ item.name }}</span>
                     </div>
                   </template>
                 </USelectMenu>
                 <USelect
                   v-model="addCompanyRole"
-                  :items="(USER_ROLE_OPTS as any)"
+                  :items="USER_ROLE_OPTS as any"
                   value-key="value"
                   label-key="label"
                   class="w-36"
@@ -699,7 +781,9 @@ async function removeCompanyFromUser(entry: UserCompanyEntry) {
     </template>
 
     <template #footer>
-      <div class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <div
+        class="flex items-center gap-4 p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      >
         <UButton
           color="neutral"
           variant="ghost"

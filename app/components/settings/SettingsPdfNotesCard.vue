@@ -56,7 +56,7 @@ const handleSave = async () => {
 
   loadingSave.value = true;
   try {
-    await $fetch(`/api/companies/${props.companyId}`, {
+    await $fetch(`/api/companies/${props.companyId}/pdf-notes`, {
       method: "PUT",
       body: {
         pdfNotes: pdfNotesForm.pdfNotes.trim() || null,

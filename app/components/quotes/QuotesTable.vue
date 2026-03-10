@@ -1,86 +1,87 @@
 <script setup lang="ts">
-import type { Quote, QuoteStatus } from '~/types/sales'
-import { formatCurrency, formatDate } from '~/utils/formatters'
+import type { Quote, QuoteStatus } from "~/types/sales";
+import { formatCurrency, formatDate } from "~/utils/formatters";
 
 defineProps<{
-  paginatedQuotes: Quote[]
-  loadingQuotes: boolean
-  filteredQuotes: Quote[]
-  pageSize: number
-  totalPages: number
+  paginatedQuotes: Quote[];
+  loadingQuotes: boolean;
+  filteredQuotes: Quote[];
+  pageSize: number;
+  totalPages: number;
   statusConfig: Record<
     QuoteStatus,
-    { label: string, color: string, icon: string }
-  >
-  isSendingPdf: number | null
-  isUpdatingStatus?: number | null
-}>()
+    { label: string; color: string; icon: string }
+  >;
+  isSendingPdf: number | null;
+  isUpdatingStatus?: number | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'edit', q: Quote): void
-  (e: 'delete', q: Quote): void
-  (e: 'cancel', q: Quote): void
-  (e: 'duplicate', q: Quote): void
-  (e: 'sendPdf', q: Quote): void
-  (e: 'updateStatus', q: Quote, status: QuoteStatus): void
-}>()
+  (e: "edit", q: Quote): void;
+  (e: "delete", q: Quote): void;
+  (e: "cancel", q: Quote): void;
+  (e: "duplicate", q: Quote): void;
+  (e: "sendPdf", q: Quote): void;
+  (e: "updateStatus", q: Quote, status: QuoteStatus): void;
+}>();
 
-const search = defineModel<string>('search')
-const statusFilter = defineModel<QuoteStatus | 'all'>('statusFilter')
-const page = defineModel<number>('page', { default: 1 })
+const search = defineModel<string>("search");
+const statusFilter = defineModel<QuoteStatus | "all">("statusFilter");
+const page = defineModel<number>("page", { default: 1 });
 
 const STATUS_OPTS = [
-  { label: 'Todos', value: 'all' },
-  { label: 'Rascunho', value: 'draft' },
-  { label: 'Enviado', value: 'sent' },
-  { label: 'Aprovado', value: 'approved' },
-  { label: 'Rejeitado', value: 'rejected' },
-  { label: 'Expirado', value: 'expired' }
-]
+  { label: "Todos", value: "all" },
+  { label: "Rascunho", value: "draft" },
+  { label: "Enviado", value: "sent" },
+  { label: "Aprovado", value: "approved" },
+  { label: "Rejeitado", value: "rejected" },
+  { label: "Expirado", value: "expired" },
+];
 
 const STATUS_ACTIONS: Record<
   QuoteStatus,
-  { next: QuoteStatus, label: string }[]
+  { next: QuoteStatus; label: string }[]
 > = {
-  draft: [{ next: 'sent', label: 'Marcar como Enviado' }],
+  draft: [{ next: "sent", label: "Marcar como Enviado" }],
   sent: [
-    { next: 'approved', label: 'Aprovar' },
-    { next: 'rejected', label: 'Rejeitar' }
+    { next: "approved", label: "Aprovar" },
+    { next: "rejected", label: "Rejeitar" },
   ],
   approved: [],
-  rejected: [{ next: 'draft', label: 'Reabrir como Rascunho' }],
-  expired: [{ next: 'draft', label: 'Reabrir como Rascunho' }]
-}
+  rejected: [{ next: "draft", label: "Reabrir como Rascunho" }],
+  expired: [{ next: "draft", label: "Reabrir como Rascunho" }],
+};
+
+const getStatusActions = (status: QuoteStatus) =>
+  isManagerOrAdmin.value ? STATUS_ACTIONS[status] : [];
 
 const downloadPdf = (id: number) => {
-  window.open(`/api/quotes/${id}/download`, '_blank')
-}
+  window.open(`/api/quotes/${id}/download`, "_blank");
+};
 
-const { user } = useAuth()
+const { user } = useAuth();
 const isManagerOrAdmin = computed(
-  () => user.value?.role === 'admin' || user.value?.role === 'manager'
-)
+  () => user.value?.role === "admin" || user.value?.role === "manager",
+);
 
 const isExpired = (date: string | number | null | undefined): boolean => {
-  if (!date) return false
-  const d = new Date(date)
-  return !isNaN(d.getTime()) && d < new Date()
-}
+  if (!date) return false;
+  const d = new Date(date);
+  return !isNaN(d.getTime()) && d < new Date();
+};
 
 const canEdit = (status: QuoteStatus): boolean => {
-  if (isManagerOrAdmin.value) return true
-  return status !== 'approved'
-}
+  return true;
+};
 
 const canDelete = (status: QuoteStatus): boolean => {
-  if (isManagerOrAdmin.value) return true
-  return status !== 'approved'
-}
+  return isManagerOrAdmin.value;
+};
 
 const canCancel = (status: QuoteStatus): boolean => {
-  if (isManagerOrAdmin.value && status === 'approved') return true
-  return status !== 'rejected' && status !== 'approved'
-}
+  if (!isManagerOrAdmin.value) return false;
+  return status !== "rejected";
+};
 </script>
 
 <template>
@@ -88,7 +89,7 @@ const canCancel = (status: QuoteStatus): boolean => {
     :ui="{
       body: 'p-0 sm:p-0',
       header: 'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
+      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
@@ -97,7 +98,9 @@ const canCancel = (status: QuoteStatus): boolean => {
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-2 h-6 bg-primary-500 rounded-full" />
-          <h3 class="font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+          <h3
+            class="font-black text-zinc-900 dark:text-white uppercase tracking-tight"
+          >
             Lista de Orçamentos
           </h3>
         </div>
@@ -126,11 +129,7 @@ const canCancel = (status: QuoteStatus): boolean => {
       v-if="loadingQuotes"
       class="divide-y divide-zinc-100 dark:divide-zinc-800/50"
     >
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="px-6 py-4"
-      >
+      <div v-for="i in 6" :key="i" class="px-6 py-4">
         <USkeleton class="h-12 rounded-xl" />
       </div>
     </div>
@@ -140,7 +139,9 @@ const canCancel = (status: QuoteStatus): boolean => {
       v-else-if="filteredQuotes.length === 0"
       class="flex flex-col items-center justify-center py-16 px-4"
     >
-      <div class="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center mb-4">
+      <div
+        class="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center mb-4"
+      >
         <UIcon
           name="i-heroicons-document-text"
           class="w-8 h-8 text-zinc-300 dark:text-zinc-600"
@@ -155,29 +156,38 @@ const canCancel = (status: QuoteStatus): boolean => {
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="overflow-x-auto"
-    >
+    <div v-else class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
-            <th class="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 whitespace-nowrap">
+            <th
+              class="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 whitespace-nowrap"
+            >
               Nº
             </th>
-            <th class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            <th
+              class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
+            >
               Cliente
             </th>
-            <th class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hidden md:table-cell">
+            <th
+              class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hidden md:table-cell"
+            >
               Data
             </th>
-            <th class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hidden lg:table-cell">
+            <th
+              class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hidden lg:table-cell"
+            >
               Validade
             </th>
-            <th class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            <th
+              class="text-left px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
+            >
               Status
             </th>
-            <th class="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            <th
+              class="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
+            >
               Total
             </th>
             <th class="px-6 py-4" />
@@ -190,19 +200,27 @@ const canCancel = (status: QuoteStatus): boolean => {
             class="group hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-all duration-200"
           >
             <!-- ID -->
-            <td class="px-6 py-4 font-black text-zinc-400 text-xs whitespace-nowrap">
+            <td
+              class="px-6 py-4 font-black text-zinc-400 text-xs whitespace-nowrap"
+            >
               #{{ String(q.id).padStart(4, "0") }}
             </td>
             <!-- Customer -->
             <td class="px-4 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
-                  <span class="text-sm font-black text-primary-600 dark:text-primary-400">
+                <div
+                  class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-500/10 flex items-center justify-center shrink-0"
+                >
+                  <span
+                    class="text-sm font-black text-primary-600 dark:text-primary-400"
+                  >
                     {{ q.customerName.charAt(0).toUpperCase() }}
                   </span>
                 </div>
                 <div class="min-w-0">
-                  <p class="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-primary-600 transition-colors">
+                  <p
+                    class="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-primary-600 transition-colors"
+                  >
                     {{ q.customerName }}
                   </p>
                   <p
@@ -215,7 +233,9 @@ const canCancel = (status: QuoteStatus): boolean => {
               </div>
             </td>
             <!-- Date -->
-            <td class="px-4 py-4 text-zinc-500 text-xs whitespace-nowrap hidden md:table-cell">
+            <td
+              class="px-4 py-4 text-zinc-500 text-xs whitespace-nowrap hidden md:table-cell"
+            >
               {{ formatDate(q.createdAt) }}
             </td>
             <!-- Valid until -->
@@ -225,30 +245,27 @@ const canCancel = (status: QuoteStatus): boolean => {
                 class="text-xs text-zinc-500"
                 :class="{
                   'text-red-500 font-bold':
-                    isExpired(q.validUntil) && q.status !== 'approved'
+                    isExpired(q.validUntil) && q.status !== 'approved',
                 }"
               >
                 {{ formatDate(q.validUntil) }}
               </span>
-              <span
-                v-else
-                class="text-xs text-zinc-300"
-              >—</span>
+              <span v-else class="text-xs text-zinc-300">—</span>
             </td>
             <!-- Status -->
             <td class="px-4 py-4">
               <UDropdownMenu
                 :items="
-                  STATUS_ACTIONS[q.status].length
+                  getStatusActions(q.status).length
                     ? [
-                      STATUS_ACTIONS[q.status].map((a) => ({
-                        label: a.label,
-                        onSelect: () => emit('updateStatus', q, a.next)
-                      }))
-                    ]
+                        getStatusActions(q.status).map((a) => ({
+                          label: a.label,
+                          onSelect: () => emit('updateStatus', q, a.next),
+                        })),
+                      ]
                     : undefined
                 "
-                :disabled="STATUS_ACTIONS[q.status].length === 0"
+                :disabled="getStatusActions(q.status).length === 0"
               >
                 <UBadge
                   :color="statusConfig[q.status].color as any"
@@ -256,10 +273,11 @@ const canCancel = (status: QuoteStatus): boolean => {
                   size="sm"
                   class="font-black uppercase tracking-widest text-[9px] rounded-full px-2.5 py-0.5 cursor-pointer"
                   :class="[
-                    STATUS_ACTIONS[q.status].length && isUpdatingStatus !== q.id
+                    getStatusActions(q.status).length &&
+                    isUpdatingStatus !== q.id
                       ? 'cursor-pointer hover:opacity-70'
                       : 'cursor-default',
-                    isUpdatingStatus === q.id && 'opacity-60'
+                    isUpdatingStatus === q.id && 'opacity-60',
                   ]"
                 >
                   <template #leading>
@@ -289,7 +307,9 @@ const canCancel = (status: QuoteStatus): boolean => {
             </td>
             <!-- Total -->
             <td class="px-4 py-4 text-right">
-              <span class="font-black tabular-nums text-base tracking-tighter text-zinc-900 dark:text-white">
+              <span
+                class="font-black tabular-nums text-base tracking-tighter text-zinc-900 dark:text-white"
+              >
                 {{ formatCurrency(q.total) }}
               </span>
             </td>
@@ -310,7 +330,11 @@ const canCancel = (status: QuoteStatus): boolean => {
                   </UTooltip>
                 </template>
                 <!-- Edit button -->
-                <UTooltip :text="canEdit(q.status) ? 'Editar Orçamento' : 'Ver Orçamento'">
+                <UTooltip
+                  :text="
+                    canEdit(q.status) ? 'Editar Orçamento' : 'Ver Orçamento'
+                  "
+                >
                   <UButton
                     color="neutral"
                     variant="ghost"
@@ -328,56 +352,66 @@ const canCancel = (status: QuoteStatus): boolean => {
                       {
                         label: 'Enviar via WhatsApp',
                         icon: 'i-simple-icons-whatsapp',
-                        onSelect: () => emit('sendPdf', q)
+                        onSelect: () => emit('sendPdf', q),
                       },
                       {
                         label: 'Baixar PDF',
                         icon: 'i-heroicons-arrow-down-tray',
-                        onSelect: () => downloadPdf(q.id)
+                        onSelect: () => downloadPdf(q.id),
                       },
                       {
                         label: 'Duplicar como Rascunho',
                         icon: 'i-heroicons-document-duplicate',
-                        onSelect: () => emit('duplicate', q)
-                      }
+                        onSelect: () => emit('duplicate', q),
+                      },
                     ],
                     // Status actions
-                    ...(STATUS_ACTIONS[q.status].length
+                    ...(getStatusActions(q.status).length
                       ? [
-                        STATUS_ACTIONS[q.status].map((a) => ({
-                          label: a.label,
-                          icon: a.next === 'approved' ? 'i-heroicons-check' : a.next === 'rejected' ? 'i-heroicons-x-mark' : 'i-heroicons-arrow-path',
-                          color: a.next === 'approved' ? 'success' as const : a.next === 'rejected' ? 'error' as const : undefined,
-                          onSelect: () => emit('updateStatus', q, a.next)
-                        }))
-                      ]
+                          getStatusActions(q.status).map((a) => ({
+                            label: a.label,
+                            icon:
+                              a.next === 'approved'
+                                ? 'i-heroicons-check'
+                                : a.next === 'rejected'
+                                  ? 'i-heroicons-x-mark'
+                                  : 'i-heroicons-arrow-path',
+                            color:
+                              a.next === 'approved'
+                                ? ('success' as const)
+                                : a.next === 'rejected'
+                                  ? ('error' as const)
+                                  : undefined,
+                            onSelect: () => emit('updateStatus', q, a.next),
+                          })),
+                        ]
                       : []),
                     // Cancel action
                     ...(canCancel(q.status)
                       ? [
-                        [
-                          {
-                            label: 'Cancelar Orçamento',
-                            icon: 'i-heroicons-no-symbol',
-                            color: 'warning' as const,
-                            onSelect: () => emit('cancel', q)
-                          }
+                          [
+                            {
+                              label: 'Cancelar Orçamento',
+                              icon: 'i-heroicons-no-symbol',
+                              color: 'warning' as const,
+                              onSelect: () => emit('cancel', q),
+                            },
+                          ],
                         ]
-                      ]
                       : []),
                     // Delete action
                     ...(canDelete(q.status)
                       ? [
-                        [
-                          {
-                            label: 'Excluir Orçamento',
-                            icon: 'i-heroicons-trash',
-                            color: 'error' as const,
-                            onSelect: () => emit('delete', q)
-                          }
+                          [
+                            {
+                              label: 'Excluir Orçamento',
+                              icon: 'i-heroicons-trash',
+                              color: 'error' as const,
+                              onSelect: () => emit('delete', q),
+                            },
+                          ],
                         ]
-                      ]
-                      : [])
+                      : []),
                   ]"
                 >
                   <UButton
@@ -397,13 +431,11 @@ const canCancel = (status: QuoteStatus): boolean => {
     </div>
 
     <!-- Pagination -->
-    <template
-      v-if="filteredQuotes.length > pageSize"
-      #footer
-    >
+    <template v-if="filteredQuotes.length > pageSize" #footer>
       <div class="flex items-center justify-between">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-          {{ filteredQuotes.length }} orçamentos · página {{ page }} de {{ totalPages }}
+          {{ filteredQuotes.length }} orçamentos · página {{ page }} de
+          {{ totalPages }}
         </p>
         <div class="flex items-center gap-2">
           <UButton
