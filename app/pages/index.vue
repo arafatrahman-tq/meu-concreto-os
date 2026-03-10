@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useDashboardFilters } from '~/composables/dashboard/useDashboardFilters'
-import { useDashboardData } from '~/composables/dashboard/useDashboardData'
-import { useDashboardMetrics } from '~/composables/dashboard/useDashboardMetrics'
+import { useDashboardFilters } from "~/composables/dashboard/useDashboardFilters";
+import { useDashboardData } from "~/composables/dashboard/useDashboardData";
+import { useDashboardMetrics } from "~/composables/dashboard/useDashboardMetrics";
 
-definePageMeta({ layout: 'default' })
-useSeoMeta({ title: 'Dashboard | Meu Concreto' })
+definePageMeta({ layout: "default" });
+useSeoMeta({ title: "Dashboard | Meu Concreto" });
 
-const { user, companies, activeCompanyId, companyId } = useAuth()
+const { user, companies, activeCompanyId, companyId } = useAuth();
 
 const canFilter = computed(() => {
-  const role = user.value?.role?.toLowerCase() || ''
-  return ['admin', 'manager', 'administrador', 'gerente'].includes(role)
-})
+  const role = user.value?.role?.toLowerCase() || "";
+  return ["admin", "manager", "administrador", "gerente"].includes(role);
+});
 
 const {
   selectedPeriod,
@@ -19,8 +19,8 @@ const {
   customEnd,
   periodOptions,
   ranges,
-  fetchWindowStart
-} = useDashboardFilters()
+  fetchWindowStart,
+} = useDashboardFilters();
 
 const {
   sales,
@@ -30,22 +30,24 @@ const {
   pending,
   lastUpdated,
   isRefreshing,
-  refreshAll
-} = await useDashboardData(companyId, fetchWindowStart)
+  refreshAll,
+} = await useDashboardData(companyId, fetchWindowStart);
 
 const metrics = useDashboardMetrics(
   { sales, transactions, quotes, products },
   ranges,
   selectedPeriod,
   customStart,
-  customEnd
-)
+  customEnd,
+);
 
 const lastUpdatedLabel = computed(() =>
-  lastUpdated.value.toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  })
-)
+  lastUpdated.value.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }),
+);
 </script>
 
 <template>
@@ -69,15 +71,13 @@ const lastUpdatedLabel = computed(() =>
       :trend-label="metrics.trendLabel.value"
     />
 
+    <DashboardPriorityAlerts :alerts="metrics.priorityAlerts.value" />
+
     <DashboardChartCashFlow :metrics="metrics" />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-4">
       <template v-if="pending">
-        <USkeleton
-          v-for="i in 3"
-          :key="i"
-          class="h-64 rounded-3xl"
-        />
+        <USkeleton v-for="i in 3" :key="i" class="h-64 rounded-3xl" />
       </template>
       <template v-else>
         <DashboardRecentTransactions
@@ -91,5 +91,7 @@ const lastUpdatedLabel = computed(() =>
         <DashboardTopSellers :top-sellers="metrics.topSellers.value" />
       </template>
     </div>
+
+    <DashboardEventTimeline :events="metrics.eventTimeline.value" />
   </div>
 </template>

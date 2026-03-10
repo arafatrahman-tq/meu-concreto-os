@@ -541,6 +541,35 @@ export const useDashboardMetrics = (
     ),
   );
 
+  const chartRevenueAverage = computed(() => {
+    const bars = cashFlowChartData.value;
+    if (!bars.length) return 0;
+    const total = bars.reduce((sum, bar) => sum + bar.revenue, 0);
+    return total / bars.length;
+  });
+
+  const chartPeakRevenue = computed(() => {
+    return cashFlowChartData.value.reduce(
+      (best, current) =>
+        current.revenue > best.revenue
+          ? { label: current.label, revenue: current.revenue }
+          : best,
+      { label: "-", revenue: 0 },
+    );
+  });
+
+  const chartWorstBalance = computed(() => {
+    return cashFlowChartData.value.reduce(
+      (worst, current) => {
+        const balance = current.income - current.expense;
+        return balance < worst.balance
+          ? { label: current.label, balance }
+          : worst;
+      },
+      { label: "-", balance: 0 },
+    );
+  });
+
   // ─── Quick stats ──────────────────────────────────────────────────
   const pendingSales = computed(
     () => salesFiltered.value.filter((s) => s.status === "pending").length,
@@ -591,6 +620,153 @@ export const useDashboardMetrics = (
       .slice(0, 5);
   });
 
+  type PriorityAlert = {
+    id: string;
+    color: "error" | "warning" | "info" | "success";
+    icon: string;
+    title: string;
+    description: string;
+    actionLabel: string;
+    actionTo: string;
+  };
+
+  const txAllInRange = computed(() =>
+    data.transactions.value.filter(
+      (t) =>
+        toMs(t.date) >= ranges.value.start && toMs(t.date) < ranges.value.end,
+    ),
+  );
+
+  const salesAllInRange = computed(() =>
+    data.sales.value.filter(
+      (s) =>
+        toMs(s.date) >= ranges.value.start && toMs(s.date) < ranges.value.end,
+    ),
+  );
+
+  const priorityAlerts = computed<PriorityAlert[]>(() => {
+    const alerts: PriorityAlert[] = [];
+
+    if (balanceFiltered.value < 0) {
+      alerts.push({
+        id: "negative-balance",
+        color: "error",
+        icon: "i-heroicons-exclamation-triangle",
+        title: "Saldo negativo no período",
+        description:
+          "As despesas superaram as entradas. Priorize recebimentos e revise saídas críticas.",
+        actionLabel: "Ver despesas pendentes",
+        actionTo: "/transacoes?type=expense&status=pending",
+      });
+    }
+
+    if (pendingSales.value >= 5) {
+      alerts.push({
+        id: "many-pending-sales",
+        color: "warning",
+        icon: "i-heroicons-clock",
+        title: "Acúmulo de vendas pendentes",
+        description: `${pendingSales.value} venda(s) pendente(s) aguardando avanço de status.`,
+        actionLabel: "Abrir vendas pendentes",
+        actionTo: "/vendas?status=pending",
+      });
+    }
+
+    if (revenueFiltered.value > 0) {
+      const expensePressure = expenseFiltered.value / revenueFiltered.value;
+      if (expensePressure >= 0.7) {
+        alerts.push({
+          id: "expense-pressure",
+          color: "warning",
+          icon: "i-heroicons-arrow-trending-down",
+          title: "Pressão de despesas elevada",
+          description:
+            "Despesas próximas do faturamento. Acompanhe margem e custos variáveis.",
+          actionLabel: "Analisar transações",
+          actionTo: "/transacoes?type=expense",
+        });
+      }
+    }
+
+    const cancelledSales = salesAllInRange.value.filter(
+      (s) => s.status === "cancelled",
+    ).length;
+    const cancellationRate = salesAllInRange.value.length
+      ? (cancelledSales / salesAllInRange.value.length) * 100
+      : 0;
+
+    if (cancellationRate >= 15) {
+      alerts.push({
+        id: "high-cancellation-rate",
+        color: "info",
+        icon: "i-heroicons-information-circle",
+        title: "Taxa de cancelamento acima do esperado",
+        description: `${cancellationRate.toFixed(1)}% das vendas do período foram canceladas.`,
+        actionLabel: "Ver vendas canceladas",
+        actionTo: "/vendas?status=cancelled",
+      });
+    }
+
+    if (alerts.length === 0) {
+      alerts.push({
+        id: "healthy-period",
+        color: "success",
+        icon: "i-heroicons-check-circle",
+        title: "Operação estável no período",
+        description:
+          "Não há alertas críticos no momento. Continue monitorando os indicadores-chave.",
+        actionLabel: "Abrir transações",
+        actionTo: "/transacoes",
+      });
+    }
+
+    return alerts.slice(0, 3);
+  });
+
+  type DashboardEvent = {
+    id: string;
+    dateMs: number;
+    title: string;
+    description: string;
+    amount: number;
+    amountTone: "positive" | "negative" | "neutral";
+    tag: string;
+  };
+
+  const eventTimeline = computed<DashboardEvent[]>(() => {
+    const txEvents: DashboardEvent[] = txAllInRange.value.map((tx) => ({
+      id: `tx-${tx.id}`,
+      dateMs: toMs(tx.date),
+      title: tx.description,
+      description:
+        tx.type === "income"
+          ? "Entrada financeira registrada"
+          : "Saída financeira registrada",
+      amount: tx.amount,
+      amountTone: tx.type === "income" ? "positive" : "negative",
+      tag: tx.status === "paid" ? "Transação paga" : "Transação pendente",
+    }));
+
+    const saleEvents: DashboardEvent[] = salesAllInRange.value.map((sale) => ({
+      id: `sale-${sale.id}`,
+      dateMs: toMs(sale.date),
+      title: sale.customerName,
+      description: "Venda registrada",
+      amount: sale.total ?? 0,
+      amountTone: sale.status === "cancelled" ? "neutral" : "positive",
+      tag:
+        sale.status === "cancelled"
+          ? "Venda cancelada"
+          : sale.status === "completed"
+            ? "Venda concluída"
+            : "Venda em andamento",
+    }));
+
+    return [...txEvents, ...saleEvents]
+      .sort((a, b) => b.dateMs - a.dateMs)
+      .slice(0, 24);
+  });
+
   return {
     revenueFiltered,
     revenueTrend,
@@ -606,8 +782,13 @@ export const useDashboardMetrics = (
     cashFlowChartData,
     cashFlowSubtitle,
     chartMax,
+    chartRevenueAverage,
+    chartPeakRevenue,
+    chartWorstBalance,
     pendingSales,
     activeProductsCount,
+    priorityAlerts,
+    eventTimeline,
     recentTransactions,
     recentSales,
     topSellers,

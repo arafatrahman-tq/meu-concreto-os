@@ -324,7 +324,7 @@ export async function generateDocumentPDF(
 
   autoTable(doc, {
     startY: 85,
-    head: [["Descrição do Produto/Serviço", "Qtd", "Preço Unit.", "Total"]],
+    head: [["DESC.", "QTD.", "VLR. UNIT.", "TOTAL"]],
     body: tableRows,
     theme: "grid",
     headStyles: {

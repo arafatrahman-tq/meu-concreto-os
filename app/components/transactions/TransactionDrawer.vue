@@ -2,169 +2,184 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus
-} from '~/types/transactions'
-import { CATEGORY_SUGGESTIONS } from '~/types/transactions'
+  TransactionStatus,
+} from "~/types/transactions";
+import { CATEGORY_SUGGESTIONS } from "~/types/transactions";
 
 const props = defineProps<{
-  open: boolean
-  transaction?: Transaction | null
-}>()
+  open: boolean;
+  transaction?: Transaction | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'saved'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "saved"): void;
+}>();
 
-const { user, companyId } = useAuth()
-const toast = useToast()
+const { user, companyId } = useAuth();
+const toast = useToast();
 
 const isOpen = computed({
   get: () => props.open,
-  set: val => emit('update:open', val)
-})
+  set: (val) => emit("update:open", val),
+});
 
-const isEditing = computed(() => !!props.transaction)
-const loadingSave = ref(false)
+const isEditing = computed(() => !!props.transaction);
+const loadingSave = ref(false);
 
 // ── Confirmation Dialog ──
-const isConfirmModalOpen = ref(false)
-const showConfirmDialog = ref(false)
+const isConfirmModalOpen = ref(false);
+const showConfirmDialog = ref(false);
 
-const { data: pmData, pending: loadingPM } = useFetch('/api/payment-methods', {
-  query: { companyId, active: 'true' }
-})
+const { data: pmData, pending: loadingPM } = useFetch("/api/payment-methods", {
+  query: { companyId, active: "true" },
+});
 
 const paymentMethodsOptions = computed(() => {
-  const methods = (pmData.value as any)?.paymentMethods || []
+  const methods = (pmData.value as any)?.paymentMethods || [];
   return methods.map((m: any) => ({
     label: m.name,
-    value: m.name
-  }))
-})
+    value: m.name,
+  }));
+});
+
+type PaymentMethodOption = {
+  label?: string;
+  value?: string;
+};
+
+const getPaymentMethodValue = (
+  value: string | PaymentMethodOption | null | undefined,
+) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value.value === "string") return value.value;
+  if (typeof value.label === "string") return value.label;
+  return "";
+};
 
 const form = reactive({
-  description: '',
+  description: "",
   amount: 0 as number,
-  type: 'income' as TransactionType,
-  category: '',
-  status: 'pending' as TransactionStatus,
-  date: new Date().toLocaleDateString('sv'),
-  dueDate: '',
-  paymentMethod: ''
-})
+  type: "income" as TransactionType,
+  category: "",
+  status: "pending" as TransactionStatus,
+  date: new Date().toLocaleDateString("sv"),
+  dueDate: "",
+  paymentMethod: "" as string | PaymentMethodOption,
+});
 
-const formErrors = reactive<Record<string, string>>({})
+const formErrors = reactive<Record<string, string>>({});
 
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key]
+    delete formErrors[key];
   }
-}
+};
 
 const validateForm = (): boolean => {
-  clearErrors()
-  let isValid = true
+  clearErrors();
+  let isValid = true;
 
   if (!form.description || form.description.trim().length < 3) {
-    formErrors.description = 'A descrição deve ter pelo menos 3 caracteres.'
-    isValid = false
+    formErrors.description = "A descrição deve ter pelo menos 3 caracteres.";
+    isValid = false;
   }
 
   if (form.amount <= 0) {
-    formErrors.amount = 'O valor deve ser maior que zero.'
-    isValid = false
+    formErrors.amount = "O valor deve ser maior que zero.";
+    isValid = false;
   }
 
   if (!form.category) {
-    formErrors.category = 'Selecione uma categoria.'
-    isValid = false
+    formErrors.category = "Selecione uma categoria.";
+    isValid = false;
   }
 
-  if (!form.paymentMethod) {
-    formErrors.paymentMethod = 'Selecione a forma de pagamento/conta.'
-    isValid = false
+  if (!getPaymentMethodValue(form.paymentMethod)) {
+    formErrors.paymentMethod = "Selecione a forma de pagamento/conta.";
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const resetForm = () => {
-  form.description = ''
-  form.amount = 0
-  form.type = 'income'
-  form.category = ''
-  form.status = 'pending'
-  form.date = new Date().toLocaleDateString('sv')
-  form.dueDate = ''
-  form.paymentMethod = ''
-  clearErrors()
-}
+  form.description = "";
+  form.amount = 0;
+  form.type = "income";
+  form.category = "";
+  form.status = "pending";
+  form.date = new Date().toLocaleDateString("sv");
+  form.dueDate = "";
+  form.paymentMethod = "";
+  clearErrors();
+};
 
 watch(
   () => props.transaction,
   (t) => {
     if (t) {
-      form.description = t.description
-      form.amount = t.amount / 100
-      form.type = t.type
-      form.category = t.category ?? ''
-      form.status = t.status
+      form.description = t.description;
+      form.amount = t.amount / 100;
+      form.type = t.type;
+      form.category = t.category ?? "";
+      form.status = t.status;
       form.date = t.date
-        ? new Date(t.date as string | number).toLocaleDateString('sv')
-        : new Date().toLocaleDateString('sv')
+        ? new Date(t.date as string | number).toLocaleDateString("sv")
+        : new Date().toLocaleDateString("sv");
       form.dueDate = t.dueDate
-        ? new Date(t.dueDate as string | number).toLocaleDateString('sv')
-        : ''
-      form.paymentMethod = t.paymentMethod ?? ''
-      clearErrors()
+        ? new Date(t.dueDate as string | number).toLocaleDateString("sv")
+        : "";
+      form.paymentMethod = t.paymentMethod ?? "";
+      clearErrors();
     } else {
-      resetForm()
+      resetForm();
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const checkDateChanges = () => {
-  if (!props.transaction) return false
+  if (!props.transaction) return false;
 
   const originalDate = props.transaction.date
     ? new Date(props.transaction.date as string | number).toLocaleDateString(
-        'sv'
+        "sv",
       )
-    : ''
+    : "";
   const originalDueDate = props.transaction.dueDate
     ? new Date(props.transaction.dueDate as string | number).toLocaleDateString(
-        'sv'
+        "sv",
       )
-    : ''
+    : "";
 
-  return form.date !== originalDate || form.dueDate !== originalDueDate
-}
+  return form.date !== originalDate || form.dueDate !== originalDueDate;
+};
 
 const handlePreSave = () => {
   if (!validateForm()) {
     toast.add({
-      title: 'Atenção',
-      description: 'Corrija os campos destacados em vermelho.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-    return
+      title: "Atenção",
+      description: "Corrija os campos destacados em vermelho.",
+      color: "error",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
   }
 
   // If editing and dates changed, show confirmation
   if (isEditing.value && checkDateChanges()) {
-    showConfirmDialog.value = true
-    return
+    showConfirmDialog.value = true;
+    return;
   }
 
-  handleSave()
-}
+  handleSave();
+};
 
 const handleSave = async () => {
-  loadingSave.value = true
-  showConfirmDialog.value = false
+  loadingSave.value = true;
+  showConfirmDialog.value = false;
   try {
     const payload = {
       companyId: companyId.value,
@@ -176,32 +191,39 @@ const handleSave = async () => {
       status: form.status,
       date: form.date ? `${form.date}T12:00:00.000Z` : undefined,
       dueDate: form.dueDate ? `${form.dueDate}T12:00:00.000Z` : undefined,
-      paymentMethod: form.paymentMethod || undefined
-    }
+      paymentMethod: getPaymentMethodValue(form.paymentMethod) || undefined,
+    };
 
     if (isEditing.value && props.transaction) {
       await $fetch(`/api/transactions/${props.transaction.id}`, {
-        method: 'PUT',
-        body: payload
-      })
-      toast.add({ title: 'Transação atualizada', color: 'success' })
+        method: "PUT",
+        body: payload,
+      });
+      toast.add({ title: "Transação atualizada", color: "success" });
     } else {
-      await $fetch('/api/transactions', { method: 'POST', body: payload })
-      toast.add({ title: 'Transação criada', color: 'success' })
+      await $fetch("/api/transactions", { method: "POST", body: payload });
+      toast.add({ title: "Transação criada", color: "success" });
     }
 
-    isOpen.value = false
-    emit('saved')
+    isOpen.value = false;
+    emit("saved");
   } catch (err: any) {
+    const validationMessage =
+      err?.data?.data?.paymentMethod?._errors?.[0] ||
+      err?.data?.paymentMethod?._errors?.[0];
+
     toast.add({
-      title: 'Erro ao salvar',
-      description: err.data?.message || err.message,
-      color: 'error'
-    })
+      title: "Erro ao salvar",
+      description:
+        validationMessage === "Expected string, received object"
+          ? "Forma de pagamento invalida. Selecione uma opcao da lista."
+          : err?.data?.message || err?.message || "Nao foi possivel salvar.",
+      color: "error",
+    });
   } finally {
-    loadingSave.value = false
+    loadingSave.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -223,10 +245,7 @@ const handleSave = async () => {
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon
-                name="i-lucide-receipt"
-                class="w-4 h-4"
-              />
+              <UIcon name="i-lucide-receipt" class="w-4 h-4" />
               Geral
             </h4>
             <div class="grid grid-cols-1 gap-4">
@@ -244,15 +263,12 @@ const handleSave = async () => {
               </UFormField>
 
               <div class="grid grid-cols-2 gap-5">
-                <UFormField
-                  label="Tipo"
-                  required
-                >
+                <UFormField label="Tipo" required>
                   <USelect
                     v-model="form.type"
                     :items="[
                       { label: 'Receita', value: 'income' },
-                      { label: 'Despesa', value: 'expense' }
+                      { label: 'Despesa', value: 'expense' },
                     ]"
                     class="w-full"
                     size="lg"
@@ -289,16 +305,13 @@ const handleSave = async () => {
                     size="lg"
                   />
                 </UFormField>
-                <UFormField
-                  label="Status"
-                  required
-                >
+                <UFormField label="Status" required>
                   <USelect
                     v-model="form.status"
                     :items="[
                       { label: 'Pendente', value: 'pending' },
                       { label: 'Pago', value: 'paid' },
-                      { label: 'Cancelado', value: 'cancelled' }
+                      { label: 'Cancelado', value: 'cancelled' },
                     ]"
                     class="w-full"
                     size="lg"
@@ -322,10 +335,7 @@ const handleSave = async () => {
             </h4>
             <div class="grid grid-cols-1 gap-5">
               <div class="grid grid-cols-2 gap-5">
-                <UFormField
-                  label="Data da Transação"
-                  required
-                >
+                <UFormField label="Data da Transação" required>
                   <UInput
                     v-model="form.date"
                     type="date"
@@ -351,7 +361,7 @@ const handleSave = async () => {
                 <USelectMenu
                   v-model="form.paymentMethod"
                   :items="paymentMethodsOptions"
-                  value-attribute="value"
+                  value-key="value"
                   placeholder="Selecione..."
                   icon="i-lucide-credit-card"
                   class="w-full"
@@ -393,17 +403,18 @@ const handleSave = async () => {
   </USlideover>
 
   <!-- Confirm Date Change Modal -->
-  <UModal
-    v-model:open="showConfirmDialog"
-    title="Confirmar Alteração de Data"
-  >
+  <UModal v-model:open="showConfirmDialog" title="Confirmar Alteração de Data">
     <template #body>
       <div class="px-6 py-4 space-y-4">
         <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
           Você alterou a
-          <span class="font-bold text-zinc-900 dark:text-white">data da transação</span>
+          <span class="font-bold text-zinc-900 dark:text-white"
+            >data da transação</span
+          >
           ou a
-          <span class="font-bold text-zinc-900 dark:text-white">data de vencimento</span>. Isso pode afetar os relatórios financeiros do período.
+          <span class="font-bold text-zinc-900 dark:text-white"
+            >data de vencimento</span
+          >. Isso pode afetar os relatórios financeiros do período.
         </p>
         <div
           class="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-4 border border-amber-200 dark:border-amber-500/20"

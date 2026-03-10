@@ -232,6 +232,20 @@
       "when": 1773110240818,
       "tag": "0032_broken_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1773139200000,
+      "tag": "0033_quick_installments",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1773162974287,
+      "tag": "0034_shallow_kabuki",
+      "breakpoints": true
     }
   ]
 }

@@ -1,36 +1,40 @@
-export type TransactionType = 'income' | 'expense'
-export type TransactionStatus = 'pending' | 'paid' | 'cancelled'
+export type TransactionType = "income" | "expense";
+export type TransactionStatus = "pending" | "paid" | "cancelled";
 
 export interface Transaction {
-  id: number
-  companyId: number
-  userId?: number | null
-  saleId?: number | null
-  description: string
-  amount: number // cents
-  type: TransactionType
-  category?: string | null
-  status: TransactionStatus
-  date: string | number
-  dueDate?: string | number | null
-  paymentMethod?: string | null
-  createdAt: string | number
-  updatedAt: string | number
-  sale?: { id: number, customerName: string, items?: any[] } | null
-  user?: { id: number, name: string } | null
+  id: number;
+  companyId: number;
+  userId?: number | null;
+  saleId?: number | null;
+  parentTransactionId?: number | null;
+  installmentNumber?: number | null;
+  installmentTotal?: number | null;
+  isInstallmentParent?: boolean;
+  description: string;
+  amount: number; // cents
+  type: TransactionType;
+  category?: string | null;
+  status: TransactionStatus;
+  date: string | number;
+  dueDate?: string | number | null;
+  paymentMethod?: string | null;
+  createdAt: string | number;
+  updatedAt: string | number;
+  sale?: { id: number; customerName: string; items?: any[] } | null;
+  user?: { id: number; name: string } | null;
 }
 
 export const CATEGORY_SUGGESTIONS = [
-  'Vendas',
-  'Serviços',
-  'Aluguel',
-  'Salário',
-  'Impostos',
-  'Combustível',
-  'Manutenção',
-  'Equipamentos',
-  'Fornecedores',
-  'Marketing',
-  'Administrativo',
-  'Outros'
-]
+  "Vendas",
+  "Serviços",
+  "Aluguel",
+  "Salário",
+  "Impostos",
+  "Combustível",
+  "Manutenção",
+  "Equipamentos",
+  "Fornecedores",
+  "Marketing",
+  "Administrativo",
+  "Outros",
+];

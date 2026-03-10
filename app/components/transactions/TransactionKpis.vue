@@ -2,68 +2,89 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus
-} from '~/types/transactions'
+  TransactionStatus,
+} from "~/types/transactions";
 
 const props = defineProps<{
   kpis: {
-    income: number
-    expense: number
-    balance: number
-    pending: number
-    pendingCount: number
-    totalCount: number
-  }
-}>()
+    income: number;
+    expense: number;
+    balance: number;
+    pending: number;
+    pendingCount: number;
+    overdue: number;
+    overdueCount: number;
+    dueSoon: number;
+    dueSoonCount: number;
+    totalCount: number;
+  };
+}>();
 
 const formatCurrency = (cents: number) =>
-  new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(cents / 100)
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(cents / 100);
 
 const kpiItems = computed(() => [
   {
-    label: 'Receitas (Pagas)',
+    label: "Receitas (Pagas)",
     value: formatCurrency(props.kpis.income),
-    suffix: 'entradas confirmadas',
-    icon: 'i-heroicons-arrow-trending-up',
-    color: 'text-green-500',
-    bg: 'bg-green-50 dark:bg-green-500/10'
+    suffix: "entradas confirmadas",
+    icon: "i-heroicons-arrow-trending-up",
+    color: "text-green-500",
+    bg: "bg-green-50 dark:bg-green-500/10",
   },
   {
-    label: 'Despesas (Pagas)',
+    label: "Despesas (Pagas)",
     value: formatCurrency(props.kpis.expense),
-    suffix: 'saídas do caixa',
-    icon: 'i-heroicons-arrow-trending-down',
-    color: 'text-red-500',
-    bg: 'bg-red-50 dark:bg-red-500/10'
+    suffix: "saídas do caixa",
+    icon: "i-heroicons-arrow-trending-down",
+    color: "text-red-500",
+    bg: "bg-red-50 dark:bg-red-500/10",
   },
   {
-    label: 'Saldo Líquido',
+    label: "Saldo Líquido",
     value: formatCurrency(props.kpis.balance),
     suffix:
-      props.kpis.balance >= 0 ? 'em conta (positivo)' : 'em conta (negativo)',
-    icon: 'i-heroicons-banknotes',
-    color: props.kpis.balance >= 0 ? 'text-primary-500' : 'text-red-500',
+      props.kpis.balance >= 0 ? "em conta (positivo)" : "em conta (negativo)",
+    icon: "i-heroicons-banknotes",
+    color: props.kpis.balance >= 0 ? "text-primary-500" : "text-red-500",
     bg:
       props.kpis.balance >= 0
-        ? 'bg-primary-50 dark:bg-primary-500/10'
-        : 'bg-red-50 dark:bg-red-500/10'
+        ? "bg-primary-50 dark:bg-primary-500/10"
+        : "bg-red-50 dark:bg-red-500/10",
   },
   {
-    label: 'A Receber/Pagar',
+    label: "A Receber/Pagar",
     value: formatCurrency(props.kpis.pending),
     suffix: `${props.kpis.pendingCount} pendências`,
-    icon: 'i-heroicons-clock',
-    color: 'text-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-500/10'
-  }
-])
+    icon: "i-heroicons-clock",
+    color: "text-amber-500",
+    bg: "bg-amber-50 dark:bg-amber-500/10",
+  },
+  {
+    label: "Vencido",
+    value: formatCurrency(props.kpis.overdue),
+    suffix:
+      props.kpis.overdueCount > 0
+        ? `${props.kpis.overdueCount} em atraso`
+        : `${props.kpis.dueSoonCount} vencem em 7 dias`,
+    icon:
+      props.kpis.overdueCount > 0
+        ? "i-heroicons-exclamation-triangle"
+        : "i-heroicons-calendar-days",
+    color: props.kpis.overdueCount > 0 ? "text-red-500" : "text-amber-500",
+    bg:
+      props.kpis.overdueCount > 0
+        ? "bg-red-50 dark:bg-red-500/10"
+        : "bg-amber-50 dark:bg-amber-500/10",
+  },
+]);
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
     <div
       v-for="(kpi, i) in kpiItems"
       :key="i"
@@ -78,13 +99,10 @@ const kpiItems = computed(() => [
         <div
           :class="[
             kpi.bg,
-            'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs'
+            'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs',
           ]"
         >
-          <UIcon
-            :name="kpi.icon"
-            :class="['w-6 h-6', kpi.color]"
-          />
+          <UIcon :name="kpi.icon" :class="['w-6 h-6', kpi.color]" />
         </div>
       </div>
       <p

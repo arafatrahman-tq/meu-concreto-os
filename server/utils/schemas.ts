@@ -52,6 +52,19 @@ const optionalNullableSlumpIntField = z.preprocess((val) => {
   return val;
 }, z.number().int().optional().nullable());
 
+const paymentMethodField = z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return undefined;
+  if (typeof val === "string") return val;
+
+  if (typeof val === "object") {
+    const maybeOption = val as { value?: unknown; label?: unknown };
+    if (typeof maybeOption.value === "string") return maybeOption.value;
+    if (typeof maybeOption.label === "string") return maybeOption.label;
+  }
+
+  return val;
+}, z.string().optional());
+
 // --- Company Schemas ---
 export const companySchema = z.object({
   name: z
@@ -446,15 +459,35 @@ export const transactionSchema = z.object({
   date: dateSchema.optional(),
   dueDate: dateSchema.optional(),
 
-  paymentMethod: z.string().optional(),
+  paymentMethod: paymentMethodField,
 });
 
 export const transactionUpdateSchema = transactionSchema
   .partial()
   .omit({ companyId: true });
 
+export const transactionInstallmentsSchema = z.object({
+  companyId: z.number({
+    required_error: "O ID da empresa é obrigatório e deve ser um número",
+  }),
+  installments: z
+    .number()
+    .int({ message: "A quantidade de parcelas deve ser um número inteiro" })
+    .min(2, { message: "Informe pelo menos 2 parcelas" })
+    .max(36, { message: "Máximo de 36 parcelas" }),
+  intervalDays: z
+    .number()
+    .int({ message: "O intervalo deve ser um número inteiro" })
+    .min(1, { message: "O intervalo mínimo é de 1 dia" })
+    .max(365, { message: "O intervalo máximo é de 365 dias" }),
+  firstDueDate: dateSchema.optional(),
+});
+
 export type TransactionInput = z.infer<typeof transactionSchema>;
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
+export type TransactionInstallmentsInput = z.infer<
+  typeof transactionInstallmentsSchema
+>;
 
 // --- WhatsApp Settings Schemas ---
 export const whatsappSettingsSchema = z.object({
