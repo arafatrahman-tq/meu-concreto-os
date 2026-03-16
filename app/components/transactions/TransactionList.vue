@@ -62,8 +62,18 @@ const formatDate = (v: string | number | null | undefined) =>
 
 const getVolume = (sale: any) => {
   if (!sale || !sale.items) return 0;
+
+  const shouldCountConcreteVolume = (item: {
+    unit?: string | null;
+    countAsConcreteVolume?: boolean;
+  }) => {
+    if (item.unit === "m3") return item.countAsConcreteVolume !== false;
+    if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
+    return false;
+  };
+
   return sale.items
-    .filter((i: any) => i.unit === "m3")
+    .filter((i: any) => shouldCountConcreteVolume(i))
     .reduce((acc: number, i: any) => acc + (i.quantity || 0), 0);
 };
 

@@ -45,7 +45,16 @@ export default defineEventHandler(async (event) => {
       orderBy: [desc(sales.createdAt)],
       // Dashboard needs minimal data, but we need items for concrete volume
       with: minimal
-        ? { seller: true, items: { columns: { quantity: true, unit: true } } }
+        ? {
+            seller: true,
+            items: {
+              columns: {
+                quantity: true,
+                unit: true,
+                countAsConcreteVolume: true,
+              },
+            },
+          }
         : { seller: true, items: true, transactions: true, drivers: true },
     });
 

@@ -34,6 +34,17 @@ export default defineEventHandler(async (event) => {
 
   const { items, driverIds, ...saleData } = result.data;
 
+  const resolveCountAsConcreteVolume = (item: {
+    unit?: string | null;
+    countAsConcreteVolume?: boolean;
+  }) => {
+    if (typeof item.countAsConcreteVolume === "boolean") {
+      return item.countAsConcreteVolume;
+    }
+    if (item.unit === "m3_faltante") return false;
+    return item.unit === "m3";
+  };
+
   // Verify the caller has access to the target company (prevents cross-tenant write)
   await requireCompanyAccess(event, saleData.companyId);
 
@@ -79,6 +90,7 @@ export default defineEventHandler(async (event) => {
         subtotal += lineTotal;
         return {
           ...item,
+          countAsConcreteVolume: resolveCountAsConcreteVolume(item),
           totalPrice: lineTotal,
         };
       });
@@ -115,6 +127,7 @@ export default defineEventHandler(async (event) => {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
+            countAsConcreteVolume: item.countAsConcreteVolume,
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,

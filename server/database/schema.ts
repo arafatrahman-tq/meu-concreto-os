@@ -163,7 +163,7 @@ export const products = sqliteTable("products", {
   })
     .notNull()
     .default("other"),
-  unit: text("unit", { enum: ["m3", "un", "hr", "kg", "ton"] })
+  unit: text("unit", { enum: ["m3", "m3_faltante", "un", "hr", "kg", "ton"] })
     .notNull()
     .default("un"),
   price: integer("price").notNull().default(0), // Price in cents
@@ -395,6 +395,11 @@ export const quoteItems = sqliteTable("quote_items", {
   quantity: real("quantity").notNull().default(1),
   unitPrice: integer("unit_price").notNull().default(0), // Cents
   totalPrice: integer("total_price").notNull().default(0), // Cents
+  countAsConcreteVolume: integer("count_as_concrete_volume", {
+    mode: "boolean",
+  })
+    .notNull()
+    .default(true),
 
   // Specific fields snapshot
   fck: integer("fck"),
@@ -515,6 +520,11 @@ export const saleItems = sqliteTable("sale_items", {
   quantity: real("quantity").notNull().default(1),
   unitPrice: integer("unit_price").notNull().default(0),
   totalPrice: integer("total_price").notNull().default(0),
+  countAsConcreteVolume: integer("count_as_concrete_volume", {
+    mode: "boolean",
+  })
+    .notNull()
+    .default(true),
 
   fck: integer("fck"),
   slump: integer("slump"),

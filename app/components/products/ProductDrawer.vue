@@ -218,6 +218,7 @@ const mixDesignOptions = computed(() =>
 
 const UNIT_OPTS = [
   { label: "m³ — metros cúbicos", value: "m3" },
+  { label: "m³ faltante — metros cúbicos faltantes", value: "m3_faltante" },
   { label: "un — unidade", value: "un" },
   { label: "hr — hora", value: "hr" },
   { label: "kg — quilograma", value: "kg" },
@@ -285,7 +286,11 @@ const TYPE_FORM_OPTS = [
           />
         </UFormField>
 
-        <UFormField label="Preço de Venda (BRL)" required :error="formErrors.price">
+        <UFormField
+          label="Preço de Venda (BRL)"
+          required
+          :error="formErrors.price"
+        >
           <UInput
             v-model.number="form.price"
             type="number"
@@ -399,7 +404,9 @@ const TYPE_FORM_OPTS = [
         class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-700"
       >
         <div>
-          <p class="text-sm font-bold text-zinc-900 dark:text-white">Produto Ativo</p>
+          <p class="text-sm font-bold text-zinc-900 dark:text-white">
+            Produto Ativo
+          </p>
           <p class="text-xs text-zinc-400 mt-0.5">
             Produtos inativos não aparecem na seleção de orçamentos e vendas
           </p>

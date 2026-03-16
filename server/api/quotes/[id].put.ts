@@ -42,6 +42,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const { items, driverIds, ...quoteData } = validation.data;
+  const resolveCountAsConcreteVolume = (item: {
+    unit?: string | null;
+    countAsConcreteVolume?: boolean;
+  }) => {
+    if (typeof item.countAsConcreteVolume === "boolean") {
+      return item.countAsConcreteVolume;
+    }
+    if (item.unit === "m3_faltante") return false;
+    return item.unit === "m3";
+  };
   const isManagerOrAdmin =
     event.context.auth?.role === "admin" ||
     event.context.auth?.role === "manager";
@@ -83,7 +93,7 @@ export default defineEventHandler(async (event) => {
         // Insert new items and sum subtotal
         subtotal = 0;
         const itemsToInsert = normalizedItems.map((item) => {
-          const itemTotal = item.quantity * item.unitPrice;
+          const itemTotal = Math.round(item.quantity * item.unitPrice);
           subtotal += itemTotal;
           return {
             quoteId: quoteId,
@@ -94,6 +104,7 @@ export default defineEventHandler(async (event) => {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: itemTotal,
+            countAsConcreteVolume: resolveCountAsConcreteVolume(item),
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,
@@ -105,7 +116,7 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      const total = subtotal - discount;
+      const total = Math.max(0, subtotal - discount);
 
       // Update Drivers if provided
       if (driverIds !== undefined) {

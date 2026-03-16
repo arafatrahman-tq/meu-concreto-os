@@ -40,6 +40,10 @@ export const usePromoteQuote = (options?: PromoteQuoteOptions) => {
           productName: it.productName,
           description: it.description ?? null,
           unit: it.unit ?? null,
+          countAsConcreteVolume:
+            typeof it.countAsConcreteVolume === "boolean"
+              ? it.countAsConcreteVolume
+              : (it.unit ?? "m3") === "m3",
           quantity: it.quantity,
           unitPrice: it.unitPrice,
           fck: it.fck ?? null,

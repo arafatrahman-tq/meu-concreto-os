@@ -20,6 +20,7 @@ export interface SaleItem {
   productName: string;
   quantity: number;
   unit: string;
+  countAsConcreteVolume?: boolean;
 }
 
 export interface Transaction {

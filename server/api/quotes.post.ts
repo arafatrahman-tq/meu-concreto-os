@@ -34,15 +34,26 @@ export default defineEventHandler(async (event) => {
 
   const { items, driverIds, ...quoteData } = validation.data;
 
+  const resolveCountAsConcreteVolume = (item: {
+    unit?: string | null;
+    countAsConcreteVolume?: boolean;
+  }) => {
+    if (typeof item.countAsConcreteVolume === "boolean") {
+      return item.countAsConcreteVolume;
+    }
+    if (item.unit === "m3_faltante") return false;
+    return item.unit === "m3";
+  };
+
   // Verify the caller has access to the target company (prevents cross-tenant write)
   await requireCompanyAccess(event, quoteData.companyId);
 
   // Calculate totals
   const subtotal = items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
+    (sum, item) => sum + Math.round(item.quantity * item.unitPrice),
     0,
   );
-  const total = subtotal - quoteData.discount;
+  const total = Math.max(0, subtotal - quoteData.discount);
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -75,6 +86,7 @@ export default defineEventHandler(async (event) => {
       // 2. Create Items
       if (items.length > 0) {
         const itemsToInsert = items.map((item) => ({
+          totalPrice: Math.round(item.quantity * item.unitPrice),
           quoteId: newQuote.id,
           productId: item.productId,
           productName: item.productName,
@@ -82,7 +94,7 @@ export default defineEventHandler(async (event) => {
           unit: item.unit,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: item.quantity * item.unitPrice,
+          countAsConcreteVolume: resolveCountAsConcreteVolume(item),
           fck: item.fck,
           slump: item.slump,
           stoneSize: item.stoneSize,

@@ -47,6 +47,7 @@ export const useSalesForm = (options: {
     productName: "",
     description: "",
     unit: "m3",
+    countAsConcreteVolume: true,
     quantity: 1,
     unitPrice: 0,
     fck: null,
@@ -192,6 +193,10 @@ export const useSalesForm = (options: {
       productName: it.productName,
       description: it.description ?? "",
       unit: it.unit ?? "m3",
+      countAsConcreteVolume:
+        typeof it.countAsConcreteVolume === "boolean"
+          ? it.countAsConcreteVolume
+          : (it.unit ?? "m3") === "m3",
       quantity: it.quantity,
       unitPrice: it.unitPrice / 100,
       fck: it.fck ?? null,
@@ -347,6 +352,8 @@ export const useSalesForm = (options: {
     item.productName = prod.name;
     item.description = prod.description ?? "";
     item.unit = prod.unit;
+    item.countAsConcreteVolume =
+      prod.unit === "m3_faltante" ? false : prod.unit === "m3";
     item.unitPrice = prod.price / 100;
     item.fck = prod.fck ?? null;
     item.slump = prod.slump ?? null;
@@ -428,6 +435,7 @@ export const useSalesForm = (options: {
           productName: it.productName,
           description: it.description || null,
           unit: it.unit || null,
+          countAsConcreteVolume: it.countAsConcreteVolume,
           quantity: it.quantity,
           unitPrice: Math.round(it.unitPrice * 100),
           fck: it.fck || null,

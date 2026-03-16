@@ -73,6 +73,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
         productName: it.productName,
         description: it.description ?? "",
         unit: it.unit,
+        countAsConcreteVolume: it.countAsConcreteVolume,
         quantity: it.quantity,
         unitPrice: it.unitPrice,
         fck: it.fck ?? null,
@@ -88,6 +89,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
     productName: "",
     description: "",
     unit: "m3",
+    countAsConcreteVolume: true,
     quantity: 1,
     unitPrice: 0,
     fck: null,
@@ -237,6 +239,8 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       item.productName = p.name;
       item.unitPrice = p.price / 100; // price is in cents
       item.unit = p.unit;
+      item.countAsConcreteVolume =
+        p.unit === "m3_faltante" ? false : p.unit === "m3";
       item.description = p.description || "";
       item.fck = p.fck ?? null;
       item.slump = p.slump ?? null;
@@ -347,6 +351,10 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       productName: it.productName,
       description: it.description ?? "",
       unit: it.unit ?? "m3",
+      countAsConcreteVolume:
+        typeof it.countAsConcreteVolume === "boolean"
+          ? it.countAsConcreteVolume
+          : (it.unit ?? "m3") === "m3",
       quantity: it.quantity,
       unitPrice: (it.unitPrice || 0) / 100, // Cents to Real
       fck: it.fck ?? null,
@@ -438,6 +446,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
           productName: it.productName,
           description: it.description || null,
           unit: it.unit || null,
+          countAsConcreteVolume: it.countAsConcreteVolume,
           quantity: it.quantity,
           unitPrice: (it.unitPrice || 0) * 100, // Real to Cents
           fck: it.fck || null,
@@ -533,6 +542,10 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
       productName: it.productName,
       description: it.description ?? "",
       unit: it.unit ?? "m3",
+      countAsConcreteVolume:
+        typeof it.countAsConcreteVolume === "boolean"
+          ? it.countAsConcreteVolume
+          : (it.unit ?? "m3") === "m3",
       quantity: it.quantity,
       unitPrice: (it.unitPrice || 0) / 100,
       fck: it.fck ?? null,

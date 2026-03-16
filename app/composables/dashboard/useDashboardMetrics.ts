@@ -26,6 +26,15 @@ export const useDashboardMetrics = (
     return 0;
   };
 
+  const shouldCountConcreteVolume = (item: {
+    unit?: string | null;
+    countAsConcreteVolume?: boolean;
+  }) => {
+    if (item.unit === "m3") return item.countAsConcreteVolume !== false;
+    if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
+    return false;
+  };
+
   // ─── Sales Filtering & Trends ───────────────────────────────────
   const salesFiltered = computed(() =>
     data.sales.value.filter(
@@ -104,7 +113,7 @@ export const useDashboardMetrics = (
   const concreteVolumeFiltered = computed(() =>
     salesFiltered.value.reduce((acc, s) => {
       const volume = (s.items ?? [])
-        .filter((i) => i.unit === "m3")
+        .filter((i) => shouldCountConcreteVolume(i))
         .reduce((sum, i) => sum + (i.quantity || 0), 0);
       return acc + volume;
     }, 0),
@@ -113,7 +122,7 @@ export const useDashboardMetrics = (
   const concreteVolumePrevious = computed(() =>
     salesPrevious.value.reduce((acc, s) => {
       const volume = (s.items ?? [])
-        .filter((i) => i.unit === "m3")
+        .filter((i) => shouldCountConcreteVolume(i))
         .reduce((sum, i) => sum + (i.quantity || 0), 0);
       return acc + volume;
     }, 0),
@@ -142,7 +151,7 @@ export const useDashboardMetrics = (
         )
         .reduce((acc, s) => {
           const volume = (s.items ?? [])
-            .filter((i) => i.unit === "m3")
+            .filter((i) => shouldCountConcreteVolume(i))
             .reduce((sum, i) => sum + (i.quantity || 0), 0);
           return acc + volume;
         }, 0);
@@ -616,7 +625,7 @@ export const useDashboardMetrics = (
 
       // Calculate volume for this sale
       const saleVolume = (s.items ?? [])
-        .filter((i) => i.unit === "m3")
+        .filter((i) => shouldCountConcreteVolume(i))
         .reduce((sum, i) => sum + (i.quantity || 0), 0);
       current.volume += saleVolume;
 

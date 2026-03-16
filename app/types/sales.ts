@@ -25,6 +25,7 @@ export interface SaleItem {
   productName: string;
   description?: string;
   unit?: string;
+  countAsConcreteVolume?: boolean;
   quantity: number;
   unitPrice: number; // cents
   totalPrice?: number;
@@ -126,6 +127,7 @@ export interface QuoteItem {
   productName: string;
   description?: string;
   unit?: string;
+  countAsConcreteVolume?: boolean;
   quantity: number;
   unitPrice: number; // cents
   totalPrice?: number;
@@ -165,6 +167,7 @@ export interface FormItem {
   productName: string;
   description: string;
   unit: string;
+  countAsConcreteVolume: boolean;
   quantity: number;
   unitPrice: number; // display value in BRL (float)
   fck: number | null;

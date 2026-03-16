@@ -68,6 +68,15 @@ const STATUS_OPTS = [
   { label: "Cancelado", value: "cancelled" },
 ];
 
+const ITEM_UNIT_OPTS = [
+  { label: "m³", value: "m3" },
+  { label: "m³ faltante", value: "m3_faltante" },
+  { label: "un", value: "un" },
+  { label: "hr", value: "hr" },
+  { label: "kg", value: "kg" },
+  { label: "ton", value: "ton" },
+];
+
 const selectedDriver = computed({
   get: () =>
     props.driverOptions.filter((d) => props.form.driverIds.includes(d.value)),
@@ -443,13 +452,32 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 <UFormField label="Unidade">
                   <USelect
                     v-model="item.unit"
-                    :items="['m3', 'un', 'hr', 'kg', 'ton']"
+                    :items="ITEM_UNIT_OPTS"
+                    value-key="value"
+                    label-key="label"
                     icon="i-heroicons-scale"
                     class="w-full"
                     size="lg"
                   />
                 </UFormField>
               </div>
+
+              <UFormField
+                v-if="item.unit === 'm3' || item.unit === 'm3_faltante'"
+                label="Contabilizar no volume (Dashboard)"
+              >
+                <div
+                  class="h-12 px-4 rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-700 flex items-center justify-between"
+                >
+                  <span class="text-sm text-zinc-600 dark:text-zinc-300">
+                    Incluir este item no cálculo de m³
+                  </span>
+                  <USwitch
+                    v-model="item.countAsConcreteVolume"
+                    color="primary"
+                  />
+                </div>
+              </UFormField>
 
               <UFormField label="Descrição">
                 <UInput
@@ -511,7 +539,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
 
               <!-- Concrete specifics -->
               <div
-                v-if="item.unit === 'm3'"
+                v-if="item.unit === 'm3' || item.unit === 'm3_faltante'"
                 class="space-y-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700"
               >
                 <UFormField label="Traço de Produção (Receita)">

@@ -65,6 +65,8 @@ const paymentMethodField = z.preprocess((val) => {
   return val;
 }, z.string().optional());
 
+const unitEnum = z.enum(["m3", "m3_faltante", "un", "hr", "kg", "ton"]);
+
 // --- Company Schemas ---
 export const companySchema = z.object({
   name: z
@@ -164,7 +166,7 @@ export const productSchema = z.object({
   type: z
     .enum(["concrete", "pump", "additive", "rental", "other"])
     .default("other"),
-  unit: z.enum(["m3", "un", "hr", "kg", "ton"]).default("un"),
+  unit: unitEnum.default("un"),
   price: z
     .number()
     .min(0, { message: "O preço deve ser não-negativo" })
@@ -195,9 +197,10 @@ export const quoteItemSchema = z.object({
     .string()
     .min(1, { message: "O nome do produto é obrigatório" }),
   description: z.string().optional().nullable(),
-  unit: z.string().optional().nullable(),
+  unit: unitEnum.optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
   unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
+  countAsConcreteVolume: z.boolean().optional(),
   // Specifics
   fck: z.number().optional().nullable(),
   slump: optionalNullableSlumpIntField,
@@ -272,9 +275,10 @@ export const saleItemSchema = z.object({
     .string()
     .min(1, { message: "O nome do produto é obrigatório" }),
   description: z.string().optional().nullable(),
-  unit: z.string().optional().nullable(),
+  unit: unitEnum.optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
   unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
+  countAsConcreteVolume: z.boolean().optional(),
   // Specifics
   fck: z.number().optional().nullable(),
   slump: optionalNullableSlumpIntField,
