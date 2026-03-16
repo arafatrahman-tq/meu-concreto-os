@@ -12,7 +12,12 @@ import { db, parseDate } from "../utils/db";
 import { eq, and } from "drizzle-orm";
 import { requireCompanyAccess } from "../utils/session";
 import { createNotification } from "../utils/notifications";
-import { getWhatsappConfig, sendWhatsappPDF } from "../utils/whatsapp";
+import {
+  buildAlertMessage,
+  getWhatsappConfig,
+  normalizeRecipientList,
+  sendWhatsappPDF,
+} from "../utils/whatsapp";
 import { generateDocumentPDF, getPaymentMethodDetails } from "../utils/pdf";
 
 export default defineEventHandler(async (event) => {
@@ -326,10 +331,22 @@ export default defineEventHandler(async (event) => {
     }
 
     // Notification trigger
+    const waConfig = await getWhatsappConfig(sale.companyId);
+    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients);
+    const companyRow =
+      waConfig?.alertsEnabled && alertRecipients.length > 0
+        ? await db
+            .select({ name: companies.name })
+            .from(companies)
+            .where(eq(companies.id, sale.companyId))
+            .get()
+        : null;
+
     const totalDisplay = new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(sale.total / 100);
+
     await createNotification({
       companyId: sale.companyId,
       type: "sale",
@@ -337,6 +354,19 @@ export default defineEventHandler(async (event) => {
       body: `${sale.customerName} — ${totalDisplay}`,
       link: "/vendas",
       icon: "i-heroicons-shopping-cart",
+      ...(waConfig?.alertsEnabled && alertRecipients.length > 0
+        ? {
+            whatsapp: {
+              toNumbers: alertRecipients,
+              message: buildAlertMessage("sale", {
+                companyName: companyRow?.name ?? "Meu Concreto",
+                customerName: sale.customerName,
+                total: sale.total,
+                id: sale.id,
+              }),
+            },
+          }
+        : {}),
     });
 
     return { sale };

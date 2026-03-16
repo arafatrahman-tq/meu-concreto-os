@@ -1,10 +1,10 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { format } from "date-fns";
 import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { companies, sellers, paymentMethods } from "../database/schema";
 import { getWhatsappConfig } from "./whatsapp";
+import { formatInAppTime } from "./timezone";
 
 export interface DocumentPDFData {
   id: number;
@@ -195,12 +195,17 @@ export async function generateDocumentPDF(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(113, 113, 122); // zinc-500
-  doc.text(`Data: ${format(data.date, "dd/MM/yyyy")}`, pageWidth - 15, 25.5, {
-    align: "right",
-  });
+  doc.text(
+    `Data: ${formatInAppTime(data.date, "dd/MM/yyyy")}`,
+    pageWidth - 15,
+    25.5,
+    {
+      align: "right",
+    },
+  );
   if (data.validUntil) {
     doc.text(
-      `Válido até: ${format(data.validUntil, "dd/MM/yyyy")}`,
+      `Válido até: ${formatInAppTime(data.validUntil, "dd/MM/yyyy")}`,
       pageWidth - 15,
       30,
       { align: "right" },
@@ -209,7 +214,7 @@ export async function generateDocumentPDF(
     doc.setTextColor(34, 197, 94); // primary-500
     doc.setFont("helvetica", "bold");
     doc.text(
-      `Entrega prevista: ${format(data.deliveryDate, "dd/MM/yyyy")}`,
+      `Entrega prevista: ${formatInAppTime(data.deliveryDate, "dd/MM/yyyy")}`,
       pageWidth - 15,
       30,
       { align: "right" },

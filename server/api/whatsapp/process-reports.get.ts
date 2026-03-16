@@ -1,18 +1,18 @@
 import { db } from "../../utils/db";
 import { getHeader } from "h3";
-import {
-  sales,
-  quotes,
-  transactions,
-  companies,
-  whatsappSettings,
-} from "../../database/schema";
-import { eq, and, gte, inArray } from "drizzle-orm";
+import { whatsappSettings } from "../../database/schema";
+import { eq } from "drizzle-orm";
 import {
   getWhatsappConfig,
+  normalizeRecipientList,
   sendWhatsappMessage,
   buildReportMessage,
 } from "../../utils/whatsapp";
+import {
+  loadReportMetrics,
+  getBrasiliaNow,
+  type ReportSchedule,
+} from "../../utils/report-metrics";
 
 export default defineEventHandler(async (_event) => {
   const cronSecret = process.env.CRON_SECRET;
@@ -40,8 +40,9 @@ export default defineEventHandler(async (_event) => {
 
   try {
     const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday
-    const dayOfMonth = now.getDate(); // 1–31
+    const brasiliaNow = getBrasiliaNow(now);
+    const dayOfWeek = brasiliaNow.getDay(); // 0 = Sunday, 1 = Monday
+    const dayOfMonth = brasiliaNow.getDate(); // 1–31
 
     // 1. Fetch all companies with reports enabled
     const settings = await db
@@ -52,7 +53,7 @@ export default defineEventHandler(async (_event) => {
 
     for (const setting of settings) {
       const companyId = setting.companyId;
-      const schedule = setting.reportSchedule ?? "daily";
+      const schedule = (setting.reportSchedule ?? "daily") as ReportSchedule;
 
       // 2. Check if today is the right day to send for this schedule
       if (schedule === "weekly" && dayOfWeek !== 1) {
@@ -83,7 +84,7 @@ export default defineEventHandler(async (_event) => {
       }
 
       // 4. Check recipients
-      const recipients = (config.reportRecipients as string[]) ?? [];
+      const recipients = normalizeRecipientList(config.reportRecipients);
       if (recipients.length === 0) {
         console.warn(
           `[Reports] Skipping company ${companyId}: no report recipients configured.`,
@@ -92,93 +93,20 @@ export default defineEventHandler(async (_event) => {
         continue;
       }
 
-      // 5. Compute date range for the report period
-      const startDate = new Date(now);
-      if (schedule === "weekly") {
-        startDate.setDate(startDate.getDate() - 7);
-      } else if (schedule === "monthly") {
-        startDate.setDate(startDate.getDate() - 30);
-      }
-      startDate.setHours(0, 0, 0, 0);
-
       try {
-        // 6. Fetch data — matching the same filters as report.post.ts and the frontend KPIs
-
-        // Sales in period — active operational statuses
-        const salesRows = await db
-          .select()
-          .from(sales)
-          .where(
-            and(
-              eq(sales.companyId, companyId),
-              gte(sales.date, startDate),
-              inArray(sales.status, [
-                "open",
-                "in_progress",
-                "completed",
-                "pending",
-                "confirmed",
-              ]),
-            ),
-          );
-
-        const salesTotal = salesRows.reduce((acc, s) => acc + s.total, 0);
-        const salesCount = salesRows.length;
-
-        // Quotes em negociação (no date filter — current outstanding)
-        const quotesRows = await db
-          .select()
-          .from(quotes)
-          .where(
-            and(
-              eq(quotes.companyId, companyId),
-              inArray(quotes.status, ["negotiation", "sent"]),
-            ),
-          );
-
-        const pendingQuotes = quotesRows.length;
-        const pendingQuotesTotal = quotesRows.reduce(
-          (acc, q) => acc + q.total,
-          0,
-        );
-
-        // Transactions in period — paid only
-        const txRows = await db
-          .select()
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.companyId, companyId),
-              gte(transactions.date, startDate),
-              eq(transactions.status, "paid"),
-            ),
-          );
-
-        const incomeTotal = txRows
-          .filter((t) => t.type === "income")
-          .reduce((acc, t) => acc + t.amount, 0);
-        const expenseTotal = txRows
-          .filter((t) => t.type === "expense")
-          .reduce((acc, t) => acc + t.amount, 0);
-
-        // Company name
-        const companyRow = await db
-          .select({ name: companies.name })
-          .from(companies)
-          .where(eq(companies.id, companyId))
-          .get();
-        const companyName = companyRow?.name ?? "Meu Concreto";
+        const metrics = await loadReportMetrics(companyId, schedule, now);
 
         // 7. Build and send message
         const text = buildReportMessage({
-          companyName,
+          companyName: metrics.companyName,
           schedule,
-          salesTotal,
-          salesCount,
-          pendingQuotes,
-          pendingQuotesTotal,
-          incomeTotal,
-          expenseTotal,
+          salesTotal: metrics.salesTotal,
+          salesCount: metrics.salesCount,
+          pendingQuotes: metrics.pendingQuotes,
+          pendingQuotesTotal: metrics.pendingQuotesTotal,
+          incomeTotal: metrics.incomeTotal,
+          expenseTotal: metrics.expenseTotal,
+          sentAt: now,
         });
 
         const sendResult = await sendWhatsappMessage(

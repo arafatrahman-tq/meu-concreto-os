@@ -1,23 +1,23 @@
-import { db } from './db'
-import { whatsappSettings } from '../database/schema'
-import { eq } from 'drizzle-orm'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { db } from "./db";
+import { whatsappSettings } from "../database/schema";
+import { eq } from "drizzle-orm";
+import { ptBR } from "date-fns/locale";
+import { formatInAppTime } from "./timezone";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 export interface WhatsappConfig {
-  apiUrl: string
-  apiKey?: string | null
-  phoneNumber?: string | null
+  apiUrl: string;
+  apiKey?: string | null;
+  phoneNumber?: string | null;
 }
 
 export interface BaileysResponse {
-  ok: boolean
-  status?: number
-  data?: unknown
-  error?: string
+  ok: boolean;
+  status?: number;
+  data?: unknown;
+  error?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -26,15 +26,15 @@ export interface BaileysResponse {
  * Strips all non-digit characters and appends @s.whatsapp.net.
  */
 export function formatJid(number: string): string {
-  let digits = number.replace(/\D/g, '')
+  let digits = number.replace(/\D/g, "");
 
   // If the number doesn't have the Brazil country code (55).
   // If it has 10/11 digits, prepend 55.
   if (
-    !digits.startsWith('55')
-    && (digits.length === 10 || digits.length === 11)
+    !digits.startsWith("55") &&
+    (digits.length === 10 || digits.length === 11)
   ) {
-    digits = '55' + digits
+    digits = "55" + digits;
   }
 
   // NOTE: Modern APIs usually handle the 9-digit resolution themselves.
@@ -42,7 +42,38 @@ export function formatJid(number: string): string {
   // cause "number not found" errors on newer WhatsApp accounts.
   // I will now return the full 13-digit digits to be safe.
 
-  return `${digits}@s.whatsapp.net`
+  return `${digits}@s.whatsapp.net`;
+}
+
+/** Normalizes recipient lists persisted as array or legacy JSON-string values. */
+export function normalizeRecipientList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
+    );
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (v): v is string => typeof v === "string" && v.trim().length > 0,
+          );
+        }
+      } catch {
+        return [];
+      }
+    }
+
+    if (trimmed.length > 0) {
+      return [trimmed];
+    }
+  }
+
+  return [];
 }
 
 /** Fetch the WhatsApp settings for a company (returns null if not configured).
@@ -56,7 +87,7 @@ export async function getWhatsappConfig(companyId: number) {
     .from(whatsappSettings)
     .where(eq(whatsappSettings.isGlobal, true))
     .limit(1)
-    .get()
+    .get();
 
   // Find company-specific record
   const companySetting = await db
@@ -64,29 +95,29 @@ export async function getWhatsappConfig(companyId: number) {
     .from(whatsappSettings)
     .where(eq(whatsappSettings.companyId, companyId))
     .limit(1)
-    .get()
+    .get();
 
-  if (!companySetting && !globalSetting) return null
+  if (!companySetting && !globalSetting) return null;
 
   // ─── Merge logic: Explicit Choice (Option B from Brainstorm) ───
   // If useGlobal is true, STRICTLY use the global connection credentials.
   // Otherwise, use company-specific ones if provided.
   // Also ensure a global instance doesn't try to use another global (it should use itself).
-  const useGlobal
-    = companySetting?.useGlobal && !!globalSetting && !companySetting?.isGlobal
+  const useGlobal =
+    companySetting?.useGlobal && !!globalSetting && !companySetting?.isGlobal;
 
-  const rawPhone
-    = (useGlobal
+  const rawPhone =
+    (useGlobal
       ? globalSetting?.phoneNumber || null
       : companySetting?.phoneNumber || null
-    )?.replace(/\D/g, '') || null
+    )?.replace(/\D/g, "") || null;
 
   // ── Instance Name Normalization ──
   // Based on your documentation, the instance name MUST have the '+' prefix.
   // Pattern: ^\+\d{5,15}$
-  let instanceName = rawPhone
-  if (instanceName && !instanceName.startsWith('+')) {
-    instanceName = '+' + instanceName
+  let instanceName = rawPhone;
+  if (instanceName && !instanceName.startsWith("+")) {
+    instanceName = "+" + instanceName;
   }
 
   return {
@@ -100,60 +131,60 @@ export async function getWhatsappConfig(companyId: number) {
       alertRecipients: [],
       reportRecipients: [],
       schedulesReminderRecipients: [],
-      reportSchedule: 'daily',
+      reportSchedule: "daily",
       isGlobal: false,
-      useGlobal: false
+      useGlobal: false,
     }),
     // If useGlobal is true, override connection fields with global values
     apiUrl: useGlobal
-      ? globalSetting?.apiUrl || 'http://localhost:3025'
-      : companySetting?.apiUrl || 'http://localhost:3025',
+      ? globalSetting?.apiUrl || "http://localhost:3025"
+      : companySetting?.apiUrl || "http://localhost:3025",
     apiKey: useGlobal
       ? globalSetting?.apiKey || null
       : companySetting?.apiKey || null,
     phoneNumber: instanceName,
     isConnected: useGlobal
       ? globalSetting?.isConnected || false
-      : companySetting?.isConnected || false
-  }
+      : companySetting?.isConnected || false,
+  };
 }
 
 /** Low-level call to the Baileys API. */
 export async function baileysCall(
   config: WhatsappConfig,
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<BaileysResponse> {
   if (!config.phoneNumber)
-    return { ok: false, error: 'phoneNumber not configured' }
+    return { ok: false, error: "phoneNumber not configured" };
 
-  const url = `${config.apiUrl.replace(/\/$/, '')}${path}`
+  const url = `${config.apiUrl.replace(/\/$/, "")}${path}`;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(config.apiKey ? { 'x-api-key': config.apiKey } : {})
-  }
+    "Content-Type": "application/json",
+    ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
+  };
 
   try {
     const res = await fetch(url, {
       ...options,
       headers: {
         ...headers,
-        ...((options.headers as Record<string, string>) ?? {})
-      }
-    })
+        ...((options.headers as Record<string, string>) ?? {}),
+      },
+    });
 
-    const data = await res.json().catch(() => null)
+    const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-      console.error(`[baileysCall] Error ${res.status}:`, JSON.stringify(data))
+      console.error(`[baileysCall] Error ${res.status}:`, JSON.stringify(data));
     } else {
-      console.log(`[baileysCall] Success ${res.status}`)
+      console.log(`[baileysCall] Success ${res.status}`);
     }
 
-    return { ok: res.ok, status: res.status, data }
+    return { ok: res.ok, status: res.status, data };
   } catch (err: unknown) {
-    console.error(`[baileysCall] Fetch Exception:`, err)
-    return { ok: false, error: String(err) }
+    console.error(`[baileysCall] Fetch Exception:`, err);
+    return { ok: false, error: String(err) };
   }
 }
 
@@ -161,30 +192,30 @@ export async function baileysCall(
 export async function sendWhatsappMessage(
   config: WhatsappConfig,
   toNumbers: string[],
-  text: string
-): Promise<{ sent: string[], failed: string[] }> {
-  const sent: string[] = []
-  const failed: string[] = []
+  text: string,
+): Promise<{ sent: string[]; failed: string[] }> {
+  const sent: string[] = [];
+  const failed: string[] = [];
 
   for (const number of toNumbers) {
     // Convert phone number to WhatsApp JID (clean digits)
-    const jid = formatJid(number)
+    const jid = formatJid(number);
     const result = await baileysCall(
       config,
       `/connections/${encodeURIComponent(config.phoneNumber!)}/send-message`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           jid,
-          messageContent: { text }
-        })
-      }
-    )
-    if (result.ok) sent.push(number)
-    else failed.push(number)
+          messageContent: { text },
+        }),
+      },
+    );
+    if (result.ok) sent.push(number);
+    else failed.push(number);
   }
 
-  return { sent, failed }
+  return { sent, failed };
 }
 
 /** Send a WhatsApp document (PDF) message. */
@@ -193,66 +224,69 @@ export async function sendWhatsappPDF(
   toNumbers: string[],
   pdfBuffer: Buffer,
   fileName: string,
-  caption?: string
-): Promise<{ sent: string[], failed: string[] }> {
-  const sent: string[] = []
-  const failed: string[] = []
+  caption?: string,
+): Promise<{ sent: string[]; failed: string[] }> {
+  const sent: string[] = [];
+  const failed: string[] = [];
 
-  const base64 = pdfBuffer.toString('base64')
+  const base64 = pdfBuffer.toString("base64");
 
   for (const number of toNumbers) {
-    const jid = formatJid(number)
+    const jid = formatJid(number);
     const result = await baileysCall(
       config,
       `/connections/${encodeURIComponent(config.phoneNumber!)}/send-message`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           jid,
           messageContent: {
             document: base64,
             fileName,
-            mimetype: 'application/pdf',
-            caption
-          }
-        })
-      }
-    )
-    if (result.ok) sent.push(number)
-    else failed.push(number)
+            mimetype: "application/pdf",
+            caption,
+          },
+        }),
+      },
+    );
+    if (result.ok) sent.push(number);
+    else failed.push(number);
   }
 
-  return { sent, failed }
+  return { sent, failed };
 }
 
 /** Format a currency value (cents) to BRL string. */
 const fmt = (cents: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-    cents / 100
-  )
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    cents / 100,
+  );
 
 /** Build a formatted WhatsApp report message. */
 export function buildReportMessage(params: {
-  companyName: string
-  schedule: string
-  salesTotal: number
-  salesCount: number
-  pendingQuotes: number
-  pendingQuotesTotal: number
-  incomeTotal: number
-  expenseTotal: number
+  companyName: string;
+  schedule: string;
+  salesTotal: number;
+  salesCount: number;
+  pendingQuotes: number;
+  pendingQuotesTotal: number;
+  incomeTotal: number;
+  expenseTotal: number;
+  sentAt?: Date;
 }) {
   const scheduleLabel: Record<string, string> = {
-    daily: 'Diário',
-    weekly: 'Semanal',
-    monthly: 'Mensal'
-  }
+    daily: "Diário",
+    weekly: "Semanal",
+    monthly: "Mensal",
+  };
 
-  const now = format(new Date(), 'dd \'de\' MMMM \'de\' yyyy \'às\' HH:mm', {
-    locale: ptBR
-  })
-  const label = scheduleLabel[params.schedule] ?? 'Diário'
-  const balance = params.incomeTotal - params.expenseTotal
+  const now = formatInAppTime(
+    params.sentAt ?? new Date(),
+    "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
+    ptBR,
+  );
+  const label = scheduleLabel[params.schedule] ?? "Diário";
+  const balance = params.incomeTotal - params.expenseTotal;
 
   return [
     `📊 *Relatório ${label} — ${params.companyName}*`,
@@ -269,33 +303,33 @@ export function buildReportMessage(params: {
     `💳 *Financeiro*`,
     `• Receitas: ${fmt(params.incomeTotal)}`,
     `• Despesas: ${fmt(params.expenseTotal)}`,
-    `• Saldo: ${balance >= 0 ? '▲' : '▼'} ${fmt(Math.abs(balance))}`,
+    `• Saldo: ${balance >= 0 ? "▲" : "▼"} ${fmt(Math.abs(balance))}`,
     ``,
-    `_Enviado por Meu Concreto_`
-  ].join('\n')
+    `_Enviado por Meu Concreto_`,
+  ].join("\n");
 }
 
 /** Build an alert message for a new event. */
 export function buildAlertMessage(
-  type: 'sale' | 'quote' | 'transaction',
+  type: "sale" | "quote" | "transaction",
   params: {
-    companyName: string
-    customerName?: string
-    total?: number
-    description?: string
-    id?: number
-  }
+    companyName: string;
+    customerName?: string;
+    total?: number;
+    description?: string;
+    id?: number;
+  },
 ) {
   const icons: Record<string, string> = {
-    sale: '🛒',
-    quote: '📋',
-    transaction: '💳'
-  }
+    sale: "🛒",
+    quote: "📋",
+    transaction: "💳",
+  };
   const labels: Record<string, string> = {
-    sale: 'Nova Venda',
-    quote: 'Novo Orçamento',
-    transaction: 'Nova Transação'
-  }
+    sale: "Nova Venda",
+    quote: "Novo Orçamento",
+    transaction: "Nova Transação",
+  };
 
   return [
     `${icons[type]} *${labels[type]} — ${params.companyName}*`,
@@ -304,8 +338,8 @@ export function buildAlertMessage(
     params.description ? `📝 ${params.description}` : null,
     params.id ? `🔑 ID: #${params.id}` : null,
     ``,
-    `_Enviado por Meu Concreto_`
+    `_Enviado por Meu Concreto_`,
   ]
     .filter(Boolean)
-    .join('\n')
+    .join("\n");
 }

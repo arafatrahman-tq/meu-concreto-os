@@ -12,7 +12,12 @@ import { quoteSchema } from "../utils/schemas";
 import { requireCompanyAccess } from "../utils/session";
 import { createNotification } from "../utils/notifications";
 import { generateDocumentPDF, getPaymentMethodDetails } from "../utils/pdf";
-import { getWhatsappConfig, sendWhatsappPDF } from "../utils/whatsapp";
+import {
+  buildAlertMessage,
+  getWhatsappConfig,
+  normalizeRecipientList,
+  sendWhatsappPDF,
+} from "../utils/whatsapp";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -308,10 +313,22 @@ export default defineEventHandler(async (event) => {
     }
 
     // Notification trigger
+    const waConfig = await getWhatsappConfig(quoteData.companyId);
+    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients);
+    const companyRow =
+      waConfig?.alertsEnabled && alertRecipients.length > 0
+        ? await db
+            .select({ name: companies.name })
+            .from(companies)
+            .where(eq(companies.id, quoteData.companyId))
+            .get()
+        : null;
+
     const qtotal = new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format((fullQuote?.total ?? 0) / 100);
+
     await createNotification({
       companyId: quoteData.companyId,
       type: "quote",
@@ -319,6 +336,19 @@ export default defineEventHandler(async (event) => {
       body: `${quoteData.customerName} — ${qtotal}`,
       link: "/orcamentos",
       icon: "i-heroicons-document-text",
+      ...(waConfig?.alertsEnabled && alertRecipients.length > 0
+        ? {
+            whatsapp: {
+              toNumbers: alertRecipients,
+              message: buildAlertMessage("quote", {
+                companyName: companyRow?.name ?? "Meu Concreto",
+                customerName: fullQuote.customerName,
+                total: fullQuote.total,
+                id: result.id,
+              }),
+            },
+          }
+        : {}),
     });
 
     return { quote: { ...fullQuote, items: createdItems } };

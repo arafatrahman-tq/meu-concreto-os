@@ -1,12 +1,14 @@
 import {
   getWhatsappConfig,
+  normalizeRecipientList,
   sendWhatsappMessage,
   buildReportMessage,
 } from "../../utils/whatsapp";
-import { db } from "../../utils/db";
-import { sales, quotes, transactions, companies } from "../../database/schema";
-import { eq, and, gte, inArray } from "drizzle-orm";
 import { requireCompanyAccess } from "../../utils/session";
+import {
+  loadReportMetrics,
+  type ReportSchedule,
+} from "../../utils/report-metrics";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -34,7 +36,7 @@ export default defineEventHandler(async (event) => {
       message: "Número de WhatsApp não configurado.",
     });
 
-  const recipients = (config.reportRecipients as string[]) ?? [];
+  const recipients = normalizeRecipientList(config.reportRecipients);
   if (recipients.length === 0) {
     throw createError({
       statusCode: 400,
@@ -43,89 +45,20 @@ export default defineEventHandler(async (event) => {
   }
 
   // ── Determine report date range based on schedule
-  const schedule = config.reportSchedule ?? "daily";
-  const startDate = new Date();
-  if (schedule === "weekly") {
-    startDate.setDate(startDate.getDate() - 7);
-  } else if (schedule === "monthly") {
-    startDate.setDate(startDate.getDate() - 30);
-  }
-  startDate.setHours(0, 0, 0, 0);
-
-  // Sales in period — active operational statuses
-  const salesRows = await db
-    .select()
-    .from(sales)
-    .where(
-      and(
-        eq(sales.companyId, companyId),
-        gte(sales.date, startDate),
-        inArray(sales.status, [
-          "open",
-          "in_progress",
-          "completed",
-          "pending",
-          "confirmed",
-        ]),
-      ),
-    );
-
-  const salesTotal = salesRows.reduce((acc: number, s) => acc + s.total, 0);
-  const salesCount = salesRows.length;
-
-  // Quotes em negociação (current outstanding, no date filter)
-  const quotesRows = await db
-    .select()
-    .from(quotes)
-    .where(
-      and(
-        eq(quotes.companyId, companyId),
-        inArray(quotes.status, ["negotiation", "sent"]),
-      ),
-    );
-
-  const pendingQuotes = quotesRows.length;
-  const pendingQuotesTotal = quotesRows.reduce(
-    (acc: number, q) => acc + q.total,
-    0,
-  );
-
-  // Transactions in period — only paid, to match frontend KPI
-  const txRows = await db
-    .select()
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.companyId, companyId),
-        gte(transactions.date, startDate),
-        eq(transactions.status, "paid"),
-      ),
-    );
-
-  const incomeTotal = txRows
-    .filter((t) => t.type === "income")
-    .reduce((acc: number, t) => acc + t.amount, 0);
-  const expenseTotal = txRows
-    .filter((t) => t.type === "expense")
-    .reduce((acc: number, t) => acc + t.amount, 0);
-
-  // Fetch company name from DB
-  const companyRow = await db
-    .select({ name: companies.name })
-    .from(companies)
-    .where(eq(companies.id, companyId))
-    .get();
-  const companyName = companyRow?.name ?? "Meu Concreto";
+  const schedule = (config.reportSchedule ?? "daily") as ReportSchedule;
+  const sendTimestamp = new Date();
+  const metrics = await loadReportMetrics(companyId, schedule, sendTimestamp);
 
   const text = buildReportMessage({
-    companyName,
+    companyName: metrics.companyName,
     schedule,
-    salesTotal,
-    salesCount,
-    pendingQuotes,
-    pendingQuotesTotal,
-    incomeTotal,
-    expenseTotal,
+    salesTotal: metrics.salesTotal,
+    salesCount: metrics.salesCount,
+    pendingQuotes: metrics.pendingQuotes,
+    pendingQuotesTotal: metrics.pendingQuotesTotal,
+    incomeTotal: metrics.incomeTotal,
+    expenseTotal: metrics.expenseTotal,
+    sentAt: sendTimestamp,
   });
 
   const result = await sendWhatsappMessage(config, recipients, text);

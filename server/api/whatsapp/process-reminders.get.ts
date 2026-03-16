@@ -2,9 +2,13 @@ import { getHeader } from "h3";
 import { db } from "../../utils/db";
 import { schedules, whatsappSettings, companies } from "../../database/schema";
 import { eq, and, lte, gte } from "drizzle-orm";
-import { getWhatsappConfig, sendWhatsappMessage } from "../../utils/whatsapp";
-import { format } from "date-fns";
+import {
+  getWhatsappConfig,
+  normalizeRecipientList,
+  sendWhatsappMessage,
+} from "../../utils/whatsapp";
 import { ptBR } from "date-fns/locale";
+import { formatInAppTime } from "../../utils/timezone";
 
 export default defineEventHandler(async (event) => {
   const cronSecret = process.env.CRON_SECRET;
@@ -69,9 +73,11 @@ export default defineEventHandler(async (event) => {
       }
 
       for (const schedule of pendingSchedules) {
-        const formattedDate = format(new Date(schedule.date), "dd 'de' MMMM", {
-          locale: ptBR,
-        });
+        const formattedDate = formatInAppTime(
+          new Date(schedule.date),
+          "dd 'de' MMMM",
+          ptBR,
+        );
         const timeStr = schedule.startTime ? ` às ${schedule.startTime}` : "";
 
         const message = [
@@ -89,7 +95,9 @@ export default defineEventHandler(async (event) => {
           .join("\n");
 
         // Send to list of recipients (internal) AND to the customer specifically
-        const recipients = [...(setting.schedulesReminderRecipients || [])];
+        const recipients = normalizeRecipientList(
+          setting.schedulesReminderRecipients,
+        );
         if (schedule.customerPhone) {
           recipients.push(schedule.customerPhone);
         }
