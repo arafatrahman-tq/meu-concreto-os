@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue'
 
-const title = "Meu Concreto";
-const description = "Sistema de gestão para concreteiras.";
+const title = 'Meu Concreto'
+const description = 'Sistema de gestão para concreteiras.'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
-  ogDescription: description,
-});
+  ogDescription: description
+})
 
 // Mantemos esse para gerenciar o modo "ícones" no Desktop.
-const isCollapsed = useCookie("mc_sidebar_collapsed", { default: () => false });
-const isMobileMenuOpen = ref(false);
+const isCollapsed = useCookie('mc_sidebar_collapsed', { default: () => false })
+const isMobileMenuOpen = ref(false)
 
 const currentDateStr = computed(() => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
   })
     .format(new Date())
     .toUpperCase()
-    .replace(".", "");
-});
+    .replace('.', '')
+})
 </script>
 
 <template>
@@ -47,7 +47,11 @@ const currentDateStr = computed(() => {
           class="h-20 flex items-center border-b border-zinc-100 dark:border-zinc-900 shrink-0 overflow-hidden px-4"
           :class="isCollapsed ? 'justify-center' : 'justify-between'"
         >
-          <NuxtLink v-if="!isCollapsed" to="/" class="shrink-0 min-w-0">
+          <NuxtLink
+            v-if="!isCollapsed"
+            to="/"
+            class="shrink-0 min-w-0"
+          >
             <AppLogo />
           </NuxtLink>
 
@@ -76,7 +80,10 @@ const currentDateStr = computed(() => {
         </div>
 
         <!-- Botão Expandir (Visível apenas quando colapsado) -->
-        <div v-if="isCollapsed" class="flex justify-center py-3 shrink-0">
+        <div
+          v-if="isCollapsed"
+          class="flex justify-center py-3 shrink-0"
+        >
           <UButton
             icon="i-heroicons-chevron-right"
             variant="ghost"
@@ -186,14 +193,20 @@ const currentDateStr = computed(() => {
             <div
               class="hidden xl:flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-zinc-400"
             >
-              <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+              <UIcon
+                name="i-heroicons-clock"
+                class="w-4 h-4"
+              />
               <span>{{ currentDateStr }}</span>
             </div>
             <div
               class="h-6 w-px bg-zinc-200 dark:border-zinc-800 hidden md:block"
             />
             <div class="flex items-center gap-2">
-              <UTooltip text="Alternar Tema" :content="{ sideOffset: 8 }">
+              <UTooltip
+                text="Alternar Tema"
+                :content="{ sideOffset: 8 }"
+              >
                 <UColorModeButton
                   class="hover:bg-primary-500/10 hover:text-primary-500 transition-colors rounded-xl"
                 />
@@ -229,9 +242,7 @@ const currentDateStr = computed(() => {
           <footer
             class="h-20 shrink-0 flex items-center justify-between px-10 border-t border-zinc-200 dark:border-zinc-900 bg-white/50 dark:bg-zinc-900/10 text-zinc-400 mt-20"
           >
-            <span class="text-[10px] font-black uppercase tracking-[0.2em]"
-              >© 2026 MEU.CONCRETO OS</span
-            >
+            <span class="text-[10px] font-black uppercase tracking-[0.2em]">© 2026 MEU.CONCRETO OS</span>
             <div
               class="flex items-center gap-6 text-[10px] font-black tracking-widest"
             >
@@ -239,11 +250,11 @@ const currentDateStr = computed(() => {
                 href="https://wa.me/5514998485689"
                 target="_blank"
                 class="hover:text-primary-500 transition-colors"
-                >SUPORTE</a
-              >
-              <a href="#" class="hover:text-primary-500 transition-colors"
-                >DOCUMENTAÇÃO</a
-              >
+              >SUPORTE</a>
+              <a
+                href="#"
+                class="hover:text-primary-500 transition-colors"
+              >DOCUMENTAÇÃO</a>
             </div>
           </footer>
         </main>

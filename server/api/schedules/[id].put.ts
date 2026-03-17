@@ -4,6 +4,8 @@ import { db } from '../../utils/db'
 import { eq } from 'drizzle-orm'
 import { requireCompanyAccess } from '../../utils/session'
 import { createNotification } from '../../utils/notifications'
+import { formatInAppTime } from '../../utils/timezone'
+import { ptBR } from 'date-fns/locale'
 
 export default defineEventHandler(async (event) => {
   const id = parseInt(event.context.params?.id as string)
@@ -67,7 +69,7 @@ export default defineEventHandler(async (event) => {
         columns: { schedulesReminderRecipients: true }
       })
 
-      const formattedDate = new Date(updated.date).toLocaleDateString('pt-BR')
+      const formattedDate = formatInAppTime(new Date(updated.date), 'dd/MM/yyyy', ptBR)
       const timeStr = updated.startTime ? ` às ${updated.startTime}` : ''
 
       // WhatsApp Message

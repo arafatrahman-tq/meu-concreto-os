@@ -223,8 +223,15 @@ const handleSave = async () => {
     @save="handleSave"
   >
     <!-- Seção: Dados de Identificação -->
-    <BaseDrawerSection title="Dados de Identificação" variant="card">
-      <UFormField label="Nome / Razão Social" required :error="formErrors.name">
+    <BaseDrawerSection
+      title="Dados de Identificação"
+      variant="card"
+    >
+      <UFormField
+        label="Nome / Razão Social"
+        required
+        :error="formErrors.name"
+      >
         <UInput
           v-model="form.name"
           placeholder="Ex: João Silva ou Construtora XYZ"
@@ -235,7 +242,10 @@ const handleSave = async () => {
       </UFormField>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <UFormField label="CPF / CNPJ" :error="formErrors.document">
+        <UFormField
+          label="CPF / CNPJ"
+          :error="formErrors.document"
+        >
           <UInput
             v-model="form.document"
             placeholder="000.000.000-00"
@@ -246,7 +256,10 @@ const handleSave = async () => {
           />
         </UFormField>
 
-        <UFormField label="Telefone" :error="formErrors.phone">
+        <UFormField
+          label="Telefone"
+          :error="formErrors.phone"
+        >
           <UInput
             v-model="form.phone"
             placeholder="(00) 00000-0000"
@@ -258,7 +271,10 @@ const handleSave = async () => {
         </UFormField>
       </div>
 
-      <UFormField label="E-mail" :error="formErrors.email">
+      <UFormField
+        label="E-mail"
+        :error="formErrors.email"
+      >
         <UInput
           v-model="form.email"
           placeholder="Ex: cliente@email.com"
@@ -270,7 +286,10 @@ const handleSave = async () => {
     </BaseDrawerSection>
 
     <!-- Seção: Endereço de Entrega -->
-    <BaseDrawerSection title="Endereço de Entrega" variant="card">
+    <BaseDrawerSection
+      title="Endereço de Entrega"
+      variant="card"
+    >
       <div class="grid grid-cols-2 gap-5">
         <UFormField label="CEP">
           <UInput
@@ -297,24 +316,56 @@ const handleSave = async () => {
 
       <div class="grid grid-cols-3 gap-5">
         <UFormField label="Número">
-          <UInput v-model="form.number" placeholder="123" size="lg" class="w-full" />
+          <UInput
+            v-model="form.number"
+            placeholder="123"
+            size="lg"
+            class="w-full"
+          />
         </UFormField>
-        <UFormField label="Bairro" class="col-span-2">
-          <UInput v-model="form.neighborhood" placeholder="Ex: Centro" size="lg" class="w-full" />
+        <UFormField
+          label="Bairro"
+          class="col-span-2"
+        >
+          <UInput
+            v-model="form.neighborhood"
+            placeholder="Ex: Centro"
+            size="lg"
+            class="w-full"
+          />
         </UFormField>
       </div>
 
       <div class="grid grid-cols-3 gap-5">
-        <UFormField label="Cidade" class="col-span-2">
-          <UInput v-model="form.city" placeholder="Sua cidade" size="lg" class="w-full" />
+        <UFormField
+          label="Cidade"
+          class="col-span-2"
+        >
+          <UInput
+            v-model="form.city"
+            placeholder="Sua cidade"
+            size="lg"
+            class="w-full"
+          />
         </UFormField>
         <UFormField label="UF">
-          <UInput v-model="form.state" placeholder="SP" maxlength="2" size="lg" class="w-full" />
+          <UInput
+            v-model="form.state"
+            placeholder="SP"
+            maxlength="2"
+            size="lg"
+            class="w-full"
+          />
         </UFormField>
       </div>
 
       <UFormField label="Complemento">
-        <UInput v-model="form.complement" placeholder="Apto, Bloco, etc." size="lg" class="w-full" />
+        <UInput
+          v-model="form.complement"
+          placeholder="Apto, Bloco, etc."
+          size="lg"
+          class="w-full"
+        />
       </UFormField>
     </BaseDrawerSection>
 

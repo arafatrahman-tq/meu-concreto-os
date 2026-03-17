@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseConfirmModal - Componente base para modais de confirmação
- * 
+ *
  * Uso: Fornece estrutura consistente para modais de confirmação com:
  * - Título customizável
  * - Corpo de mensagem via slot
@@ -24,15 +24,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  confirm: []
+  'confirm': []
 }>()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit('update:open', val)
+  set: val => emit('update:open', val)
 })
 
-const confirmButtonLabel = computed(() => 
+const confirmButtonLabel = computed(() =>
   props.loading ? (props.loadingText || 'Processando...') : (props.confirmLabel || 'Confirmar')
 )
 </script>

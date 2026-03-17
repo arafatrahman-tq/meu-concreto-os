@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseDrawerSection - Seção de drawer com header estilizado
- * 
+ *
  * Usado para agrupar campos de formulário em seções lógicas
  * seguindo o princípio de Miller (5-9 itens por seção)
  */

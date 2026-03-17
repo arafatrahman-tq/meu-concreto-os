@@ -1,4 +1,3 @@
-
 export interface ViaCepResult {
   cep: string
   logradouro: string

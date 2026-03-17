@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import type { User } from "~/types/users";
-import { ROLE_LABELS } from "~/utils/constants";
+import type { User } from '~/types/users'
+import { ROLE_LABELS } from '~/utils/constants'
 
 const props = defineProps<{
-  user: User;
-  companyName?: string;
-  city?: string | null;
-  state?: string | null;
-}>();
+  user: User
+  companyName?: string
+  city?: string | null
+  state?: string | null
+}>()
 
 const initials = computed(() => {
-  if (!props.user?.name) return "U";
+  if (!props.user?.name) return 'U'
   return props.user.name
-    .split(" ")
+    .split(' ')
     .map((n: string) => n[0])
-    .join("")
+    .join('')
     .slice(0, 2)
-    .toUpperCase();
-});
+    .toUpperCase()
+})
 
 const userRoleLabel = computed(() => {
-  return ROLE_LABELS[props.user?.role ?? "user"] ?? "Usuário";
-});
+  return ROLE_LABELS[props.user?.role ?? 'user'] ?? 'Usuário'
+})
 </script>
 
 <template>

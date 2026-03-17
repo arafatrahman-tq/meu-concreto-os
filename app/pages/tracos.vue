@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { MixDesign } from "~/types/mix-designs";
-import { type Material } from "~/types/inventory";
+import type { MixDesign } from '~/types/mix-designs'
+import type { Material } from '~/types/inventory'
 
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Traços | Meu Concreto" });
+definePageMeta({ layout: 'default' })
+useSeoMeta({ title: 'Traços | Meu Concreto' })
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 // typeConfig imported from inventory types
 
@@ -17,29 +17,29 @@ const toast = useToast();
 const {
   data: mixDesignsData,
   refresh: refreshMixDesigns,
-  pending: loadingMixDesigns,
-} = await useFetch<{ mixDesigns: MixDesign[] }>("/api/mix-designs", {
+  pending: loadingMixDesigns
+} = await useFetch<{ mixDesigns: MixDesign[] }>('/api/mix-designs', {
   query: { companyId },
-  watch: [companyId],
-});
+  watch: [companyId]
+})
 
 const mixDesigns = computed<MixDesign[]>(
-  () => mixDesignsData.value?.mixDesigns ?? [],
-);
+  () => mixDesignsData.value?.mixDesigns ?? []
+)
 
 // 2. Fetch Materials (for the drawer)
 const { data: materialsData } = await useFetch<{ materials: Material[] }>(
-  "/api/materials",
-  { query: { companyId }, watch: [companyId] },
-);
+  '/api/materials',
+  { query: { companyId }, watch: [companyId] }
+)
 
-const materials = computed(() => materialsData.value?.materials ?? []);
+const materials = computed(() => materialsData.value?.materials ?? [])
 
 // ─────────────────────────────────────────────
 // Summary Stats
 // ─────────────────────────────────────────────
 const stats = computed(() => {
-  const all = mixDesigns.value;
+  const all = mixDesigns.value
   // Calculate average cost per mix design based on current material costs
   // Note: This requires full material data, but we rely on what's in items.material
   // If items.material is populated by the API, we can calculate.
@@ -47,62 +47,62 @@ const stats = computed(() => {
   return {
     total: all.length,
     recent: all.filter((m) => {
-      const date = new Date(m.createdAt);
-      const now = new Date();
-      return now.getTime() - date.getTime() < 30 * 24 * 60 * 60 * 1000; // 30 days
-    }).length,
-  };
-});
+      const date = new Date(m.createdAt)
+      const now = new Date()
+      return now.getTime() - date.getTime() < 30 * 24 * 60 * 60 * 1000 // 30 days
+    }).length
+  }
+})
 
 // materials used in MixDesignDrawer
 
 // ─────────────────────────────────────────────
 // Filter & Search
 // ─────────────────────────────────────────────
-const search = ref("");
+const search = ref('')
 
 const filteredMixDesigns = computed(() => {
-  if (!search.value) return mixDesigns.value;
-  const q = search.value.toLowerCase();
+  if (!search.value) return mixDesigns.value
+  const q = search.value.toLowerCase()
   return mixDesigns.value.filter(
-    (m) =>
-      m.name.toLowerCase().includes(q) ||
-      (m.description || "").toLowerCase().includes(q),
-  );
-});
+    m =>
+      m.name.toLowerCase().includes(q)
+      || (m.description || '').toLowerCase().includes(q)
+  )
+})
 
 // ─────────────────────────────────────────────
 // Pagination
 // ─────────────────────────────────────────────
-const page = ref(1);
-const pageSize = ref(12);
+const page = ref(1)
+const pageSize = ref(12)
 
 const paginatedMixDesigns = computed(() => {
-  const start = (page.value - 1) * pageSize.value;
-  return filteredMixDesigns.value.slice(start, start + pageSize.value);
-});
+  const start = (page.value - 1) * pageSize.value
+  return filteredMixDesigns.value.slice(start, start + pageSize.value)
+})
 
 const totalPages = computed(() =>
-  Math.ceil(filteredMixDesigns.value.length / pageSize.value),
-);
+  Math.ceil(filteredMixDesigns.value.length / pageSize.value)
+)
 
 watch(search, () => {
-  page.value = 1;
-});
+  page.value = 1
+})
 
 // Drawer state
-const isDrawerOpen = ref(false);
-const editingMixDesign = ref<MixDesign | null>(null);
+const isDrawerOpen = ref(false)
+const editingMixDesign = ref<MixDesign | null>(null)
 
 const openCreate = () => {
-  editingMixDesign.value = null;
-  isDrawerOpen.value = true;
-};
+  editingMixDesign.value = null
+  isDrawerOpen.value = true
+}
 
 const openEdit = (m: MixDesign) => {
-  editingMixDesign.value = m;
-  isDrawerOpen.value = true;
-};
+  editingMixDesign.value = m
+  isDrawerOpen.value = true
+}
 
 // Logic moved to MixDesignDrawer
 
@@ -112,20 +112,20 @@ const openEdit = (m: MixDesign) => {
 // Logic moved to MixDesignDrawer
 
 const deleteMixDesign = async (id: number) => {
-  if (!confirm("Tem certeza que deseja excluir este traço?")) return;
+  if (!confirm('Tem certeza que deseja excluir este traço?')) return
 
   try {
-    await $fetch(`/api/mix-designs/${id}`, { method: "DELETE" });
-    toast.add({ title: "Traço excluído", color: "success" });
-    refreshMixDesigns();
+    await $fetch(`/api/mix-designs/${id}`, { method: 'DELETE' })
+    toast.add({ title: 'Traço excluído', color: 'success' })
+    refreshMixDesigns()
   } catch (error: any) {
     toast.add({
-      title: "Erro ao excluir",
-      description: error.data?.message || "Verifique se o traço está em uso.",
-      color: "error",
-    });
+      title: 'Erro ao excluir',
+      description: error.data?.message || 'Verifique se o traço está em uso.',
+      color: 'error'
+    })
   }
-};
+}
 </script>
 
 <template>
@@ -169,19 +169,20 @@ const deleteMixDesign = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Total de Traços</span
-          >
+          >Total de Traços</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
           >
-            <UIcon name="i-heroicons-beaker" class="h-5 w-5 text-primary-500" />
+            <UIcon
+              name="i-heroicons-beaker"
+              class="h-5 w-5 text-primary-500"
+            />
           </div>
         </div>
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.total }}</span
-          >
+          >{{ stats.total }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           receitas cadastradas
@@ -194,19 +195,20 @@ const deleteMixDesign = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Novos (30d)</span
-          >
+          >Novos (30d)</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10"
           >
-            <UIcon name="i-heroicons-sparkles" class="h-5 w-5 text-blue-500" />
+            <UIcon
+              name="i-heroicons-sparkles"
+              class="h-5 w-5 text-blue-500"
+            />
           </div>
         </div>
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.recent }}</span
-          >
+          >{{ stats.recent }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           criados recentemente
@@ -220,7 +222,7 @@ const deleteMixDesign = async (id: number) => {
         body: 'p-0 sm:p-0',
         header:
           'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
+        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
       }"
       class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
     >
@@ -254,12 +256,17 @@ const deleteMixDesign = async (id: number) => {
         <div
           class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800"
         >
-          <UIcon name="i-heroicons-beaker" class="h-8 w-8 text-zinc-400" />
+          <UIcon
+            name="i-heroicons-beaker"
+            class="h-8 w-8 text-zinc-400"
+          />
         </div>
         <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
           Nenhum traço encontrado
         </h3>
-        <p class="text-sm text-zinc-500">Crie uma nova receita para começar.</p>
+        <p class="text-sm text-zinc-500">
+          Crie uma nova receita para começar.
+        </p>
         <UButton
           color="primary"
           icon="i-heroicons-plus"
@@ -271,7 +278,10 @@ const deleteMixDesign = async (id: number) => {
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto">
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -399,9 +409,9 @@ const deleteMixDesign = async (id: number) => {
                           label: 'Excluir',
                           icon: 'i-heroicons-trash',
                           color: 'error',
-                          onSelect: () => deleteMixDesign(mix.id),
-                        },
-                      ],
+                          onSelect: () => deleteMixDesign(mix.id)
+                        }
+                      ]
                     ]"
                   >
                     <UButton
@@ -420,7 +430,10 @@ const deleteMixDesign = async (id: number) => {
       </div>
 
       <!-- Pagination -->
-      <template v-if="totalPages > 1" #footer>
+      <template
+        v-if="totalPages > 1"
+        #footer
+      >
         <div class="flex items-center justify-between">
           <p
             class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400"

@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm'
 import {
   schedules,
-  companies,
-  whatsappSettings
+  companies
 } from '../../../database/schema'
 import { db } from '../../../utils/db'
 import {
@@ -10,6 +9,8 @@ import {
   sendWhatsappMessage
 } from '../../../utils/whatsapp'
 import { requireCompanyAccess } from '../../../utils/session'
+import { formatInAppTime } from '../../../utils/timezone'
+import { ptBR } from 'date-fns/locale'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -54,7 +55,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 4. Format Message (Reused from schedules.post.ts)
-  const formattedDate = new Date(schedule.date).toLocaleDateString('pt-BR')
+  const formattedDate = formatInAppTime(new Date(schedule.date), 'dd/MM/yyyy', ptBR)
   const timeStr = schedule.startTime ? ` às ${schedule.startTime}` : ''
 
   const waMessage = [

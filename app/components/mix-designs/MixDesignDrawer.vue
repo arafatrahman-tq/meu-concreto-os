@@ -1,177 +1,177 @@
 <script setup lang="ts">
-import type { MixDesign, MixDesignItem } from "~/types/mix-designs";
-import type { Material } from "~/types/inventory";
-import { typeConfig } from "~/types/inventory";
-import { formatCurrency } from "~/utils/formatters";
+import type { MixDesign, MixDesignItem } from '~/types/mix-designs'
+import type { Material } from '~/types/inventory'
+import { typeConfig } from '~/types/inventory'
+import { formatCurrency } from '~/utils/formatters'
 
 const props = defineProps<{
-  open: boolean;
-  mixDesign?: MixDesign | null;
-  materials: Material[];
-}>();
+  open: boolean
+  mixDesign?: MixDesign | null
+  materials: Material[]
+}>()
 
 const emit = defineEmits<{
-  (e: "update:open", value: boolean): void;
-  (e: "saved"): void;
-}>();
+  (e: 'update:open', value: boolean): void
+  (e: 'saved'): void
+}>()
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit("update:open", val),
-});
+  set: val => emit('update:open', val)
+})
 
-const isEditing = computed(() => !!props.mixDesign);
-const loadingSave = ref(false);
+const isEditing = computed(() => !!props.mixDesign)
+const loadingSave = ref(false)
 
 const form = reactive({
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   fck: undefined as number | undefined,
   slump: undefined as number | undefined,
-  stoneSize: "",
-  items: [] as { materialId: number; quantity: number; tempId: string }[],
-});
+  stoneSize: '',
+  items: [] as { materialId: number, quantity: number, tempId: string }[]
+})
 
-const formErrors = reactive<Record<string, string>>({});
+const formErrors = reactive<Record<string, string>>({})
 
 const clearErrors = () => {
-  for (const key in formErrors) delete formErrors[key];
-};
+  for (const key in formErrors) delete formErrors[key]
+}
 
 const validateForm = (): boolean => {
-  clearErrors();
-  let isValid = true;
+  clearErrors()
+  let isValid = true
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
-    isValid = false;
+    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
+    isValid = false
   }
 
   if (form.items.length === 0) {
     toast.add({
-      title: "Traço Vazio",
-      description: "Adicione pelo menos um insumo ao traço.",
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
-    isValid = false;
+      title: 'Traço Vazio',
+      description: 'Adicione pelo menos um insumo ao traço.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
+    isValid = false
   }
 
   form.items.forEach((item, index) => {
     if (!item.materialId) {
-      formErrors[`items_${index}_materialId`] = "Selecione um insumo.";
-      isValid = false;
+      formErrors[`items_${index}_materialId`] = 'Selecione um insumo.'
+      isValid = false
     }
     if (item.quantity <= 0) {
-      formErrors[`items_${index}_quantity`] = "A Qtd deve ser maior que zero.";
-      isValid = false;
+      formErrors[`items_${index}_quantity`] = 'A Qtd deve ser maior que zero.'
+      isValid = false
     }
-  });
+  })
 
-  return isValid;
-};
+  return isValid
+}
 
 const resetForm = () => {
-  form.name = "";
-  form.description = "";
-  form.fck = undefined;
-  form.slump = undefined;
-  form.stoneSize = "";
-  form.items = [];
-  clearErrors();
-};
+  form.name = ''
+  form.description = ''
+  form.fck = undefined
+  form.slump = undefined
+  form.stoneSize = ''
+  form.items = []
+  clearErrors()
+}
 
 watch(
   () => props.mixDesign,
   (m) => {
     if (m) {
-      form.name = m.name;
-      form.description = m.description || "";
-      form.fck = m.fck || undefined;
-      form.slump = m.slump || undefined;
-      form.stoneSize = m.stoneSize || "";
-      form.items = m.items.map((i) => ({
+      form.name = m.name
+      form.description = m.description || ''
+      form.fck = m.fck || undefined
+      form.slump = m.slump || undefined
+      form.stoneSize = m.stoneSize || ''
+      form.items = m.items.map(i => ({
         materialId: i.materialId,
         quantity: i.quantity,
-        tempId: Math.random().toString(36).substr(2, 9),
-      }));
-      clearErrors();
+        tempId: Math.random().toString(36).substr(2, 9)
+      }))
+      clearErrors()
     } else {
-      resetForm();
+      resetForm()
     }
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 const materialOptions = computed(() =>
-  props.materials.map((m) => ({
+  props.materials.map(m => ({
     label: m.name,
     value: m.id,
     materialType: m.type,
-    unit: m.unit,
-  })),
-);
+    unit: m.unit
+  }))
+)
 
-const getMaterialDetails = (id: number) => props.materials.find((m) => m.id === id);
+const getMaterialDetails = (id: number) => props.materials.find(m => m.id === id)
 
 const newItem = reactive({
   materialId: undefined as number | undefined,
-  quantity: 0,
-});
+  quantity: 0
+})
 
 const addMaterialToMix = () => {
   if (!newItem.materialId || newItem.quantity <= 0) {
     toast.add({
-      title: "Atenção",
-      description: "Selecione um material e informe a quantidade.",
-      color: "warning",
-    });
-    return;
+      title: 'Atenção',
+      description: 'Selecione um material e informe a quantidade.',
+      color: 'warning'
+    })
+    return
   }
 
-  const existing = form.items.find((i) => i.materialId === newItem.materialId);
+  const existing = form.items.find(i => i.materialId === newItem.materialId)
   if (existing) {
-    existing.quantity += newItem.quantity;
-    toast.add({ title: "Quantidade atualizada", color: "info" });
+    existing.quantity += newItem.quantity
+    toast.add({ title: 'Quantidade atualizada', color: 'info' })
   } else {
     form.items.push({
       materialId: newItem.materialId,
       quantity: newItem.quantity,
-      tempId: Math.random().toString(36).substr(2, 9),
-    });
+      tempId: Math.random().toString(36).substr(2, 9)
+    })
   }
 
-  newItem.materialId = undefined;
-  newItem.quantity = 0;
-};
+  newItem.materialId = undefined
+  newItem.quantity = 0
+}
 
 const removeMaterialFromMix = (index: number) => {
-  form.items.splice(index, 1);
-};
+  form.items.splice(index, 1)
+}
 
 const calculateTotalCost = () => {
   return form.items.reduce((acc, item) => {
-    const mat = getMaterialDetails(item.materialId);
-    if (!mat) return acc;
-    return acc + item.quantity * mat.cost;
-  }, 0);
-};
+    const mat = getMaterialDetails(item.materialId)
+    if (!mat) return acc
+    return acc + item.quantity * mat.cost
+  }, 0)
+}
 
 const saveMixDesign = async () => {
   if (!validateForm()) {
     toast.add({
-      title: "Atenção",
-      description: "Corrija os campos destacados em vermelho.",
-      color: "error",
-      icon: "i-heroicons-exclamation-triangle",
-    });
-    return;
+      title: 'Atenção',
+      description: 'Corrija os campos destacados em vermelho.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-triangle'
+    })
+    return
   }
 
-  loadingSave.value = true;
+  loadingSave.value = true
   try {
     const payload = {
       companyId: companyId.value,
@@ -180,38 +180,38 @@ const saveMixDesign = async () => {
       fck: form.fck,
       slump: form.slump,
       stoneSize: form.stoneSize,
-      items: form.items.map((i) => ({
+      items: form.items.map(i => ({
         materialId: i.materialId,
-        quantity: i.quantity,
-      })),
-    };
+        quantity: i.quantity
+      }))
+    }
 
     if (isEditing.value && props.mixDesign) {
       await $fetch(`/api/mix-designs/${props.mixDesign.id}`, {
-        method: "PUT",
-        body: payload,
-      });
-      toast.add({ title: "Traço atualizado!", color: "success" });
+        method: 'PUT',
+        body: payload
+      })
+      toast.add({ title: 'Traço atualizado!', color: 'success' })
     } else {
-      await $fetch("/api/mix-designs", {
-        method: "POST",
-        body: payload,
-      });
-      toast.add({ title: "Traço criado!", color: "success" });
+      await $fetch('/api/mix-designs', {
+        method: 'POST',
+        body: payload
+      })
+      toast.add({ title: 'Traço criado!', color: 'success' })
     }
 
-    isOpen.value = false;
-    emit("saved");
+    isOpen.value = false
+    emit('saved')
   } catch (error: any) {
     toast.add({
-      title: "Erro ao salvar",
+      title: 'Erro ao salvar',
       description: error.data?.message || error.message,
-      color: "error",
-    });
+      color: 'error'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 </script>
 
 <template>
@@ -227,11 +227,22 @@ const saveMixDesign = async () => {
     "
     @save="saveMixDesign"
   >
-    <form id="mix-design-form" class="flex flex-col gap-8" @submit.prevent="saveMixDesign">
+    <form
+      id="mix-design-form"
+      class="flex flex-col gap-8"
+      @submit.prevent="saveMixDesign"
+    >
       <!-- Seção: Identificação -->
-      <BaseDrawerSection title="Identificação" icon="i-heroicons-cube">
+      <BaseDrawerSection
+        title="Identificação"
+        icon="i-heroicons-cube"
+      >
         <div class="grid grid-cols-1 gap-4">
-          <UFormField label="Nome do Traço" required :error="formErrors.name">
+          <UFormField
+            label="Nome do Traço"
+            required
+            :error="formErrors.name"
+          >
             <UInput
               v-model="form.name"
               placeholder="Ex: Traço 25MPa Convencional"
@@ -288,7 +299,10 @@ const saveMixDesign = async () => {
       <USeparator />
 
       <!-- Seção: Composição -->
-      <BaseDrawerSection title="Composição" variant="card">
+      <BaseDrawerSection
+        title="Composição"
+        variant="card"
+      >
         <div class="flex items-center justify-between">
           <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
             Custo Total
@@ -343,7 +357,10 @@ const saveMixDesign = async () => {
         </div>
 
         <!-- List of added items -->
-        <div v-if="form.items.length > 0" class="flex flex-col gap-2">
+        <div
+          v-if="form.items.length > 0"
+          class="flex flex-col gap-2"
+        >
           <div
             v-for="(item, idx) in form.items"
             :key="item.tempId"
@@ -399,7 +416,11 @@ const saveMixDesign = async () => {
                   size="lg"
                 />
               </UFormField>
-              <UFormField label="Quantidade" required :error="formErrors[`items_${idx}_quantity`]">
+              <UFormField
+                label="Quantidade"
+                required
+                :error="formErrors[`items_${idx}_quantity`]"
+              >
                 <UInput
                   v-model.number="item.quantity"
                   type="number"

@@ -1,31 +1,31 @@
-import { eq } from "drizzle-orm";
-import { sales, transactions } from "../../../database/schema";
-import { db } from "../../../utils/db";
-import { requireCompanyAccess } from "../../../utils/session";
-import { createNotification } from "../../../utils/notifications";
+import { eq } from 'drizzle-orm'
+import { sales, transactions } from '../../../database/schema'
+import { db } from '../../../utils/db'
+import { requireCompanyAccess } from '../../../utils/session'
+import { createNotification } from '../../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, "id");
-  if (!id) throw createError({ statusCode: 400, statusMessage: "ID required" });
-  const saleId = parseInt(id);
+  const id = getRouterParam(event, 'id')
+  if (!id) throw createError({ statusCode: 400, statusMessage: 'ID required' })
+  const saleId = parseInt(id)
 
-  const body = await readBody(event);
-  const { paymentMethod, status: transStatus = "paid" } = body;
+  const body = await readBody(event)
+  const { paymentMethod, status: transStatus = 'paid' } = body
 
-  const sale = await db.select().from(sales).where(eq(sales.id, saleId)).get();
+  const sale = await db.select().from(sales).where(eq(sales.id, saleId)).get()
 
   if (!sale)
-    throw createError({ statusCode: 404, statusMessage: "Sale not found" });
+    throw createError({ statusCode: 404, statusMessage: 'Sale not found' })
 
   // Security check: Verify user has access to this company
-  requireCompanyAccess(event, sale.companyId);
+  requireCompanyAccess(event, sale.companyId)
 
   // Guard: Cannot bill a cancelled sale
-  if (sale.status === "cancelled") {
+  if (sale.status === 'cancelled') {
     throw createError({
       statusCode: 422,
-      statusMessage: "Não é possível faturar uma venda cancelada.",
-    });
+      statusMessage: 'Não é possível faturar uma venda cancelada.'
+    })
   }
 
   // Guard: Prevent double-billing — check if a transaction already exists for this sale
@@ -33,21 +33,21 @@ export default defineEventHandler(async (event) => {
     .select({ id: transactions.id })
     .from(transactions)
     .where(eq(transactions.saleId, saleId))
-    .get();
+    .get()
 
   if (existingTransaction) {
     throw createError({
       statusCode: 409,
       statusMessage:
-        "Esta venda já foi faturada. Não é possível faturar novamente.",
-    });
+        'Esta venda já foi faturada. Não é possível faturar novamente.'
+    })
   }
 
   try {
     const result = await db.transaction(async (tx) => {
       // 1. Create Transaction
-      const desc = `Faturamento Venda #${String(sale.id).padStart(4, "0")} — ${sale.customerName}`;
-      const pMethod = paymentMethod || sale.paymentMethod || "Não definido";
+      const desc = `Faturamento Venda #${String(sale.id).padStart(4, '0')} — ${sale.customerName}`
+      const pMethod = paymentMethod || sale.paymentMethod || 'Não definido'
 
       const newTransaction = await tx
         .insert(transactions)
@@ -57,20 +57,20 @@ export default defineEventHandler(async (event) => {
           saleId: sale.id,
           description: desc,
           amount: sale.total,
-          type: "income",
-          category: "Vendas",
+          type: 'income',
+          category: 'Vendas',
           status: transStatus,
           date: new Date(),
-          paymentMethod: pMethod,
+          paymentMethod: pMethod
         })
         .returning()
-        .get();
+        .get()
 
       // 2. Update Sale Status
       // In the simplified model, billing can move an open sale to in progress.
-      let nextStatus = sale.status;
-      if (sale.status === "open" || sale.status === "pending") {
-        nextStatus = "in_progress";
+      let nextStatus = sale.status
+      if (sale.status === 'open' || sale.status === 'pending') {
+        nextStatus = 'in_progress'
       }
 
       await tx
@@ -78,34 +78,34 @@ export default defineEventHandler(async (event) => {
         .set({
           status: nextStatus,
           paymentMethod: pMethod,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         })
-        .where(eq(sales.id, sale.id));
+        .where(eq(sales.id, sale.id))
 
-      return { transaction: newTransaction, nextStatus };
-    });
+      return { transaction: newTransaction, nextStatus }
+    })
 
     // Notification trigger
-    const tAmount = new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(sale.total / 100);
+    const tAmount = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(sale.total / 100)
     await createNotification({
       companyId: sale.companyId,
-      type: "transaction",
+      type: 'transaction',
       title: `Venda Faturada — Receita`,
-      body: `Venda #${String(sale.id).padStart(4, "0")} — ${tAmount}`,
-      link: "/transacoes",
-      icon: "i-heroicons-banknotes",
-    });
+      body: `Venda #${String(sale.id).padStart(4, '0')} — ${tAmount}`,
+      link: '/transacoes',
+      icon: 'i-heroicons-banknotes'
+    })
 
-    return result;
+    return result
   } catch (e: any) {
-    console.error("Bill Sale Error:", e);
+    console.error('Bill Sale Error:', e)
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal Server Error",
-      data: { message: e.message },
-    });
+      statusMessage: 'Internal Server Error',
+      data: { message: e.message }
+    })
   }
-});
+})

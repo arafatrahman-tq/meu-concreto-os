@@ -312,7 +312,10 @@ const ACTIVE_OPTS = [
               />
             </div>
           </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter" :class="kpi.color">
+          <p
+            class="text-3xl font-black tabular-nums tracking-tighter"
+            :class="kpi.color"
+          >
             {{ kpi.value }}
           </p>
           <div class="flex items-center gap-1.5 -mt-2">

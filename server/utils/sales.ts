@@ -1,6 +1,6 @@
-import { eq, and, ne } from "drizzle-orm";
-import { transactions, sales } from "../database/schema";
-import { db } from "./db";
+import { eq, and, ne } from 'drizzle-orm'
+import { transactions, sales } from '../database/schema'
+import { db } from './db'
 
 /**
  * Verifica o status de pagamento de uma venda e atualiza para "completed"
@@ -18,33 +18,33 @@ import { db } from "./db";
  */
 export async function checkAndUpdateSaleStatus(
   saleId: number,
-  tx?: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  tx?: Parameters<Parameters<typeof db.transaction>[0]>[0]
 ): Promise<boolean> {
-  const client = tx || db;
+  const client = tx || db
 
   // Busca todas as transações não canceladas da venda
   const saleTransactions = await client
     .select({
       id: transactions.id,
       status: transactions.status,
-      amount: transactions.amount,
+      amount: transactions.amount
     })
     .from(transactions)
     .where(
       and(
         eq(transactions.saleId, saleId),
-        ne(transactions.status, "cancelled"),
-      ),
+        ne(transactions.status, 'cancelled')
+      )
     )
-    .all();
+    .all()
 
   // Se não há transações vinculadas, não altera o status da venda
   if (saleTransactions.length === 0) {
-    return false;
+    return false
   }
 
   // Verifica se todas as transações estão pagas
-  const allPaid = saleTransactions.every((t) => t.status === "paid");
+  const allPaid = saleTransactions.every(t => t.status === 'paid')
 
   if (allPaid) {
     // Busca o status atual da venda
@@ -52,30 +52,30 @@ export async function checkAndUpdateSaleStatus(
       .select({ id: sales.id, status: sales.status })
       .from(sales)
       .where(eq(sales.id, saleId))
-      .get();
+      .get()
 
     // Só atualiza se a venda não estiver já completed ou cancelled
     if (
-      currentSale &&
-      currentSale.status !== "completed" &&
-      currentSale.status !== "cancelled"
+      currentSale
+      && currentSale.status !== 'completed'
+      && currentSale.status !== 'cancelled'
     ) {
       await client
         .update(sales)
         .set({
-          status: "completed",
-          updatedAt: new Date(),
+          status: 'completed',
+          updatedAt: new Date()
         })
-        .where(eq(sales.id, saleId));
+        .where(eq(sales.id, saleId))
 
       console.log(
-        `[checkAndUpdateSaleStatus] Sale ${saleId} auto-completed. All ${saleTransactions.length} transactions paid.`,
-      );
-      return true;
+        `[checkAndUpdateSaleStatus] Sale ${saleId} auto-completed. All ${saleTransactions.length} transactions paid.`
+      )
+      return true
     }
   }
 
-  return false;
+  return false
 }
 
 /**
@@ -89,21 +89,21 @@ export async function checkAndUpdateSaleStatus(
 export async function updateSaleStatus(
   saleId: number,
   status:
-    | "open"
-    | "in_progress"
-    | "completed"
-    | "cancelled"
-    | "pending"
-    | "confirmed",
-  tx?: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    | 'open'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled'
+    | 'pending'
+    | 'confirmed',
+  tx?: Parameters<Parameters<typeof db.transaction>[0]>[0]
 ): Promise<void> {
-  const client = tx || db;
+  const client = tx || db
 
   await client
     .update(sales)
     .set({
       status,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     })
-    .where(eq(sales.id, saleId));
+    .where(eq(sales.id, saleId))
 }

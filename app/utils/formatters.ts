@@ -1,12 +1,30 @@
 // /utils/formatters.ts
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { ptBR } from 'date-fns/locale'
 
 export const formatDate = (
   d: Date | string | number | null | undefined
 ): string => {
   if (!d) return '—'
-  return format(new Date(d), 'dd MMM yyyy', { locale: ptBR })
+  const tz = useRuntimeConfig().public.appTimezone || 'America/Sao_Paulo'
+  return formatInTimeZone(new Date(d), tz as string, 'dd MMM yyyy', { locale: ptBR })
+}
+
+export const formatDateNumeric = (
+  d: Date | string | number | null | undefined
+): string => {
+  if (!d) return '—'
+  const tz = useRuntimeConfig().public.appTimezone || 'America/Sao_Paulo'
+  return formatInTimeZone(new Date(d), tz as string, 'dd/MM/yyyy', { locale: ptBR })
+}
+
+export const formatISODate = (
+  d: Date | string | number | null | undefined
+): string => {
+  if (!d) return ''
+  const tz = useRuntimeConfig().public.appTimezone || 'America/Sao_Paulo'
+  return formatInTimeZone(new Date(d), tz as string, 'yyyy-MM-dd')
 }
 
 export const formatRelative = (

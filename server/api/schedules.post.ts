@@ -4,6 +4,8 @@ import { db, parseDate } from '../utils/db'
 import { eq, and } from 'drizzle-orm'
 import { requireCompanyAccess } from '../utils/session'
 import { createNotification } from '../utils/notifications'
+import { formatInAppTime } from '../utils/timezone'
+import { ptBR } from 'date-fns/locale'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -58,7 +60,7 @@ export default defineEventHandler(async (event) => {
       throw new Error('Falha ao criar agendamento')
     }
 
-    const formattedDate = new Date(newSchedule.date).toLocaleDateString('pt-BR')
+    const formattedDate = formatInAppTime(new Date(newSchedule.date), 'dd/MM/yyyy', ptBR)
     const timeStr = newSchedule.startTime ? ` às ${newSchedule.startTime}` : ''
 
     // WhatsApp Message

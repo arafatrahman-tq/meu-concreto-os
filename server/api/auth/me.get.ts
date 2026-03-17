@@ -5,14 +5,14 @@ import { db } from '../../utils/db'
 // GET /api/auth/me - Retorna dados atualizados do usuário logado e suas empresas
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth
-  
+
   if (!auth) {
     throw createError({
       statusCode: 401,
       message: 'Não autorizado. Por favor, faça login.'
     })
   }
-  
+
   const userId = auth.userId
 
   // Busca dados atualizados do usuário

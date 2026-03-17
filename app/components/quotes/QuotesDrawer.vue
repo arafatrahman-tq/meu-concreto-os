@@ -3,113 +3,113 @@ import type {
   KnownCustomer,
   QuoteForm,
   SelectOption,
-  MixDesign,
-} from "~/types/sales";
-import { formatCurrency, maskPhone, maskDocument } from "~/utils/formatters";
-import { STATUS_OPTS } from "~/composables/useQuotes";
+  MixDesign
+} from '~/types/sales'
+import { formatCurrency, maskPhone, maskDocument } from '~/utils/formatters'
+import { STATUS_OPTS } from '~/composables/useQuotes'
 
 const props = defineProps<{
-  isEditing: boolean;
-  knownCustomers: KnownCustomer[];
-  productOptions: SelectOption[];
-  sellerOptions: SelectOption[];
-  driverOptions: SelectOption[];
-  pumperOptions: SelectOption[];
-  mixDesigns: MixDesign[];
-  paymentMethodOptions: SelectOption[];
+  isEditing: boolean
+  knownCustomers: KnownCustomer[]
+  productOptions: SelectOption[]
+  sellerOptions: SelectOption[]
+  driverOptions: SelectOption[]
+  pumperOptions: SelectOption[]
+  mixDesigns: MixDesign[]
+  paymentMethodOptions: SelectOption[]
   // Form state and methods
-  form: QuoteForm;
-  isDrawerOpen: boolean;
-  loadingSave: boolean;
-  subtotalBRL: number;
-  totalBRL: number;
-  customerSearchTerm: string;
-  selectedCustomer: KnownCustomer | undefined;
-  selectedDriver: SelectOption[] | undefined;
-  selectedPumper: SelectOption | undefined;
-  useDeliveryAddress: boolean;
-  customerRegisteredAddress: string;
+  form: QuoteForm
+  isDrawerOpen: boolean
+  loadingSave: boolean
+  subtotalBRL: number
+  totalBRL: number
+  customerSearchTerm: string
+  selectedCustomer: KnownCustomer | undefined
+  selectedDriver: SelectOption[] | undefined
+  selectedPumper: SelectOption | undefined
+  useDeliveryAddress: boolean
+  customerRegisteredAddress: string
   // Methods
-  onCustomerSelect: (c: KnownCustomer) => void;
-  onProductSelect: (idx: number, id: number | null) => void;
-  onMixDesignSelect: (idx: number, id: number | null) => void;
-  addItem: () => void;
-  removeItem: (idx: number) => void;
-  handleSave: () => void;
-  onCreateDriver: (name: string) => void;
-  onDeleteDriver: (d: { id: number; name: string }) => void;
-  onCreatePumper: (name: string) => void;
-  onDeletePumper: (p: { id: number; name: string }) => void;
-  formErrors: Record<string, string>;
-}>();
+  onCustomerSelect: (c: KnownCustomer) => void
+  onProductSelect: (idx: number, id: number | null) => void
+  onMixDesignSelect: (idx: number, id: number | null) => void
+  addItem: () => void
+  removeItem: (idx: number) => void
+  handleSave: () => void
+  onCreateDriver: (name: string) => void
+  onDeleteDriver: (d: { id: number, name: string }) => void
+  onCreatePumper: (name: string) => void
+  onDeletePumper: (p: { id: number, name: string }) => void
+  formErrors: Record<string, string>
+}>()
 
 const emit = defineEmits<{
-  (e: "update:isDrawerOpen", value: boolean): void;
-  (e: "update:customerSearchTerm", value: string): void;
-  (e: "update:selectedCustomer", value: KnownCustomer | undefined): void;
-  (e: "update:selectedDriver", value: SelectOption[] | undefined): void;
-  (e: "update:selectedPumper", value: SelectOption | undefined): void;
-  (e: "update:useDeliveryAddress", value: boolean): void;
-}>();
+  (e: 'update:isDrawerOpen', value: boolean): void
+  (e: 'update:customerSearchTerm', value: string): void
+  (e: 'update:selectedCustomer', value: KnownCustomer | undefined): void
+  (e: 'update:selectedDriver', value: SelectOption[] | undefined): void
+  (e: 'update:selectedPumper', value: SelectOption | undefined): void
+  (e: 'update:useDeliveryAddress', value: boolean): void
+}>()
 
 // We use computed with getter/setter for v-model props
 const isDrawerOpen = computed({
   get: () => props.isDrawerOpen,
-  set: (val) => emit("update:isDrawerOpen", val),
-});
+  set: val => emit('update:isDrawerOpen', val)
+})
 
 const customerSearchTerm = computed({
   get: () => props.customerSearchTerm,
-  set: (val) => emit("update:customerSearchTerm", val),
-});
+  set: val => emit('update:customerSearchTerm', val)
+})
 
 const selectedCustomer = computed({
   get: () => props.selectedCustomer,
-  set: (val) => emit("update:selectedCustomer", val),
-});
+  set: val => emit('update:selectedCustomer', val)
+})
 
 const selectedDriver = computed({
   get: () => props.selectedDriver,
-  set: (val) => emit("update:selectedDriver", val),
-});
+  set: val => emit('update:selectedDriver', val)
+})
 
 const selectedPumper = computed({
   get: () => props.selectedPumper,
-  set: (val) => emit("update:selectedPumper", val),
-});
+  set: val => emit('update:selectedPumper', val)
+})
 
 const useDeliveryAddress = computed({
   get: () => props.useDeliveryAddress,
-  set: (val) => emit("update:useDeliveryAddress", val),
-});
+  set: val => emit('update:useDeliveryAddress', val)
+})
 
-const { user } = useAuth();
+const { user } = useAuth()
 const isManagerOrAdmin = computed(
-  () => user.value?.role === "admin" || user.value?.role === "manager",
-);
+  () => user.value?.role === 'admin' || user.value?.role === 'manager'
+)
 const isRestrictedEdit = computed(
   () =>
-    props.isEditing && !isManagerOrAdmin.value && props.form.status !== "draft",
-);
+    props.isEditing && !isManagerOrAdmin.value && props.form.status !== 'draft'
+)
 
 const statusLabel = computed(() => {
-  const status = STATUS_OPTS.find((s: any) => s.value === props.form.status);
-  return status?.label || props.form.status;
-});
+  const status = STATUS_OPTS.find((s: any) => s.value === props.form.status)
+  return status?.label || props.form.status
+})
 
 const restrictedStatusMessage = computed(
   () =>
-    `No status ${statusLabel.value}, você pode editar apenas dados operacionais (cliente, logística, validade, pagamento e observações). Itens, desconto e status exigem perfil gerente/admin.`,
-);
+    `No status ${statusLabel.value}, você pode editar apenas dados operacionais (cliente, logística, validade, pagamento e observações). Itens, desconto e status exigem perfil gerente/admin.`
+)
 
 const ITEM_UNIT_OPTS = [
-  { label: "m³", value: "m3" },
-  { label: "m³ faltante", value: "m3_faltante" },
-  { label: "un", value: "un" },
-  { label: "hr", value: "hr" },
-  { label: "kg", value: "kg" },
-  { label: "ton", value: "ton" },
-];
+  { label: 'm³', value: 'm3' },
+  { label: 'm³ faltante', value: 'm3_faltante' },
+  { label: 'un', value: 'un' },
+  { label: 'hr', value: 'hr' },
+  { label: 'kg', value: 'kg' },
+  { label: 'ton', value: 'ton' }
+]
 </script>
 
 <template>
@@ -126,7 +126,10 @@ const ITEM_UNIT_OPTS = [
           <h4
             class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
           >
-            <UIcon name="i-heroicons-user" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-user"
+              class="w-4 h-4"
+            />
             Dados do Cliente
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -148,7 +151,7 @@ const ITEM_UNIT_OPTS = [
                 size="lg"
                 :class="{
                   'bg-red-50 dark:bg-red-500/10 transition-colors':
-                    formErrors.customerName,
+                    formErrors.customerName
                 }"
                 :reset-search-term-on-blur="false"
                 :reset-search-term-on-select="false"
@@ -262,7 +265,7 @@ const ITEM_UNIT_OPTS = [
                     : 'Endereço de Entrega'
                 "
                 :class="{
-                  hidden: customerRegisteredAddress && !useDeliveryAddress,
+                  hidden: customerRegisteredAddress && !useDeliveryAddress
                 }"
               >
                 <UInput
@@ -314,7 +317,7 @@ const ITEM_UNIT_OPTS = [
                         @click="
                           onDeleteDriver({
                             id: item.value,
-                            name: item.label,
+                            name: item.label
                           })
                         "
                       />
@@ -358,7 +361,7 @@ const ITEM_UNIT_OPTS = [
                         @click="
                           onDeletePumper({
                             id: item.value,
-                            name: item.label,
+                            name: item.label
                           })
                         "
                       />
@@ -390,7 +393,10 @@ const ITEM_UNIT_OPTS = [
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon name="i-lucide-package" class="w-4 h-4" />
+              <UIcon
+                name="i-lucide-package"
+                class="w-4 h-4"
+              />
               Itens do Orçamento
             </h4>
             <UButton
@@ -426,7 +432,10 @@ const ITEM_UNIT_OPTS = [
                 :disabled="isRestrictedEdit"
                 @click="removeItem(idx as number)"
               >
-                <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+                <UIcon
+                  name="i-heroicons-trash"
+                  class="w-4 h-4"
+                />
               </button>
 
               <!-- Product select -->
@@ -549,7 +558,7 @@ const ITEM_UNIT_OPTS = [
                     />
                     {{
                       formatCurrency(
-                        Math.round(item.quantity * item.unitPrice * 100),
+                        Math.round(item.quantity * item.unitPrice * 100)
                       )
                     }}
                   </div>
@@ -677,7 +686,10 @@ const ITEM_UNIT_OPTS = [
                 size="lg"
               />
             </UFormField>
-            <UFormField label="Desconto (R$)" :error="formErrors.discount">
+            <UFormField
+              label="Desconto (R$)"
+              :error="formErrors.discount"
+            >
               <UInput
                 v-model.number="form.discount"
                 type="number"
@@ -693,7 +705,10 @@ const ITEM_UNIT_OPTS = [
               <div
                 class="flex items-center h-12 px-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-sm font-black text-primary-600 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-500/20"
               >
-                <UIcon name="i-heroicons-banknotes" class="w-4 h-4 mr-2" />
+                <UIcon
+                  name="i-heroicons-banknotes"
+                  class="w-4 h-4 mr-2"
+                />
                 {{ formatCurrency(Math.round(totalBRL * 100)) }}
               </div>
             </UFormField>

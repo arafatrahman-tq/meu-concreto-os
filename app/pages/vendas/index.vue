@@ -3,7 +3,7 @@ import { useSales } from "~/composables/useSales";
 import { useSalesForm } from "~/composables/useSalesForm";
 import { formatCurrency } from "~/utils/formatters";
 
-label: ("Em Entrega", useSeoMeta({ title: "Vendas | Meu Concreto" }));
+label: useSeoMeta({ title: 'Vendas | Meu Concreto' });
 
 const route = useRoute();
 
@@ -20,9 +20,16 @@ const {
   refreshSales,
   search,
   statusFilter,
+  dateStart,
+  dateEnd,
+  clearFilters,
+  exportFilteredCsv,
+  exportFilteredExcel,
+  exportFilteredPdf,
   page,
   pageSize,
   paginatedSales,
+  filteredSales,
   totalPages,
   stats,
   // Actions State
@@ -268,10 +275,28 @@ onMounted(() => {
       </template>
     </div>
 
-    <!-- Main Table UI -->
-    <SalesTable
+    <!-- Filters Component -->
+    <SalesFilters
       v-model:search="search"
       v-model:status-filter="statusFilter"
+      v-model:date-start="dateStart"
+      v-model:date-end="dateEnd"
+      :status-opts="[
+        { label: 'Todos os Status', value: 'all' },
+        { label: 'Aberta', value: 'open' },
+        { label: 'Pendente', value: 'in_progress' },
+        { label: 'Concluída', value: 'completed' },
+        { label: 'Cancelado', value: 'cancelled' }
+      ]"
+      :has-records="filteredSales.length > 0"
+      @clear="clearFilters"
+      @export-csv="exportFilteredCsv"
+      @export-excel="exportFilteredExcel"
+      @export-pdf="exportFilteredPdf"
+    />
+
+    <!-- Main Table UI -->
+    <SalesTable
       v-model:page="page"
       :sales="paginatedSales"
       :loading="loadingSales"

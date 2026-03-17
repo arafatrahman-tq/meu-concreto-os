@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import PaymentMethodDrawer from "~/components/payment-methods/PaymentMethodDrawer.vue";
-import type { PaymentMethod, MethodType } from "~/types/payment-methods";
-import { TYPE_CONFIG as TYPE_CONFIG_MAP } from "~/types/payment-methods";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import PaymentMethodDrawer from '~/components/payment-methods/PaymentMethodDrawer.vue'
+import type { PaymentMethod, MethodType } from '~/types/payment-methods'
+import { TYPE_CONFIG as TYPE_CONFIG_MAP } from '~/types/payment-methods'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Formas de Pagamento | Meu Concreto" });
+definePageMeta({ layout: 'default' })
+useSeoMeta({ title: 'Formas de Pagamento | Meu Concreto' })
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 // ---------------------------------------------
 // Data
@@ -17,138 +17,138 @@ const toast = useToast();
 const {
   data: pmData,
   refresh,
-  pending: _loadingList,
+  pending: _loadingList
 } = await useFetch<{ paymentMethods: PaymentMethod[] }>(
-  "/api/payment-methods",
+  '/api/payment-methods',
   {
     query: { companyId },
-    watch: [companyId],
-  },
-);
+    watch: [companyId]
+  }
+)
 
 const methodsList = computed<PaymentMethod[]>(
-  () => pmData.value?.paymentMethods ?? [],
-);
+  () => pmData.value?.paymentMethods ?? []
+)
 
 // ---------------------------------------------
 // Type config
 // ---------------------------------------------
 const TYPE_OPTS = Object.entries(TYPE_CONFIG_MAP).map(([value, cfg]) => ({
   value: value as MethodType,
-  label: cfg.label,
-}));
+  label: cfg.label
+}))
 
 // ---------------------------------------------
 // KPIs
 // ---------------------------------------------
 const stats = computed(() => {
-  const list = methodsList.value;
-  const uniqueTypes = new Set(list.map((m) => m.type)).size;
+  const list = methodsList.value
+  const uniqueTypes = new Set(list.map(m => m.type)).size
   return {
     total: list.length,
-    active: list.filter((m) => m.active).length,
-    inactive: list.filter((m) => !m.active).length,
-    uniqueTypes,
-  };
-});
+    active: list.filter(m => m.active).length,
+    inactive: list.filter(m => !m.active).length,
+    uniqueTypes
+  }
+})
 
 // ---------------------------------------------
 // Filter & Search
 // ---------------------------------------------
-const search = ref("");
-const typeFilter = ref<MethodType | "all">("all");
-const activeFilter = ref<"all" | "active" | "inactive">("all");
+const search = ref('')
+const typeFilter = ref<MethodType | 'all'>('all')
+const activeFilter = ref<'all' | 'active' | 'inactive'>('all')
 
 const filteredMethods = computed(() => {
   return methodsList.value.filter((m) => {
-    const matchType = typeFilter.value === "all" || m.type === typeFilter.value;
-    const matchActive =
-      activeFilter.value === "all" ||
-      (activeFilter.value === "active" && m.active) ||
-      (activeFilter.value === "inactive" && !m.active);
-    const q = search.value.toLowerCase();
-    const matchSearch =
-      !q ||
-      m.name.toLowerCase().includes(q) ||
-      TYPE_CONFIG_MAP[m.type].label.toLowerCase().includes(q);
-    return matchType && matchActive && matchSearch;
-  });
-});
+    const matchType = typeFilter.value === 'all' || m.type === typeFilter.value
+    const matchActive
+      = activeFilter.value === 'all'
+        || (activeFilter.value === 'active' && m.active)
+        || (activeFilter.value === 'inactive' && !m.active)
+    const q = search.value.toLowerCase()
+    const matchSearch
+      = !q
+        || m.name.toLowerCase().includes(q)
+        || TYPE_CONFIG_MAP[m.type].label.toLowerCase().includes(q)
+    return matchType && matchActive && matchSearch
+  })
+})
 
 // ---------------------------------------------
 // Pagination
 // ---------------------------------------------
-const page = ref(1);
-const pageSize = ref(12);
+const page = ref(1)
+const pageSize = ref(12)
 
 const paginatedMethods = computed(() => {
-  const start = (page.value - 1) * pageSize.value;
-  return filteredMethods.value.slice(start, start + pageSize.value);
-});
+  const start = (page.value - 1) * pageSize.value
+  return filteredMethods.value.slice(start, start + pageSize.value)
+})
 
 const totalPages = computed(() =>
-  Math.ceil(filteredMethods.value.length / pageSize.value),
-);
+  Math.ceil(filteredMethods.value.length / pageSize.value)
+)
 
 watch([search, typeFilter, activeFilter], () => {
-  page.value = 1;
-});
+  page.value = 1
+})
 
 // ---------------------------------------------
 // Drawer management
 // ---------------------------------------------
-const isDrawerOpen = ref(false);
-const selectedPaymentMethod = ref<PaymentMethod | null>(null);
+const isDrawerOpen = ref(false)
+const selectedPaymentMethod = ref<PaymentMethod | null>(null)
 
 function openCreate() {
-  selectedPaymentMethod.value = null;
-  isDrawerOpen.value = true;
+  selectedPaymentMethod.value = null
+  isDrawerOpen.value = true
 }
 
 function openEdit(m: PaymentMethod) {
-  selectedPaymentMethod.value = { ...m };
-  isDrawerOpen.value = true;
+  selectedPaymentMethod.value = { ...m }
+  isDrawerOpen.value = true
 }
 
 // ---------------------------------------------
 // Delete logic
 // ---------------------------------------------
-const deleteTarget = ref<PaymentMethod | null>(null);
-const loadingDelete = ref(false);
-const isDeleteModalOpen = ref(false);
+const deleteTarget = ref<PaymentMethod | null>(null)
+const loadingDelete = ref(false)
+const isDeleteModalOpen = ref(false)
 
 function confirmDelete(m: PaymentMethod) {
-  deleteTarget.value = m;
-  isDeleteModalOpen.value = true;
+  deleteTarget.value = m
+  isDeleteModalOpen.value = true
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return;
-  loadingDelete.value = true;
-  const name = deleteTarget.value.name;
+  if (!deleteTarget.value) return
+  loadingDelete.value = true
+  const name = deleteTarget.value.name
   try {
     await $fetch(`/api/payment-methods/${deleteTarget.value.id}`, {
-      method: "DELETE",
-    });
-    isDeleteModalOpen.value = false;
+      method: 'DELETE'
+    })
+    isDeleteModalOpen.value = false
     toast.add({
-      title: "Removida com sucesso",
+      title: 'Removida com sucesso',
       description: `"${name}" foi excluída.`,
-      color: "success",
-      icon: "i-heroicons-trash",
-    });
-    await refresh();
+      color: 'success',
+      icon: 'i-heroicons-trash'
+    })
+    await refresh()
   } catch (e: any) {
-    const err =
-      (e as any).data?.statusMessage || e.message || "Erro ao excluir";
+    const err
+      = (e as any).data?.statusMessage || e.message || 'Erro ao excluir'
     toast.add({
-      title: "Erro ao excluir",
+      title: 'Erro ao excluir',
       description: err,
-      color: "error",
-    });
+      color: 'error'
+    })
   } finally {
-    loadingDelete.value = false;
-    deleteTarget.value = null;
+    loadingDelete.value = false
+    deleteTarget.value = null
   }
 }
 
@@ -158,54 +158,54 @@ async function handleDelete() {
 async function toggleActive(m: PaymentMethod) {
   try {
     await $fetch(`/api/payment-methods/${m.id}`, {
-      method: "PUT",
-      body: { active: !m.active },
-    });
+      method: 'PUT',
+      body: { active: !m.active }
+    })
     toast.add({
-      title: m.active ? "Desativada" : "Ativada",
-      description: `"${m.name}" foi ${m.active ? "desativada" : "ativada"}.`,
-      color: m.active ? "warning" : "success",
-      icon: m.active ? "i-heroicons-eye-slash" : "i-heroicons-check-circle",
-    });
-    await refresh();
+      title: m.active ? 'Desativada' : 'Ativada',
+      description: `"${m.name}" foi ${m.active ? 'desativada' : 'ativada'}.`,
+      color: m.active ? 'warning' : 'success',
+      icon: m.active ? 'i-heroicons-eye-slash' : 'i-heroicons-check-circle'
+    })
+    await refresh()
   } catch (e: any) {
-    const err = (e as any).data?.statusMessage || "Tente novamente.";
-    toast.add({ title: "Erro", description: err, color: "error" });
+    const err = (e as any).data?.statusMessage || 'Tente novamente.'
+    toast.add({ title: 'Erro', description: err, color: 'error' })
   }
 }
 
 async function setDefault2(m: PaymentMethod) {
   try {
     await $fetch(`/api/payment-methods/${m.id}`, {
-      method: "PUT",
-      body: { isDefault2: !m.isDefault2 },
-    });
+      method: 'PUT',
+      body: { isDefault2: !m.isDefault2 }
+    })
     toast.add({
       title: m.isDefault2
         ? `"${m.name}" removida como 2º padrão`
         : `"${m.name}" definida como 2º padrão`,
-      color: m.isDefault2 ? "neutral" : "success",
-      icon: m.isDefault2 ? "i-heroicons-star" : "i-heroicons-star",
-    });
-    await refresh();
+      color: m.isDefault2 ? 'neutral' : 'success',
+      icon: m.isDefault2 ? 'i-heroicons-star' : 'i-heroicons-star'
+    })
+    await refresh()
   } catch (e: any) {
-    const err = (e as any).data?.statusMessage || "Tente novamente.";
-    toast.add({ title: "Erro", description: err, color: "error" });
+    const err = (e as any).data?.statusMessage || 'Tente novamente.'
+    toast.add({ title: 'Erro', description: err, color: 'error' })
   }
 }
 
 const STATUS_FILTER_OPTS = [
-  { label: "Todos", value: "all" },
-  { label: "Ativos", value: "active" },
-  { label: "Inativos", value: "inactive" },
-];
+  { label: 'Todos', value: 'all' },
+  { label: 'Ativos', value: 'active' },
+  { label: 'Inativos', value: 'inactive' }
+]
 
-const ALL_TYPES_OPT = [{ value: "all", label: "Todos os tipos" }, ...TYPE_OPTS];
+const ALL_TYPES_OPT = [{ value: 'all', label: 'Todos os tipos' }, ...TYPE_OPTS]
 
 const formatDate = (date: string | number | Date | null | undefined) => {
-  if (!date) return "—";
-  return format(new Date(date), "dd MMM yyyy", { locale: ptBR });
-};
+  if (!date) return '—'
+  return format(new Date(date), 'dd MMM yyyy', { locale: ptBR })
+}
 </script>
 
 <template>
@@ -264,8 +264,7 @@ const formatDate = (date: string | number | Date | null | undefined) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.total }}</span
-          >
+          >{{ stats.total }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           formas cadastradas
@@ -293,8 +292,7 @@ const formatDate = (date: string | number | Date | null | undefined) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.active }}</span
-          >
+          >{{ stats.active }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           disponíveis no sistema
@@ -313,14 +311,16 @@ const formatDate = (date: string | number | Date | null | undefined) => {
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800"
           >
-            <UIcon name="i-heroicons-eye-slash" class="h-5 w-5 text-zinc-500" />
+            <UIcon
+              name="i-heroicons-eye-slash"
+              class="h-5 w-5 text-zinc-500"
+            />
           </div>
         </div>
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.inactive }}</span
-          >
+          >{{ stats.inactive }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           temporariamente ocultos
@@ -348,10 +348,11 @@ const formatDate = (date: string | number | Date | null | undefined) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.uniqueTypes }}</span
-          >
+          >{{ stats.uniqueTypes }}</span>
         </div>
-        <p class="text-xs font-medium text-zinc-400 -mt-2">categorias em uso</p>
+        <p class="text-xs font-medium text-zinc-400 -mt-2">
+          categorias em uso
+        </p>
       </div>
     </div>
 
@@ -361,7 +362,7 @@ const formatDate = (date: string | number | Date | null | undefined) => {
         body: 'p-0 sm:p-0',
         header:
           'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
+        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
       }"
       class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
     >
@@ -406,7 +407,10 @@ const formatDate = (date: string | number | Date | null | undefined) => {
       </template>
 
       <!-- Table -->
-      <div v-if="filteredMethods.length" class="overflow-x-auto">
+      <div
+        v-if="filteredMethods.length"
+        class="overflow-x-auto"
+      >
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -449,7 +453,7 @@ const formatDate = (date: string | number | Date | null | undefined) => {
                   <div
                     :class="[
                       'flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-700',
-                      TYPE_CONFIG_MAP[m.type].bg,
+                      TYPE_CONFIG_MAP[m.type].bg
                     ]"
                   >
                     <UIcon
@@ -555,24 +559,24 @@ const formatDate = (date: string | number | Date | null | undefined) => {
                           icon: m.active
                             ? 'i-heroicons-eye-slash'
                             : 'i-heroicons-check-circle',
-                          onSelect: () => toggleActive(m),
+                          onSelect: () => toggleActive(m)
                         },
                         {
                           label: m.isDefault2
                             ? 'Remover 2º padrão'
                             : 'Definir como 2º padrão',
                           icon: 'i-heroicons-star',
-                          onSelect: () => setDefault2(m),
-                        },
+                          onSelect: () => setDefault2(m)
+                        }
                       ],
                       [
                         {
                           label: 'Excluir',
                           icon: 'i-heroicons-trash',
                           color: 'error',
-                          onSelect: () => confirmDelete(m),
-                        },
-                      ],
+                          onSelect: () => confirmDelete(m)
+                        }
+                      ]
                     ]"
                   >
                     <UButton
@@ -612,7 +616,10 @@ const formatDate = (date: string | number | Date | null | undefined) => {
         </UButton>
       </div>
 
-      <template v-if="totalPages > 1" #footer>
+      <template
+        v-if="totalPages > 1"
+        #footer
+      >
         <div class="flex items-center justify-between">
           <p
             class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400"

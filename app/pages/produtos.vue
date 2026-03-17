@@ -329,7 +329,10 @@ const TYPE_FORM_OPTS = [
               />
             </div>
           </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter" :class="kpi.color">
+          <p
+            class="text-3xl font-black tabular-nums tracking-tighter"
+            :class="kpi.color"
+          >
             {{ kpi.value }}
           </p>
           <div class="flex items-center gap-1.5 -mt-2">
@@ -696,7 +699,10 @@ const TYPE_FORM_OPTS = [
           >
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary-100 dark:bg-primary-500/20">
-                <UIcon :name="typeConfig[deleteTarget.type].icon" class="w-4 h-4 text-primary-500" />
+                <UIcon
+                  :name="typeConfig[deleteTarget.type].icon"
+                  class="w-4 h-4 text-primary-500"
+                />
               </div>
               <div>
                 <p class="text-sm font-bold text-zinc-900 dark:text-white">

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Configurações | Meu Concreto" });
+definePageMeta({ layout: 'default' })
+useSeoMeta({ title: 'Configurações | Meu Concreto' })
 
-const { user, companyId, refreshAuth } = useAuth();
+const { user, companyId, refreshAuth } = useAuth()
 
 // Small fetch to get company name for the account card
-const { data: companyBasicData, refresh: refreshBasicCompany } =
-  await useFetch<{
-    company: { name: string; city: string | null; state: string | null };
-  }>(() => `/api/companies/${companyId.value}`);
+const { data: companyBasicData, refresh: refreshBasicCompany }
+  = await useFetch<{
+    company: { name: string, city: string | null, state: string | null }
+  }>(() => `/api/companies/${companyId.value}`)
 
-const companyBasic = computed(() => companyBasicData.value?.company ?? null);
+const companyBasic = computed(() => companyBasicData.value?.company ?? null)
 
 // Handler quando a empresa é atualizada - atualiza dados locais e estado global
 const handleCompanyUpdated = async () => {
-  await refreshBasicCompany(); // Atualiza dados básicos da página
-  await refreshAuth(); // Atualiza dados no CompanySwitcher e estado global
-};
+  await refreshBasicCompany() // Atualiza dados básicos da página
+  await refreshAuth() // Atualiza dados no CompanySwitcher e estado global
+}
 </script>
 
 <template>

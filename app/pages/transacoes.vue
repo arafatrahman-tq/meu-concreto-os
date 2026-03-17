@@ -761,6 +761,97 @@ const downloadReport = async () => {
     loadingPDF.value = false;
   }
 };
+// ─────────────────────────────────────────────
+// CSV & Excel Exporters
+// ─────────────────────────────────────────────
+const exportFilteredCsv = () => {
+  if (filteredTransactions.value.length === 0) {
+    toast.add({
+      title: 'Sem dados',
+      description: 'Não há registros para exportar com os filtros atuais.',
+      color: 'warning'
+    })
+    return
+  }
+
+  const headers = [
+    'ID',
+    'Data',
+    'Vencimento',
+    'Descrição',
+    'Categoria',
+    'Tipo',
+    'Status',
+    'Método Pgto.',
+    'Valor (R$)',
+    'Cliente / Obra',
+    'ID Venda'
+  ]
+
+  const rows = filteredTransactions.value.map((t) => {
+    return [
+      t.id,
+      t.date ? formatISODate(new Date(t.date as string | number)) : '',
+      t.dueDate ? formatISODate(new Date(t.dueDate as string | number)) : '',
+      `"${t.description.replace(/"/g, '""')}"`,
+      `"${t.category || ''}"`,
+      t.type === 'income' ? 'Receita' : 'Despesa',
+      t.status === 'paid' ? 'Pago' : t.status === 'pending' ? 'Pendente' : 'Cancelado',
+      `"${t.paymentMethod || ''}"`,
+      (t.type === 'expense' ? '-' : '') + (t.amount / 100).toFixed(2).replace('.', ','),
+      `"${t.sale?.customerName || ''}"`,
+      t.saleId || ''
+    ]
+  })
+
+  const csvContent = [
+    headers.join(';'),
+    ...rows.map(row => row.join(';'))
+  ].join('\n')
+
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `transacoes-${formatISODate(new Date())}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const exportFilteredExcel = async () => {
+  if (filteredTransactions.value.length === 0) {
+    toast.add({
+      title: 'Sem dados',
+      description: 'Não há registros para exportar.',
+      color: 'warning'
+    })
+    return
+  }
+
+  const { utils, writeFile } = await import('xlsx')
+
+  const rows = filteredTransactions.value.map(t => ({
+    ID: t.id,
+    Data: t.date ? formatISODate(new Date(t.date as string | number)) : '',
+    Vencimento: t.dueDate ? formatISODate(new Date(t.dueDate as string | number)) : '',
+    Descrição: t.description,
+    Categoria: t.category || '',
+    Tipo: t.type === 'income' ? 'Receita' : 'Despesa',
+    Status: t.status === 'paid' ? 'Pago' : t.status === 'pending' ? 'Pendente' : 'Cancelado',
+    'Método Pgto.': t.paymentMethod || '',
+    'Valor (R$)': (t.type === 'expense' ? -1 : 1) * (t.amount / 100),
+    'Cliente / Obra': t.sale?.customerName || '',
+    'ID Venda': t.saleId || ''
+  }))
+
+  const worksheet = utils.json_to_sheet(rows)
+  const workbook = utils.book_new()
+  utils.book_append_sheet(workbook, worksheet, 'Transações')
+
+  writeFile(workbook, `transacoes-${formatISODate(new Date())}.xlsx`)
+}
+
 </script>
 
 <template>
@@ -828,6 +919,8 @@ const downloadReport = async () => {
       :loading-p-d-f="loadingPDF"
       :has-transactions="filteredTransactions.length > 0"
       @download="downloadReport"
+      @export-csv="exportFilteredCsv"
+      @export-excel="exportFilteredExcel"
       @clear="clearFilters"
     />
 

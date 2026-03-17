@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseEntityActionModal - Modal para ações em entidades (Motorista/Bombeador)
- * 
+ *
  * Usado para: Criar ou Deletar motoristas/bombeadores
  */
 
@@ -15,15 +15,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  confirm: []
+  'confirm': []
 }>()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit('update:open', val)
+  set: val => emit('update:open', val)
 })
 
-const entityLabel = computed(() => 
+const entityLabel = computed(() =>
   props.type === 'driver' ? 'Motorista' : 'Bombeador'
 )
 
@@ -32,15 +32,15 @@ const title = computed(() => {
   return `${action} ${entityLabel.value}`
 })
 
-const confirmLabel = computed(() => 
+const confirmLabel = computed(() =>
   props.action === 'create' ? 'Confirmar e Criar' : 'Confirmar e Excluir'
 )
 
-const confirmColor = computed(() => 
+const confirmColor = computed(() =>
   props.action === 'create' ? 'primary' : 'error'
 )
 
-const confirmIcon = computed(() => 
+const confirmIcon = computed(() =>
   props.action === 'create' ? 'i-heroicons-plus' : 'i-heroicons-trash'
 )
 

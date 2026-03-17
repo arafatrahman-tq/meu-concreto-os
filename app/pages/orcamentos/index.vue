@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Quote, QuoteStatus } from "~/types/sales";
 import { formatCurrency } from "~/utils/formatters";
-import { useQuotes, statusConfig } from "~/composables/useQuotes";
+import { useQuotes, statusConfig, STATUS_OPTS } from "~/composables/useQuotes";
 import { useQuotesForm } from "~/composables/useQuotesForm";
 import { usePromoteQuote } from "~/composables/usePromoteQuote";
 
@@ -20,6 +20,12 @@ const {
   refreshQuotes,
   search,
   statusFilter,
+  dateStart,
+  dateEnd,
+  clearFilters,
+  exportFilteredCsv,
+  exportFilteredExcel,
+  exportFilteredPdf,
   page,
   pageSize,
   filteredQuotes,
@@ -287,10 +293,22 @@ onMounted(() => {
       </template>
     </div>
 
-    <!-- Main Table Component -->
-    <QuotesTable
+    <!-- Filters Component -->
+    <QuotesFilters
       v-model:search="search"
       v-model:status-filter="statusFilter"
+      v-model:date-start="dateStart"
+      v-model:date-end="dateEnd"
+      :status-opts="STATUS_OPTS"
+      :has-records="filteredQuotes.length > 0"
+      @clear="clearFilters"
+      @export-csv="exportFilteredCsv"
+      @export-excel="exportFilteredExcel"
+      @export-pdf="exportFilteredPdf"
+    />
+
+    <!-- Main Table Component -->
+    <QuotesTable
       v-model:page="page"
       :paginated-quotes="paginatedQuotes"
       :loading-quotes="loadingQuotes"

@@ -1,69 +1,69 @@
-import { eq } from "drizzle-orm";
-import { quotes, quoteItems, quotesDrivers } from "../../database/schema";
-import { db, parseDate } from "../../utils/db";
-import { quoteUpdateSchema } from "../../utils/schemas";
-import { requireCompanyAccess } from "../../utils/session";
-import { createNotification } from "../../utils/notifications";
+import { eq } from 'drizzle-orm'
+import { quotes, quoteItems, quotesDrivers } from '../../database/schema'
+import { db, parseDate } from '../../utils/db'
+import { quoteUpdateSchema } from '../../utils/schemas'
+import { requireCompanyAccess } from '../../utils/session'
+import { createNotification } from '../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, "id");
+  const id = getRouterParam(event, 'id')
   if (!id)
-    throw createError({ statusCode: 400, statusMessage: "ID obrigatório" });
+    throw createError({ statusCode: 400, statusMessage: 'ID obrigatório' })
 
-  const quoteId = parseInt(id);
+  const quoteId = parseInt(id)
 
   const existing = await db
     .select({
       companyId: quotes.companyId,
       status: quotes.status,
-      customerName: quotes.customerName,
+      customerName: quotes.customerName
     })
     .from(quotes)
     .where(eq(quotes.id, quoteId))
-    .get();
+    .get()
   if (!existing)
     throw createError({
       statusCode: 404,
-      statusMessage: "Orçamento não encontrado",
-    });
+      statusMessage: 'Orçamento não encontrado'
+    })
 
-  requireCompanyAccess(event, existing.companyId);
+  requireCompanyAccess(event, existing.companyId)
 
-  const body = await readBody(event);
+  const body = await readBody(event)
 
   // Validation
-  const validation = quoteUpdateSchema.safeParse(body);
+  const validation = quoteUpdateSchema.safeParse(body)
   if (!validation.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Falha na validação",
-      data: validation.error.flatten(),
-    });
+      statusMessage: 'Falha na validação',
+      data: validation.error.flatten()
+    })
   }
 
-  const { items, driverIds, ...quoteData } = validation.data;
+  const { items, driverIds, ...quoteData } = validation.data
   const resolveCountAsConcreteVolume = (item: {
-    unit?: string | null;
-    countAsConcreteVolume?: boolean;
+    unit?: string | null
+    countAsConcreteVolume?: boolean
   }) => {
-    if (typeof item.countAsConcreteVolume === "boolean") {
-      return item.countAsConcreteVolume;
+    if (typeof item.countAsConcreteVolume === 'boolean') {
+      return item.countAsConcreteVolume
     }
-    if (item.unit === "m3_faltante") return false;
-    return item.unit === "m3";
-  };
-  const toCents = (value: number) => Math.round(value);
-  const isManagerOrAdmin =
-    event.context.auth?.role === "admin" ||
-    event.context.auth?.role === "manager";
-  const canEditSensitiveFields =
-    isManagerOrAdmin || existing.status === "draft";
+    if (item.unit === 'm3_faltante') return false
+    return item.unit === 'm3'
+  }
+  const toCents = (value: number) => Math.round(value)
+  const isManagerOrAdmin
+    = event.context.auth?.role === 'admin'
+      || event.context.auth?.role === 'manager'
+  const canEditSensitiveFields
+    = isManagerOrAdmin || existing.status === 'draft'
 
-  const normalizedItems = canEditSensitiveFields ? items : undefined;
-  const normalizedQuoteData = { ...quoteData };
+  const normalizedItems = canEditSensitiveFields ? items : undefined
+  const normalizedQuoteData = { ...quoteData }
   if (!canEditSensitiveFields) {
-    delete normalizedQuoteData.status;
-    delete normalizedQuoteData.discount;
+    delete normalizedQuoteData.status
+    delete normalizedQuoteData.discount
   }
 
   try {
@@ -73,30 +73,30 @@ export default defineEventHandler(async (event) => {
         .select()
         .from(quotes)
         .where(eq(quotes.id, quoteId))
-        .get();
+        .get()
       if (!currentQuote)
         throw createError({
           statusCode: 404,
-          statusMessage: "Orçamento não encontrado",
-        });
+          statusMessage: 'Orçamento não encontrado'
+        })
 
-      let subtotal = currentQuote.subtotal;
-      const discount =
-        normalizedQuoteData.discount !== undefined
+      let subtotal = currentQuote.subtotal
+      const discount
+        = normalizedQuoteData.discount !== undefined
           ? toCents(normalizedQuoteData.discount)
-          : currentQuote.discount;
+          : currentQuote.discount
 
       // If items are being updated, recalculate subtotal
       if (normalizedItems) {
         // Delete existing items
-        await tx.delete(quoteItems).where(eq(quoteItems.quoteId, quoteId));
+        await tx.delete(quoteItems).where(eq(quoteItems.quoteId, quoteId))
 
         // Insert new items and sum subtotal
-        subtotal = 0;
+        subtotal = 0
         const itemsToInsert = normalizedItems.map((item) => {
-          const unitPriceCents = toCents(item.unitPrice);
-          const itemTotal = Math.round(item.quantity * unitPriceCents);
-          subtotal += itemTotal;
+          const unitPriceCents = toCents(item.unitPrice)
+          const itemTotal = Math.round(item.quantity * unitPriceCents)
+          subtotal += itemTotal
           return {
             quoteId: quoteId,
             productId: item.productId,
@@ -110,29 +110,29 @@ export default defineEventHandler(async (event) => {
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,
-            mixDesignId: item.mixDesignId,
-          };
-        });
+            mixDesignId: item.mixDesignId
+          }
+        })
 
         if (itemsToInsert.length > 0) {
-          await tx.insert(quoteItems).values(itemsToInsert);
+          await tx.insert(quoteItems).values(itemsToInsert)
         }
       }
 
-      const total = Math.max(0, subtotal - discount);
+      const total = Math.max(0, subtotal - discount)
 
       // Update Drivers if provided
       if (driverIds !== undefined) {
         await tx
           .delete(quotesDrivers)
-          .where(eq(quotesDrivers.quoteId, quoteId));
+          .where(eq(quotesDrivers.quoteId, quoteId))
         if (driverIds.length > 0) {
           await tx.insert(quotesDrivers).values(
-            driverIds.map((driverId) => ({
+            driverIds.map(driverId => ({
               quoteId: quoteId,
-              driverId,
-            })),
-          );
+              driverId
+            }))
+          )
         }
       }
 
@@ -145,48 +145,48 @@ export default defineEventHandler(async (event) => {
           discount,
           total,
           validUntil: parseDate(normalizedQuoteData.validUntil),
-          updatedAt: new Date(),
+          updatedAt: new Date()
         })
-        .where(eq(quotes.id, quoteId));
-    });
+        .where(eq(quotes.id, quoteId))
+    })
 
     // Return full object
     const fullQuote = await db.query.quotes.findFirst({
       where: eq(quotes.id, quoteId),
-      with: { items: true, seller: true, drivers: true },
-    });
+      with: { items: true, seller: true, drivers: true }
+    })
 
     // Notification trigger — only when status changes to approved or closed
     if (
-      normalizedQuoteData.status &&
-      normalizedQuoteData.status !== existing.status &&
-      (normalizedQuoteData.status === "approved" ||
-        normalizedQuoteData.status === "closed" ||
-        normalizedQuoteData.status === "rejected")
+      normalizedQuoteData.status
+      && normalizedQuoteData.status !== existing.status
+      && (normalizedQuoteData.status === 'approved'
+        || normalizedQuoteData.status === 'closed'
+        || normalizedQuoteData.status === 'rejected')
     ) {
-      const statusLabel =
-        normalizedQuoteData.status === "approved" ? "aprovado" : "encerrado";
+      const statusLabel
+        = normalizedQuoteData.status === 'approved' ? 'aprovado' : 'encerrado'
       await createNotification({
         companyId: existing.companyId,
-        type: "quote_updated",
+        type: 'quote_updated',
         title: `Orçamento ${statusLabel}`,
         body: `${existing.customerName} — status atualizado para ${statusLabel}`,
-        link: "/orcamentos",
+        link: '/orcamentos',
         icon:
-          normalizedQuoteData.status === "approved"
-            ? "i-heroicons-check-circle"
-            : "i-heroicons-x-circle",
-      });
+          normalizedQuoteData.status === 'approved'
+            ? 'i-heroicons-check-circle'
+            : 'i-heroicons-x-circle'
+      })
     }
 
-    return { quote: fullQuote };
+    return { quote: fullQuote }
   } catch (e: unknown) {
-    if ((e as { statusCode?: number }).statusCode) throw e;
-    console.error("Database Error:", e);
+    if ((e as { statusCode?: number }).statusCode) throw e
+    console.error('Database Error:', e)
     throw createError({
       statusCode: 500,
-      statusMessage: "Erro interno do servidor",
-      data: { message: e instanceof Error ? e.message : "Erro desconhecido" },
-    });
+      statusMessage: 'Erro interno do servidor',
+      data: { message: e instanceof Error ? e.message : 'Erro desconhecido' }
+    })
   }
-});
+})

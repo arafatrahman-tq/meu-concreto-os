@@ -1,83 +1,83 @@
 <script setup lang="ts">
 const props = defineProps<{
   metrics: {
-    chartMax: { value: number };
-    cashFlowSubtitle: { value: string };
+    chartMax: { value: number }
+    cashFlowSubtitle: { value: string }
     cashFlowChartData: {
       value: Array<{
-        label: string;
-        revenue: number;
-        income: number;
-        expense: number;
-      }>;
-    };
-    incomeFiltered: { value: number };
-    expenseFiltered: { value: number };
-    balanceFiltered: { value: number };
-    pendingSales: { value: number };
-    activeProductsCount: { value: number };
-    chartRevenueAverage: { value: number };
-    chartPeakRevenue: { value: { label: string; revenue: number } };
-    chartWorstBalance: { value: { label: string; balance: number } };
-  };
-}>();
+        label: string
+        revenue: number
+        income: number
+        expense: number
+      }>
+    }
+    incomeFiltered: { value: number }
+    expenseFiltered: { value: number }
+    balanceFiltered: { value: number }
+    pendingSales: { value: number }
+    activeProductsCount: { value: number }
+    chartRevenueAverage: { value: number }
+    chartPeakRevenue: { value: { label: string, revenue: number } }
+    chartWorstBalance: { value: { label: string, balance: number } }
+  }
+}>()
 
 // Pequeno ajuste para garantir altura base das barras do gráfico
 const barHeight = (val: number, max: number) =>
-  max > 0 ? Math.max(4, (val / max) * 140) : 4;
+  max > 0 ? Math.max(4, (val / max) * 140) : 4
 
 const hasChartData = computed(() =>
   props.metrics.cashFlowChartData.value.some(
-    (item) => item.revenue > 0 || item.income > 0 || item.expense > 0,
-  ),
-);
+    item => item.revenue > 0 || item.income > 0 || item.expense > 0
+  )
+)
 
 const formatCurrency = (cents: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(cents / 100);
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(cents / 100)
 
-const chartScrollRef = ref<HTMLElement | null>(null);
-const isPointerDown = ref(false);
-const isDragging = ref(false);
-const dragStartX = ref(0);
-const startScrollLeft = ref(0);
+const chartScrollRef = ref<HTMLElement | null>(null)
+const isPointerDown = ref(false)
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const startScrollLeft = ref(0)
 
 const onChartPointerDown = (event: PointerEvent) => {
-  const container = chartScrollRef.value;
-  if (!container) return;
+  const container = chartScrollRef.value
+  if (!container) return
 
-  isPointerDown.value = true;
-  isDragging.value = false;
-  dragStartX.value = event.clientX;
-  startScrollLeft.value = container.scrollLeft;
-};
+  isPointerDown.value = true
+  isDragging.value = false
+  dragStartX.value = event.clientX
+  startScrollLeft.value = container.scrollLeft
+}
 
 const onChartPointerMove = (event: PointerEvent) => {
-  const container = chartScrollRef.value;
-  if (!container || !isPointerDown.value) return;
+  const container = chartScrollRef.value
+  if (!container || !isPointerDown.value) return
 
-  const deltaX = event.clientX - dragStartX.value;
+  const deltaX = event.clientX - dragStartX.value
   if (Math.abs(deltaX) > 4) {
-    isDragging.value = true;
-    container.scrollLeft = startScrollLeft.value - deltaX;
+    isDragging.value = true
+    container.scrollLeft = startScrollLeft.value - deltaX
   }
-};
+}
 
 const stopChartDrag = () => {
-  if (!isPointerDown.value) return;
+  if (!isPointerDown.value) return
 
-  isPointerDown.value = false;
+  isPointerDown.value = false
   if (isDragging.value) {
     setTimeout(() => {
-      isDragging.value = false;
-    }, 100);
-    return;
+      isDragging.value = false
+    }, 100)
+    return
   }
 
-  isDragging.value = false;
-};
+  isDragging.value = false
+}
 </script>
 
 <template>
@@ -89,7 +89,7 @@ const stopChartDrag = () => {
       :ui="{
         body: 'flex-1 p-4 sm:p-6',
         header:
-          'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
+          'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800'
       }"
     >
       <template #header>
@@ -122,13 +122,19 @@ const stopChartDrag = () => {
               />
               Faturamento
             </span>
-            <span class="flex items-center gap-1.5" title="Entradas faturadas">
+            <span
+              class="flex items-center gap-1.5"
+              title="Entradas faturadas"
+            >
               <span
                 class="w-2.5 h-2.5 rounded-sm bg-primary-500 block shadow-[0_0_8px_rgba(34,197,94,0.4)]"
               />
               Receita
             </span>
-            <span class="flex items-center gap-1.5" title="Saídas registradas">
+            <span
+              class="flex items-center gap-1.5"
+              title="Saídas registradas"
+            >
               <span
                 class="w-2.5 h-2.5 rounded-sm bg-red-500 block shadow-[0_0_8px_rgba(239,68,68,0.4)]"
               />
@@ -138,14 +144,29 @@ const stopChartDrag = () => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2 pl-12 sm:pl-0 sm:ml-5">
-          <UBadge color="neutral" variant="soft" size="sm" class="font-bold">
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="sm"
+            class="font-bold"
+          >
             Média faturamento:
             {{ formatCurrency(metrics.chartRevenueAverage.value) }}
           </UBadge>
-          <UBadge color="success" variant="soft" size="sm" class="font-bold">
+          <UBadge
+            color="success"
+            variant="soft"
+            size="sm"
+            class="font-bold"
+          >
             Pico: {{ metrics.chartPeakRevenue.value.label }}
           </UBadge>
-          <UBadge color="error" variant="soft" size="sm" class="font-bold">
+          <UBadge
+            color="error"
+            variant="soft"
+            size="sm"
+            class="font-bold"
+          >
             Pior saldo: {{ metrics.chartWorstBalance.value.label }}
           </UBadge>
         </div>
@@ -168,7 +189,7 @@ const stopChartDrag = () => {
           :key="i"
           :class="[
             'flex flex-col items-center gap-2 group shrink-0 transition-transform duration-300',
-            metrics.cashFlowChartData.value.length > 12 ? 'w-10' : 'flex-1',
+            metrics.cashFlowChartData.value.length > 12 ? 'w-10' : 'flex-1'
           ]"
         >
           <UTooltip
@@ -254,8 +275,7 @@ const stopChartDrag = () => {
                 >
                   <span
                     class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                    >Saldo</span
-                  >
+                  >Saldo</span>
                   <span
                     class="text-sm font-black"
                     :class="
@@ -273,7 +293,7 @@ const stopChartDrag = () => {
                   <span class="font-black text-zinc-700 dark:text-zinc-200">
                     {{
                       formatCurrency(
-                        m.revenue - metrics.chartRevenueAverage.value,
+                        m.revenue - metrics.chartRevenueAverage.value
                       )
                     }}
                   </span>
@@ -289,21 +309,21 @@ const stopChartDrag = () => {
               <div
                 class="w-2 sm:w-2.5 rounded-t-md bg-zinc-200 dark:bg-zinc-700/50 transition-all duration-500"
                 :style="{
-                  height: `${barHeight(m.revenue, metrics.chartMax.value)}px`,
+                  height: `${barHeight(m.revenue, metrics.chartMax.value)}px`
                 }"
               />
               <!-- Receita -->
               <div
                 class="w-2 sm:w-2.5 rounded-t-md bg-primary-400 dark:bg-primary-500 shadow-[0_-4px_16px_rgba(34,197,94,0.2)] transition-all duration-500"
                 :style="{
-                  height: `${barHeight(m.income, metrics.chartMax.value)}px`,
+                  height: `${barHeight(m.income, metrics.chartMax.value)}px`
                 }"
               />
               <!-- Despesa -->
               <div
                 class="w-2 sm:w-2.5 rounded-t-md bg-red-400 dark:bg-red-500 shadow-[0_-4px_16px_rgba(239,68,68,0.2)] transition-all duration-500"
                 :style="{
-                  height: `${barHeight(m.expense, metrics.chartMax.value)}px`,
+                  height: `${barHeight(m.expense, metrics.chartMax.value)}px`
                 }"
               />
             </div>
@@ -349,7 +369,7 @@ const stopChartDrag = () => {
       :ui="{
         body: 'flex-1 flex flex-col justify-between p-4 sm:p-6',
         header:
-          'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
+          'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800'
       }"
     >
       <template #header>

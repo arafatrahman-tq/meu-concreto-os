@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { maskPhone } from "~/utils/formatters";
+import { maskPhone } from '~/utils/formatters'
 
 const props = defineProps<{
-  modelValue: string[];
-  placeholder?: string;
-}>();
+  modelValue: string[]
+  placeholder?: string
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: string[]): void;
-}>();
+  (e: 'update:modelValue', value: string[]): void
+}>()
 
 const add = () => {
-  const newList = [...props.modelValue, ""];
-  emit("update:modelValue", newList);
-};
+  const newList = [...props.modelValue, '']
+  emit('update:modelValue', newList)
+}
 
 const remove = (index: number) => {
-  const newList = [...props.modelValue];
-  newList.splice(index, 1);
-  emit("update:modelValue", newList);
-};
+  const newList = [...props.modelValue]
+  newList.splice(index, 1)
+  emit('update:modelValue', newList)
+}
 
 const update = (index: number, value: string) => {
-  const newList = [...props.modelValue];
-  const masked = maskPhone(value);
-  
+  const newList = [...props.modelValue]
+  const masked = maskPhone(value)
+
   // Só atualiza se mudou (evita loop se máscara não mudar nada)
   if (newList[index] !== masked) {
-    newList[index] = masked;
-    emit("update:modelValue", newList);
+    newList[index] = masked
+    emit('update:modelValue', newList)
   }
-};
+}
 </script>
 
 <template>

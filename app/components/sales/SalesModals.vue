@@ -1,78 +1,78 @@
 <script setup lang="ts">
-import type { Sale } from "~/types/sales";
-import { formatCurrency } from "~/utils/formatters";
+import type { Sale } from '~/types/sales'
+import { formatCurrency } from '~/utils/formatters'
 
 const props = defineProps<{
-  deleteModalOpen: boolean;
-  deleteTarget: Sale | null;
-  loadingDelete: boolean;
+  deleteModalOpen: boolean
+  deleteTarget: Sale | null
+  loadingDelete: boolean
 
-  billingDialog: boolean;
-  billingSale: Sale | null;
-  billingForm: { paymentMethod: string | undefined; status: string };
-  paymentMethodOptions: { label: string; value: string | undefined }[];
+  billingDialog: boolean
+  billingSale: Sale | null
+  billingForm: { paymentMethod: string | undefined, status: string }
+  paymentMethodOptions: { label: string, value: string | undefined }[]
 
-  confirmDeleteModalOpen: boolean;
-  confirmDeleteData: { type: "driver" | "pumper"; name: string };
-  isDeleting: boolean;
+  confirmDeleteModalOpen: boolean
+  confirmDeleteData: { type: 'driver' | 'pumper', name: string }
+  isDeleting: boolean
 
-  confirmCreateModalOpen: boolean;
-  confirmCreateData: { type: "driver" | "pumper"; name: string };
-  isCreating: boolean;
+  confirmCreateModalOpen: boolean
+  confirmCreateData: { type: 'driver' | 'pumper', name: string }
+  isCreating: boolean
 
-  cancelModalOpen: boolean;
-  cancelTarget: Sale | null;
-  loadingCancel: boolean;
-  cancelReason: string;
-}>();
+  cancelModalOpen: boolean
+  cancelTarget: Sale | null
+  loadingCancel: boolean
+  cancelReason: string
+}>()
 
 const emit = defineEmits<{
-  "update:deleteModalOpen": [value: boolean];
-  delete: [];
+  'update:deleteModalOpen': [value: boolean]
+  'delete': []
 
-  "update:billingDialog": [value: boolean];
-  bill: [];
+  'update:billingDialog': [value: boolean]
+  'bill': []
 
-  "update:confirmDeleteModalOpen": [value: boolean];
-  confirmDelete: [];
+  'update:confirmDeleteModalOpen': [value: boolean]
+  'confirmDelete': []
 
-  "update:confirmCreateModalOpen": [value: boolean];
-  confirmCreate: [];
+  'update:confirmCreateModalOpen': [value: boolean]
+  'confirmCreate': []
 
-  "update:cancelModalOpen": [value: boolean];
-  "update:cancelReason": [value: string];
-  cancel: [];
-}>();
+  'update:cancelModalOpen': [value: boolean]
+  'update:cancelReason': [value: string]
+  'cancel': []
+}>()
 
 const isDeleteModalOpen = computed({
   get: () => props.deleteModalOpen,
-  set: (val) => emit("update:deleteModalOpen", val),
-});
+  set: val => emit('update:deleteModalOpen', val)
+})
 
 const isConfirmDeleteModalOpen = computed({
   get: () => props.confirmDeleteModalOpen,
-  set: (val) => emit("update:confirmDeleteModalOpen", val),
-});
+  set: val => emit('update:confirmDeleteModalOpen', val)
+})
 
 const isConfirmCreateModalOpen = computed({
   get: () => props.confirmCreateModalOpen,
-  set: (val) => emit("update:confirmCreateModalOpen", val),
-});
+  set: val => emit('update:confirmCreateModalOpen', val)
+})
 
 const isBillingDialogOpen = computed({
   get: () => props.billingDialog,
-  set: (val) => emit("update:billingDialog", val),
-});
+  set: val => emit('update:billingDialog', val)
+})
 
 const isCancelModalOpen = computed({
   get: () => props.cancelModalOpen,
-  set: (val) => emit("update:cancelModalOpen", val),
-});
+  set: val => emit('update:cancelModalOpen', val)
+})
 
 const localCancelReason = computed({
   get: () => props.cancelReason,
-  set: (val) => emit("update:cancelReason", val),
-});
+  set: val => emit('update:cancelReason', val)
+})
 </script>
 
 <template>
@@ -83,9 +83,9 @@ const localCancelReason = computed({
       :target="
         deleteTarget
           ? {
-              id: deleteTarget.id,
-              name: deleteTarget.customerName,
-            }
+            id: deleteTarget.id,
+            name: deleteTarget.customerName
+          }
           : null
       "
       target-label="Venda"
@@ -96,7 +96,10 @@ const localCancelReason = computed({
     />
 
     <!-- MODAL — Bill (Faturar) -->
-    <UModal v-model:open="isBillingDialogOpen" title="Faturar Venda">
+    <UModal
+      v-model:open="isBillingDialogOpen"
+      title="Faturar Venda"
+    >
       <template #body>
         <div class="px-6 py-4 space-y-4">
           <div
@@ -118,8 +121,7 @@ const localCancelReason = computed({
                 <p class="text-sm text-zinc-500 mt-1">
                   Esta ação criará uma transação de receita no valor de
                   <span class="font-bold text-zinc-700 dark:text-zinc-300">
-                    {{ formatCurrency(billingSale?.total || 0) }} </span
-                  >.
+                    {{ formatCurrency(billingSale?.total || 0) }} </span>.
                 </p>
               </div>
             </div>
@@ -143,7 +145,7 @@ const localCancelReason = computed({
                 v-model="billingForm.status"
                 :items="[
                   { label: 'Recebido (Pago)', value: 'paid' },
-                  { label: 'Pendente', value: 'pending' },
+                  { label: 'Pendente', value: 'pending' }
                 ]"
                 value-key="value"
                 label-key="label"
@@ -215,11 +217,13 @@ const localCancelReason = computed({
         </span>
         de
         <span class="font-bold text-zinc-900 dark:text-white">
-          {{ cancelTarget?.customerName }} </span
-        >?
+          {{ cancelTarget?.customerName }} </span>?
       </p>
 
-      <UFormField label="Motivo do cancelamento" hint="Opcional">
+      <UFormField
+        label="Motivo do cancelamento"
+        hint="Opcional"
+      >
         <UTextarea
           v-model="localCancelReason"
           placeholder="Ex: Cliente solicitou cancelamento, erro no pedido..."

@@ -2,182 +2,179 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus,
-} from "~/types/transactions";
-import { CATEGORY_SUGGESTIONS } from "~/types/transactions";
+  TransactionStatus
+} from '~/types/transactions'
+import { CATEGORY_SUGGESTIONS } from '~/types/transactions'
+import { formatISODate } from '~/utils/formatters'
 
 const props = defineProps<{
-  open: boolean;
-  transaction?: Transaction | null;
-}>();
+  open: boolean
+  transaction?: Transaction | null
+}>()
 
 const emit = defineEmits<{
-  (e: "update:open", value: boolean): void;
-  (e: "saved"): void;
-}>();
+  (e: 'update:open', value: boolean): void
+  (e: 'saved'): void
+}>()
 
-const { user, companyId } = useAuth();
-const toast = useToast();
+const { user, companyId } = useAuth()
+const toast = useToast()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit("update:open", val),
-});
+  set: val => emit('update:open', val)
+})
 
-const isEditing = computed(() => !!props.transaction);
-const loadingSave = ref(false);
+const isEditing = computed(() => !!props.transaction)
+const loadingSave = ref(false)
 
-const showConfirmDialog = ref(false);
+const showConfirmDialog = ref(false)
 
-const { data: pmData, pending: loadingPM } = useFetch("/api/payment-methods", {
-  query: { companyId, active: "true" },
-  watch: [companyId],
-});
+const { data: pmData, pending: loadingPM } = useFetch('/api/payment-methods', {
+  query: { companyId, active: 'true' },
+  watch: [companyId]
+})
 
 const paymentMethodsOptions = computed(() => {
-  const methods = (pmData.value as any)?.paymentMethods || [];
+  const methods = (pmData.value as any)?.paymentMethods || []
   return methods.map((m: any) => ({
     label: m.name,
-    value: m.name,
-  }));
-});
+    value: m.name
+  }))
+})
 
 type PaymentMethodOption = {
-  label?: string;
-  value?: string;
-};
+  label?: string
+  value?: string
+}
 
 const getPaymentMethodValue = (
-  value: string | PaymentMethodOption | null | undefined,
+  value: string | PaymentMethodOption | null | undefined
 ) => {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (typeof value.value === "string") return value.value;
-  if (typeof value.label === "string") return value.label;
-  return "";
-};
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (typeof value.value === 'string') return value.value
+  if (typeof value.label === 'string') return value.label
+  return ''
+}
 
 const form = reactive({
-  description: "",
+  description: '',
   amount: 0 as number,
-  type: "income" as TransactionType,
-  category: "",
-  status: "pending" as TransactionStatus,
-  date: new Date().toLocaleDateString("sv"),
-  dueDate: "",
-  paymentMethod: "" as string | PaymentMethodOption,
-});
+  type: 'income' as TransactionType,
+  category: '',
+  status: 'pending' as TransactionStatus,
+  date: formatISODate(new Date()),
+  dueDate: '',
+  paymentMethod: '' as string | PaymentMethodOption
+})
 
-const formErrors = reactive<Record<string, string>>({});
+const formErrors = reactive<Record<string, string>>({})
 
 const clearErrors = () => {
   for (const key in formErrors) {
-    delete formErrors[key];
+    delete formErrors[key]
   }
-};
+}
 
 const validateForm = (): boolean => {
-  clearErrors();
-  let isValid = true;
+  clearErrors()
+  let isValid = true
 
   if (!form.description || form.description.trim().length < 3) {
-    formErrors.description = "A descrição deve ter pelo menos 3 caracteres.";
-    isValid = false;
+    formErrors.description = 'A descrição deve ter pelo menos 3 caracteres.'
+    isValid = false
   }
 
   if (form.amount <= 0) {
-    formErrors.amount = "O valor deve ser maior que zero.";
-    isValid = false;
+    formErrors.amount = 'O valor deve ser maior que zero.'
+    isValid = false
   }
 
   if (!form.category) {
-    formErrors.category = "Selecione uma categoria.";
-    isValid = false;
+    formErrors.category = 'Selecione uma categoria.'
+    isValid = false
   }
 
   if (!getPaymentMethodValue(form.paymentMethod)) {
-    formErrors.paymentMethod = "Selecione a forma de pagamento/conta.";
-    isValid = false;
+    formErrors.paymentMethod = 'Selecione a forma de pagamento/conta.'
+    isValid = false
   }
 
-  return isValid;
-};
+  return isValid
+}
 
 const resetForm = () => {
-  form.description = "";
-  form.amount = 0;
-  form.type = "income";
-  form.category = "";
-  form.status = "pending";
-  form.date = new Date().toLocaleDateString("sv");
-  form.dueDate = "";
-  form.paymentMethod = "";
-  clearErrors();
-};
+  form.description = ''
+  form.amount = 0
+  form.type = 'income'
+  form.category = ''
+  form.status = 'pending'
+  form.date = formatISODate(new Date())
+  form.dueDate = ''
+  form.paymentMethod = ''
+  clearErrors()
+}
 
 watch(
   () => props.transaction,
   (t) => {
     if (t) {
-      form.description = t.description;
-      form.amount = t.amount / 100;
-      form.type = t.type;
-      form.category = t.category ?? "";
-      form.status = t.status;
+      form.description = t.description
+      form.amount = t.amount / 100
+      form.type = t.type
+      form.category = t.category ?? ''
+      form.status = t.status
       form.date = t.date
-        ? new Date(t.date as string | number).toLocaleDateString("sv")
-        : new Date().toLocaleDateString("sv");
+        ? formatISODate(t.date as string | number)
+        : formatISODate(new Date())
       form.dueDate = t.dueDate
-        ? new Date(t.dueDate as string | number).toLocaleDateString("sv")
-        : "";
-      form.paymentMethod = t.paymentMethod ?? "";
-      clearErrors();
+        ? formatISODate(t.dueDate as string | number)
+        : ''
+      form.paymentMethod = t.paymentMethod ?? ''
+      clearErrors()
     } else {
-      resetForm();
+      resetForm()
     }
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 const checkDateChanges = () => {
-  if (!props.transaction) return false;
+  if (!props.transaction) return false
 
   const originalDate = props.transaction.date
-    ? new Date(props.transaction.date as string | number).toLocaleDateString(
-        "sv",
-      )
-    : "";
+    ? formatISODate(props.transaction.date as string | number)
+    : ''
   const originalDueDate = props.transaction.dueDate
-    ? new Date(props.transaction.dueDate as string | number).toLocaleDateString(
-        "sv",
-      )
-    : "";
+    ? formatISODate(props.transaction.dueDate as string | number)
+    : ''
 
-  return form.date !== originalDate || form.dueDate !== originalDueDate;
-};
+  return form.date !== originalDate || form.dueDate !== originalDueDate
+}
 
 const handlePreSave = () => {
   if (!validateForm()) {
     toast.add({
-      title: "Atenção",
-      description: "Corrija os campos destacados em vermelho.",
-      color: "error",
-      icon: "i-heroicons-exclamation-triangle",
-    });
-    return;
+      title: 'Atenção',
+      description: 'Corrija os campos destacados em vermelho.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-triangle'
+    })
+    return
   }
 
   if (isEditing.value && checkDateChanges()) {
-    showConfirmDialog.value = true;
-    return;
+    showConfirmDialog.value = true
+    return
   }
 
-  handleSave();
-};
+  handleSave()
+}
 
 const handleSave = async () => {
-  loadingSave.value = true;
-  showConfirmDialog.value = false;
+  loadingSave.value = true
+  showConfirmDialog.value = false
   try {
     const payload = {
       companyId: companyId.value,
@@ -189,39 +186,39 @@ const handleSave = async () => {
       status: form.status,
       date: form.date ? `${form.date}T12:00:00.000Z` : undefined,
       dueDate: form.dueDate ? `${form.dueDate}T12:00:00.000Z` : undefined,
-      paymentMethod: getPaymentMethodValue(form.paymentMethod) || undefined,
-    };
+      paymentMethod: getPaymentMethodValue(form.paymentMethod) || undefined
+    }
 
     if (isEditing.value && props.transaction) {
       await $fetch(`/api/transactions/${props.transaction.id}`, {
-        method: "PUT",
-        body: payload,
-      });
-      toast.add({ title: "Transação atualizada", color: "success" });
+        method: 'PUT',
+        body: payload
+      })
+      toast.add({ title: 'Transação atualizada', color: 'success' })
     } else {
-      await $fetch("/api/transactions", { method: "POST", body: payload });
-      toast.add({ title: "Transação criada", color: "success" });
+      await $fetch('/api/transactions', { method: 'POST', body: payload })
+      toast.add({ title: 'Transação criada', color: 'success' })
     }
 
-    isOpen.value = false;
-    emit("saved");
+    isOpen.value = false
+    emit('saved')
   } catch (err: any) {
-    const validationMessage =
-      err?.data?.data?.paymentMethod?._errors?.[0] ||
-      err?.data?.paymentMethod?._errors?.[0];
+    const validationMessage
+      = err?.data?.data?.paymentMethod?._errors?.[0]
+        || err?.data?.paymentMethod?._errors?.[0]
 
     toast.add({
-      title: "Erro ao salvar",
+      title: 'Erro ao salvar',
       description:
-        validationMessage === "Expected string, received object"
-          ? "Forma de pagamento invalida. Selecione uma opcao da lista."
-          : err?.data?.message || err?.message || "Nao foi possivel salvar.",
-      color: "error",
-    });
+        validationMessage === 'Expected string, received object'
+          ? 'Forma de pagamento invalida. Selecione uma opcao da lista.'
+          : err?.data?.message || err?.message || 'Nao foi possivel salvar.',
+      color: 'error'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 </script>
 
 <template>
@@ -235,11 +232,22 @@ const handleSave = async () => {
     save-label="Confirmar Lançamento"
     @save="handlePreSave"
   >
-    <form id="transaction-form" class="flex flex-col gap-8" @submit.prevent="handlePreSave">
+    <form
+      id="transaction-form"
+      class="flex flex-col gap-8"
+      @submit.prevent="handlePreSave"
+    >
       <!-- Seção: Geral -->
-      <BaseDrawerSection title="Geral" icon="i-lucide-receipt">
+      <BaseDrawerSection
+        title="Geral"
+        icon="i-lucide-receipt"
+      >
         <div class="grid grid-cols-1 gap-4">
-          <UFormField label="Descrição" required :error="formErrors.description">
+          <UFormField
+            label="Descrição"
+            required
+            :error="formErrors.description"
+          >
             <UInput
               v-model="form.description"
               placeholder="Ex: Pagamento Fornecedor Cimento"
@@ -249,18 +257,25 @@ const handleSave = async () => {
           </UFormField>
 
           <div class="grid grid-cols-2 gap-5">
-            <UFormField label="Tipo" required>
+            <UFormField
+              label="Tipo"
+              required
+            >
               <USelect
                 v-model="form.type"
                 :items="[
                   { label: 'Receita', value: 'income' },
-                  { label: 'Despesa', value: 'expense' },
+                  { label: 'Despesa', value: 'expense' }
                 ]"
                 class="w-full"
                 size="lg"
               />
             </UFormField>
-            <UFormField label="Valor (R$)" required :error="formErrors.amount">
+            <UFormField
+              label="Valor (R$)"
+              required
+              :error="formErrors.amount"
+            >
               <UInput
                 v-model.number="form.amount"
                 type="number"
@@ -274,7 +289,11 @@ const handleSave = async () => {
           </div>
 
           <div class="grid grid-cols-2 gap-5">
-            <UFormField label="Categoria" required :error="formErrors.category">
+            <UFormField
+              label="Categoria"
+              required
+              :error="formErrors.category"
+            >
               <USelectMenu
                 v-model="form.category"
                 :items="CATEGORY_SUGGESTIONS"
@@ -283,13 +302,16 @@ const handleSave = async () => {
                 size="lg"
               />
             </UFormField>
-            <UFormField label="Status" required>
+            <UFormField
+              label="Status"
+              required
+            >
               <USelect
                 v-model="form.status"
                 :items="[
                   { label: 'Pendente', value: 'pending' },
                   { label: 'Pago', value: 'paid' },
-                  { label: 'Cancelado', value: 'cancelled' },
+                  { label: 'Cancelado', value: 'cancelled' }
                 ]"
                 class="w-full"
                 size="lg"
@@ -302,18 +324,38 @@ const handleSave = async () => {
       <USeparator />
 
       <!-- Seção: Datas & Pagamento -->
-      <BaseDrawerSection title="Datas & Pagamento" variant="card">
+      <BaseDrawerSection
+        title="Datas & Pagamento"
+        variant="card"
+      >
         <div class="grid grid-cols-1 gap-5">
           <div class="grid grid-cols-2 gap-5">
-            <UFormField label="Data da Transação" required>
-              <UInput v-model="form.date" type="date" class="w-full" size="lg" />
+            <UFormField
+              label="Data da Transação"
+              required
+            >
+              <UInput
+                v-model="form.date"
+                type="date"
+                class="w-full"
+                size="lg"
+              />
             </UFormField>
             <UFormField label="Data de Vencimento">
-              <UInput v-model="form.dueDate" type="date" class="w-full" size="lg" />
+              <UInput
+                v-model="form.dueDate"
+                type="date"
+                class="w-full"
+                size="lg"
+              />
             </UFormField>
           </div>
 
-          <UFormField label="Conta / Forma de Pagamento" required :error="formErrors.paymentMethod">
+          <UFormField
+            label="Conta / Forma de Pagamento"
+            required
+            :error="formErrors.paymentMethod"
+          >
             <USelectMenu
               v-model="form.paymentMethod"
               :items="paymentMethodsOptions"
@@ -331,7 +373,10 @@ const handleSave = async () => {
   </BaseSimpleDrawer>
 
   <!-- Confirm Date Change Modal -->
-  <UModal v-model:open="showConfirmDialog" title="Confirmar Alteração de Data">
+  <UModal
+    v-model:open="showConfirmDialog"
+    title="Confirmar Alteração de Data"
+  >
     <template #body>
       <div class="px-6 py-4 space-y-4">
         <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -343,8 +388,13 @@ const handleSave = async () => {
         </p>
         <div class="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-4 border border-amber-200 dark:border-amber-500/20">
           <div class="flex items-center gap-3">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-500" />
-            <p class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Atenção</p>
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="w-5 h-5 text-amber-500"
+            />
+            <p class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+              Atenção
+            </p>
           </div>
           <p class="text-xs text-amber-600 dark:text-amber-500 mt-2">
             Independentemente do status (Pago, Pendente ou Cancelado), a data informada será atualizada no sistema.
@@ -354,8 +404,23 @@ const handleSave = async () => {
     </template>
     <template #footer>
       <div class="flex justify-end gap-3 px-6 pb-4">
-        <UButton color="neutral" variant="ghost" size="md" @click="showConfirmDialog = false">Revisar</UButton>
-        <UButton color="primary" icon="i-heroicons-check" size="md" :loading="loadingSave" @click="handleSave">Confirmar e Salvar</UButton>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="md"
+          @click="showConfirmDialog = false"
+        >
+          Revisar
+        </UButton>
+        <UButton
+          color="primary"
+          icon="i-heroicons-check"
+          size="md"
+          :loading="loadingSave"
+          @click="handleSave"
+        >
+          Confirmar e Salvar
+        </UButton>
       </div>
     </template>
   </UModal>

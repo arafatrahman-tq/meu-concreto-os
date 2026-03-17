@@ -26,8 +26,6 @@ const emit = defineEmits<{
   (e: "updateStatus", q: Quote, status: QuoteStatus): void;
 }>();
 
-const search = defineModel<string>("search");
-const statusFilter = defineModel<QuoteStatus | "all">("statusFilter");
 const page = defineModel<number>("page", { default: 1 });
 
 const STATUS_OPTS = [
@@ -212,7 +210,6 @@ watch(pageQuoteIds, (ids) => {
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
-    <!-- Toolbar -->
     <template #header>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -222,23 +219,6 @@ watch(pageQuoteIds, (ids) => {
           >
             Lista de Orçamentos
           </h3>
-        </div>
-        <div class="flex items-center gap-2">
-          <UInput
-            v-model="search"
-            icon="i-heroicons-magnifying-glass"
-            placeholder="Buscar cliente, nº..."
-            size="sm"
-            class="w-44 lg:w-56"
-          />
-          <USelect
-            v-model="statusFilter"
-            :items="STATUS_OPTS"
-            value-key="value"
-            label-key="label"
-            size="sm"
-            class="w-36"
-          />
         </div>
       </div>
     </template>

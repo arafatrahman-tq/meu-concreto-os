@@ -13,7 +13,7 @@ const {
   data: usersData,
   pending,
   refresh
-} = await useFetch<{ users: User[] }>('/api/users', { 
+} = await useFetch<{ users: User[] }>('/api/users', {
   query: { companyId },
   watch: [companyId]
 })
@@ -303,10 +303,16 @@ async function handleDelete() {
               {{ kpi.label }}
             </span>
             <div :class="[kpi.bg, 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0']">
-              <UIcon :name="kpi.icon" :class="['w-6 h-6', kpi.color]" />
+              <UIcon
+                :name="kpi.icon"
+                :class="['w-6 h-6', kpi.color]"
+              />
             </div>
           </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter" :class="kpi.color">
+          <p
+            class="text-3xl font-black tabular-nums tracking-tighter"
+            :class="kpi.color"
+          >
             {{ kpi.value }}
           </p>
           <div class="flex items-center gap-1.5 -mt-2">

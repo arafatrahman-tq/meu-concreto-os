@@ -1,62 +1,62 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and } from 'drizzle-orm'
 import {
   quotes,
   quoteItems,
   quotesDrivers,
   companies,
   sellers,
-  paymentMethods,
-} from "../database/schema";
-import { db, parseDate } from "../utils/db";
-import { quoteSchema } from "../utils/schemas";
-import { requireCompanyAccess } from "../utils/session";
-import { createNotification } from "../utils/notifications";
-import { generateDocumentPDF, getPaymentMethodDetails } from "../utils/pdf";
+  paymentMethods
+} from '../database/schema'
+import { db, parseDate } from '../utils/db'
+import { quoteSchema } from '../utils/schemas'
+import { requireCompanyAccess } from '../utils/session'
+import { createNotification } from '../utils/notifications'
+import { generateDocumentPDF, getPaymentMethodDetails } from '../utils/pdf'
 import {
   buildAlertMessage,
   getWhatsappConfig,
   normalizeRecipientList,
-  sendWhatsappPDF,
-} from "../utils/whatsapp";
+  sendWhatsappPDF
+} from '../utils/whatsapp'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
+  const body = await readBody(event)
 
-  const validation = quoteSchema.safeParse(body);
+  const validation = quoteSchema.safeParse(body)
 
   if (!validation.success) {
     throw createError({
       statusCode: 400,
-      message: "Falha na validação",
-      data: validation.error.flatten(),
-    });
+      message: 'Falha na validação',
+      data: validation.error.flatten()
+    })
   }
 
-  const { items, driverIds, ...quoteData } = validation.data;
+  const { items, driverIds, ...quoteData } = validation.data
 
   const resolveCountAsConcreteVolume = (item: {
-    unit?: string | null;
-    countAsConcreteVolume?: boolean;
+    unit?: string | null
+    countAsConcreteVolume?: boolean
   }) => {
-    if (typeof item.countAsConcreteVolume === "boolean") {
-      return item.countAsConcreteVolume;
+    if (typeof item.countAsConcreteVolume === 'boolean') {
+      return item.countAsConcreteVolume
     }
-    if (item.unit === "m3_faltante") return false;
-    return item.unit === "m3";
-  };
+    if (item.unit === 'm3_faltante') return false
+    return item.unit === 'm3'
+  }
 
-  const toCents = (value: number) => Math.round(value);
+  const toCents = (value: number) => Math.round(value)
 
   // Verify the caller has access to the target company (prevents cross-tenant write)
-  await requireCompanyAccess(event, quoteData.companyId);
+  await requireCompanyAccess(event, quoteData.companyId)
 
   // Calculate totals
   const subtotal = items.reduce(
     (sum, item) => sum + Math.round(item.quantity * toCents(item.unitPrice)),
-    0,
-  );
-  const discount = toCents(quoteData.discount);
-  const total = Math.max(0, subtotal - discount);
+    0
+  )
+  const discount = toCents(quoteData.discount)
+  const total = Math.max(0, subtotal - discount)
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
           customerDocument: quoteData.customerDocument,
           customerPhone: quoteData.customerPhone,
           customerAddress: quoteData.customerAddress,
-          status: "draft", // Always start as draft; becomes 'negotiation' after WhatsApp push
+          status: 'draft', // Always start as draft; becomes 'negotiation' after WhatsApp push
           date: new Date(),
           validUntil: parseDate(quoteData.validUntil) ?? null,
           paymentMethod: quoteData.paymentMethod,
@@ -81,14 +81,14 @@ export default defineEventHandler(async (event) => {
           notes: quoteData.notes,
           subtotal,
           discount,
-          total,
+          total
         })
         .returning()
-        .get();
+        .get()
 
       // 2. Create Items
       if (items.length > 0) {
-        const itemsToInsert = items.map((item) => ({
+        const itemsToInsert = items.map(item => ({
           totalPrice: Math.round(item.quantity * toCents(item.unitPrice)),
           quoteId: newQuote.id,
           productId: item.productId,
@@ -101,75 +101,75 @@ export default defineEventHandler(async (event) => {
           fck: item.fck,
           slump: item.slump,
           stoneSize: item.stoneSize,
-          mixDesignId: item.mixDesignId,
-        }));
+          mixDesignId: item.mixDesignId
+        }))
 
-        await tx.insert(quoteItems).values(itemsToInsert);
+        await tx.insert(quoteItems).values(itemsToInsert)
       }
 
       // 3. Associate Drivers
       if (driverIds && driverIds.length > 0) {
         await tx.insert(quotesDrivers).values(
-          driverIds.map((driverId) => ({
+          driverIds.map(driverId => ({
             quoteId: newQuote.id,
-            driverId,
-          })),
-        );
+            driverId
+          }))
+        )
       }
 
-      return newQuote;
-    });
+      return newQuote
+    })
 
     // Fetch full object with items
     const fullQuote = await db
       .select()
       .from(quotes)
       .where(eq(quotes.id, result.id))
-      .get();
+      .get()
     if (!fullQuote)
       throw createError({
         statusCode: 500,
-        message: "Failed to retrieve quote after creation",
-      });
+        message: 'Failed to retrieve quote after creation'
+      })
     const createdItems = await db
       .select()
       .from(quoteItems)
       .where(eq(quoteItems.quoteId, result.id))
-      .all();
+      .all()
 
     // ── WhatsApp PDF Push ──
     try {
-      const waSettings = await getWhatsappConfig(quoteData.companyId);
-      const connected = waSettings?.isConnected && waSettings?.phoneNumber;
+      const waSettings = await getWhatsappConfig(quoteData.companyId)
+      const connected = waSettings?.isConnected && waSettings?.phoneNumber
 
       if (
-        connected &&
-        (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
+        connected
+        && (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
       ) {
         // Prepare everything for PDF
         const company = await db
           .select()
           .from(companies)
           .where(eq(companies.id, quoteData.companyId))
-          .get();
+          .get()
         const seller = quoteData.sellerId
           ? await db
               .select()
               .from(sellers)
               .where(eq(sellers.id, quoteData.sellerId))
               .get()
-          : null;
+          : null
 
         const selectedPaymentMethod = await getPaymentMethodDetails(
           quoteData.companyId,
-          fullQuote.paymentMethod,
-        );
+          fullQuote.paymentMethod
+        )
         const selectedPaymentMethod2 = fullQuote.paymentMethod2
           ? await getPaymentMethodDetails(
               quoteData.companyId,
-              fullQuote.paymentMethod2,
+              fullQuote.paymentMethod2
             )
-          : null;
+          : null
 
         const defaultPaymentMethod = await db
           .select()
@@ -177,13 +177,13 @@ export default defineEventHandler(async (event) => {
           .where(
             and(
               eq(paymentMethods.companyId, quoteData.companyId),
-              eq(paymentMethods.isDefault, true),
-            ),
+              eq(paymentMethods.isDefault, true)
+            )
           )
-          .get();
+          .get()
 
-        const paymentMethodToUse =
-          selectedPaymentMethod || defaultPaymentMethod;
+        const paymentMethodToUse
+          = selectedPaymentMethod || defaultPaymentMethod
 
         if (company) {
           const pdfBuffer = await generateDocumentPDF({
@@ -207,9 +207,9 @@ export default defineEventHandler(async (event) => {
               email: company.email,
               address: company.address,
               city: company.city,
-              state: company.state,
+              state: company.state
             },
-            items: createdItems.map((i) => ({
+            items: createdItems.map(i => ({
               productName: i.productName,
               quantity: i.quantity,
               unit: i.unit,
@@ -217,49 +217,49 @@ export default defineEventHandler(async (event) => {
               totalPrice: i.totalPrice,
               fck: i.fck || null,
               slump: i.slump || null,
-              stoneSize: i.stoneSize || null,
+              stoneSize: i.stoneSize || null
             })),
             paymentMethod: paymentMethodToUse
               ? {
                   name: paymentMethodToUse.name,
                   type: paymentMethodToUse.type,
-                  details: paymentMethodToUse.details,
+                  details: paymentMethodToUse.details
                 }
               : null,
             paymentMethod2: selectedPaymentMethod2
               ? {
                   name: selectedPaymentMethod2.name,
                   type: selectedPaymentMethod2.type,
-                  details: selectedPaymentMethod2.details,
+                  details: selectedPaymentMethod2.details
                 }
               : null,
             seller: seller
               ? {
                   name: seller.name,
                   phone: seller.phone || null,
-                  commissionRate: seller.commissionRate,
+                  commissionRate: seller.commissionRate
                 }
-              : null,
-          });
+              : null
+          })
 
           const config = {
             apiUrl: waSettings.apiUrl!,
             apiKey: waSettings.apiKey!,
-            phoneNumber: waSettings.phoneNumber!,
-          };
+            phoneNumber: waSettings.phoneNumber!
+          }
 
           const fileName = `Orcamento_${String(result.id).padStart(
             5,
-            "0",
-          )}.pdf`;
+            '0'
+          )}.pdf`
           const caption = `📄 Orçamento de ${
             fullQuote.customerName
-          }\nTotal: ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(fullQuote.total / 100)}`;
+          }\nTotal: ${new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(fullQuote.total / 100)}`
 
-          let wasSentResult = false;
+          let wasSentResult = false
 
           // A. Send to Seller
           if (waSettings.quotePdfToSeller) {
@@ -269,22 +269,22 @@ export default defineEventHandler(async (event) => {
                 [seller.phone],
                 pdfBuffer,
                 fileName,
-                caption,
-              );
-              if (res.sent.length > 0) wasSentResult = true;
+                caption
+              )
+              if (res.sent.length > 0) wasSentResult = true
             } else {
               // Notification for missing seller phone
               await createNotification({
                 companyId: quoteData.companyId,
-                type: "user",
-                title: "Vendedor sem telefone",
+                type: 'user',
+                title: 'Vendedor sem telefone',
                 body: `O vendedor ${
-                  seller?.name || "desconhecido"
+                  seller?.name || 'desconhecido'
                 } não possui telefone cadastrado para receber o PDF do orçamento #${
                   result.id
                 }.`,
-                icon: "i-heroicons-exclamation-triangle",
-              });
+                icon: 'i-heroicons-exclamation-triangle'
+              })
             }
           }
 
@@ -296,18 +296,18 @@ export default defineEventHandler(async (event) => {
                 [fullQuote.customerPhone],
                 pdfBuffer,
                 fileName,
-                caption,
-              );
-              if (res.sent.length > 0) wasSentResult = true;
+                caption
+              )
+              if (res.sent.length > 0) wasSentResult = true
             } else {
               // Notification for missing customer phone
               await createNotification({
                 companyId: quoteData.companyId,
-                type: "quote",
-                title: "Cliente sem telefone",
+                type: 'quote',
+                title: 'Cliente sem telefone',
                 body: `O cliente ${fullQuote.customerName} não possui telefone no orçamento #${result.id} para receber o PDF.`,
-                icon: "i-heroicons-exclamation-triangle",
-              });
+                icon: 'i-heroicons-exclamation-triangle'
+              })
             }
           }
 
@@ -315,64 +315,64 @@ export default defineEventHandler(async (event) => {
           if (wasSentResult) {
             await db
               .update(quotes)
-              .set({ status: "negotiation", updatedAt: new Date() })
-              .where(eq(quotes.id, result.id));
+              .set({ status: 'negotiation', updatedAt: new Date() })
+              .where(eq(quotes.id, result.id))
 
             // Update the local object for notification/response
-            fullQuote.status = "negotiation";
+            fullQuote.status = 'negotiation'
           }
         }
       }
     } catch (waErr) {
-      console.error("WhatsApp Push Error:", waErr);
+      console.error('WhatsApp Push Error:', waErr)
     }
 
     // Notification trigger
-    const waConfig = await getWhatsappConfig(quoteData.companyId);
-    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients);
-    const companyRow =
-      waConfig?.alertsEnabled && alertRecipients.length > 0
+    const waConfig = await getWhatsappConfig(quoteData.companyId)
+    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients)
+    const companyRow
+      = waConfig?.alertsEnabled && alertRecipients.length > 0
         ? await db
             .select({ name: companies.name })
             .from(companies)
             .where(eq(companies.id, quoteData.companyId))
             .get()
-        : null;
+        : null
 
-    const qtotal = new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format((fullQuote?.total ?? 0) / 100);
+    const qtotal = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format((fullQuote?.total ?? 0) / 100)
 
     await createNotification({
       companyId: quoteData.companyId,
-      type: "quote",
-      title: "Novo orçamento criado",
+      type: 'quote',
+      title: 'Novo orçamento criado',
       body: `${quoteData.customerName} — ${qtotal}`,
-      link: "/orcamentos",
-      icon: "i-heroicons-document-text",
+      link: '/orcamentos',
+      icon: 'i-heroicons-document-text',
       ...(waConfig?.alertsEnabled && alertRecipients.length > 0
         ? {
             whatsapp: {
               toNumbers: alertRecipients,
-              message: buildAlertMessage("quote", {
-                companyName: companyRow?.name ?? "Meu Concreto",
+              message: buildAlertMessage('quote', {
+                companyName: companyRow?.name ?? 'Meu Concreto',
                 customerName: fullQuote.customerName,
                 total: fullQuote.total,
-                id: result.id,
-              }),
-            },
+                id: result.id
+              })
+            }
           }
-        : {}),
-    });
+        : {})
+    })
 
-    return { quote: { ...fullQuote, items: createdItems } };
+    return { quote: { ...fullQuote, items: createdItems } }
   } catch (e: any) {
-    console.error("Database Error:", e);
+    console.error('Database Error:', e)
     throw createError({
       statusCode: 500,
-      message: "Erro interno do servidor",
-      data: { message: e.message },
-    });
+      message: 'Erro interno do servidor',
+      data: { message: e.message }
+    })
   }
-});
+})

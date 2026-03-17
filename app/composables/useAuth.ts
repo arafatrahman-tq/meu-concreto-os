@@ -118,13 +118,13 @@ export const useAuth = () => {
   // Atualiza os dados do usuário e empresas buscando do servidor
   const refreshAuth = async () => {
     try {
-      const data = await $fetch<{ user: AuthUser; companies: AuthCompany[] }>('/api/auth/me')
-      
+      const data = await $fetch<{ user: AuthUser, companies: AuthCompany[] }>('/api/auth/me')
+
       // Atualiza apenas os dados de empresas (o usuário raramente muda)
       // mas mantém a empresa ativa se ainda for válida
       const currentActiveId = activeCompanyId.value
       companies.value = data.companies
-      
+
       // Se a empresa ativa atual não existe mais na lista, reseta para a padrão ou primeira
       const stillValid = data.companies.find(c => c.id === currentActiveId)
       if (!stillValid) {
@@ -135,7 +135,7 @@ export const useAuth = () => {
           activeCompanyId.value = data.companies[0]?.id ?? null
         }
       }
-      
+
       syncCookies()
       return true
     } catch (error) {

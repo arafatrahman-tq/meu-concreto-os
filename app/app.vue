@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onBeforeMount, nextTick } from 'vue'
+import { useAppLoader } from '~/composables/useAppLoader'
 
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
@@ -9,11 +10,17 @@ useHead({
   }
 })
 
-const appReady = ref(false)
+const { isLoading, progress, startLoading, finishLoading } = useAppLoader()
+
+// Start fake progression only on client-side to avoid server-side setInterval memory leaks
+onBeforeMount(() => {
+  startLoading()
+})
 
 onMounted(() => {
   nextTick(() => {
-    appReady.value = true
+    // Dom ready, let's complete the bar
+    finishLoading()
   })
 })
 </script>
@@ -34,7 +41,7 @@ onMounted(() => {
       leave-to-class="opacity-0"
     >
       <div
-        v-if="!appReady"
+        v-if="isLoading"
         class="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-zinc-950 overflow-hidden"
         style="
           background-image: url(&quot;/login-hero.jpg&quot;);
@@ -66,13 +73,22 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Spinner -->
-        <div class="relative z-10 flex items-center gap-2 text-white/50 text-sm font-bold">
-          <UIcon
-            name="i-lucide-loader-circle"
-            class="w-5 h-5 animate-spin text-primary-500"
-          />
-          <span>Carregando o sistema…</span>
+        <!-- Progress Bar and Text -->
+        <div class="relative z-10 flex flex-col items-center gap-3 w-64 max-w-[80vw]">
+          <!-- Bar container -->
+          <div class="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-xs ring-1 ring-white/10">
+            <!-- Animated fill -->
+            <div
+              class="absolute left-0 top-0 bottom-0 bg-primary-500 rounded-full transition-all duration-300 ease-out"
+              :style="{ width: `${progress}%` }"
+            />
+          </div>
+
+          <!-- Text and Percentage -->
+          <div class="flex justify-between items-center w-full px-1">
+            <span class="text-white/50 text-xs font-bold uppercase tracking-wider">Inicializando</span>
+            <span class="text-white/70 text-xs font-bold font-mono">{{ Math.round(progress) }}%</span>
+          </div>
         </div>
       </div>
     </Transition>

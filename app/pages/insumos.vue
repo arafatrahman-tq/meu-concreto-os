@@ -3,14 +3,14 @@ import {
   typeConfig,
   type Material,
   type MaterialType,
-  type MaterialUnit,
-} from "~/types/inventory";
+  type MaterialUnit
+} from '~/types/inventory'
 
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Insumos | Meu Concreto" });
+definePageMeta({ layout: 'default' })
+useSeoMeta({ title: 'Insumos | Meu Concreto' })
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 // ─────────────────────────────────────────────
 // Data
@@ -18,116 +18,116 @@ const toast = useToast();
 const {
   data: materialsData,
   refresh: refreshMaterials,
-  pending: loadingMaterials,
-} = await useFetch<{ materials: Material[] }>("/api/materials", {
+  pending: loadingMaterials
+} = await useFetch<{ materials: Material[] }>('/api/materials', {
   query: { companyId },
-  watch: [companyId],
-});
+  watch: [companyId]
+})
 
 const materials = computed<Material[]>(
-  () => materialsData.value?.materials ?? [],
-);
+  () => materialsData.value?.materials ?? []
+)
 
 const PREVIEW_TYPE_OPTS = [
-  { label: "Todos", value: "all" },
-  { label: "Cimento", value: "cement" },
-  { label: "Areia", value: "sand" },
-  { label: "Brita", value: "stone" },
-  { label: "Aditivo", value: "additive" },
-  { label: "Água", value: "water" },
-  { label: "Outro", value: "other" },
-];
+  { label: 'Todos', value: 'all' },
+  { label: 'Cimento', value: 'cement' },
+  { label: 'Areia', value: 'sand' },
+  { label: 'Brita', value: 'stone' },
+  { label: 'Aditivo', value: 'additive' },
+  { label: 'Água', value: 'water' },
+  { label: 'Outro', value: 'other' }
+]
 
 // ─────────────────────────────────────────────
 // Summary stats
 // ─────────────────────────────────────────────
 const stats = computed(() => {
-  const all = materials.value;
-  const active = all.filter((m) => m.active);
-  const lowStock = all.filter((m) => m.stock < 100); // Example threshold
-  const totalValue = all.reduce((acc, m) => acc + m.stock * m.cost, 0);
+  const all = materials.value
+  const active = all.filter(m => m.active)
+  const lowStock = all.filter(m => m.stock < 100) // Example threshold
+  const totalValue = all.reduce((acc, m) => acc + m.stock * m.cost, 0)
 
   return {
     total: all.length,
     active: active.length,
     lowStock: lowStock.length,
-    totalValue,
-  };
-});
+    totalValue
+  }
+})
 
 // ─────────────────────────────────────────────
 // Filter & Search
 // ─────────────────────────────────────────────
-const search = ref("");
-const typeFilter = ref<MaterialType | "all">("all");
-const activeFilter = ref<"all" | "active" | "inactive">("all");
+const search = ref('')
+const typeFilter = ref<MaterialType | 'all'>('all')
+const activeFilter = ref<'all' | 'active' | 'inactive'>('all')
 
 const filteredMaterials = computed(() => {
   return materials.value.filter((m) => {
-    const matchType = typeFilter.value === "all" || m.type === typeFilter.value;
-    const matchActive =
-      activeFilter.value === "all" ||
-      (activeFilter.value === "active" && m.active) ||
-      (activeFilter.value === "inactive" && !m.active);
-    const q = search.value.toLowerCase();
-    const matchSearch = !q || m.name.toLowerCase().includes(q);
+    const matchType = typeFilter.value === 'all' || m.type === typeFilter.value
+    const matchActive
+      = activeFilter.value === 'all'
+        || (activeFilter.value === 'active' && m.active)
+        || (activeFilter.value === 'inactive' && !m.active)
+    const q = search.value.toLowerCase()
+    const matchSearch = !q || m.name.toLowerCase().includes(q)
 
-    return matchType && matchActive && matchSearch;
-  });
-});
+    return matchType && matchActive && matchSearch
+  })
+})
 
 // ─────────────────────────────────────────────
 // Pagination
 // ─────────────────────────────────────────────
-const page = ref(1);
-const pageSize = ref(12);
+const page = ref(1)
+const pageSize = ref(12)
 
 const paginatedMaterials = computed(() => {
-  const start = (page.value - 1) * pageSize.value;
-  return filteredMaterials.value.slice(start, start + pageSize.value);
-});
+  const start = (page.value - 1) * pageSize.value
+  return filteredMaterials.value.slice(start, start + pageSize.value)
+})
 
 const totalPages = computed(() =>
-  Math.ceil(filteredMaterials.value.length / pageSize.value),
-);
+  Math.ceil(filteredMaterials.value.length / pageSize.value)
+)
 
 watch([search, typeFilter, activeFilter], () => {
-  page.value = 1;
-});
+  page.value = 1
+})
 
 // No local formatters needed
 
 // Drawer state
-const isDrawerOpen = ref(false);
-const editingMaterial = ref<Material | null>(null);
+const isDrawerOpen = ref(false)
+const editingMaterial = ref<Material | null>(null)
 
 const openCreate = () => {
-  editingMaterial.value = null;
-  isDrawerOpen.value = true;
-};
+  editingMaterial.value = null
+  isDrawerOpen.value = true
+}
 
 const openEdit = (m: Material) => {
-  editingMaterial.value = m;
-  isDrawerOpen.value = true;
-};
+  editingMaterial.value = m
+  isDrawerOpen.value = true
+}
 
 // Save logic now in MaterialDrawer
 
 const deleteMaterial = async (id: number) => {
-  if (!confirm("Tem certeza que deseja excluir este insumo?")) return;
+  if (!confirm('Tem certeza que deseja excluir este insumo?')) return
 
   try {
-    await $fetch(`/api/materials/${id}`, { method: "DELETE" });
-    toast.add({ title: "Insumo excluído", color: "success" });
-    refreshMaterials();
+    await $fetch(`/api/materials/${id}`, { method: 'DELETE' })
+    toast.add({ title: 'Insumo excluído', color: 'success' })
+    refreshMaterials()
   } catch (error: any) {
     toast.add({
-      title: "Erro ao excluir",
-      description: error.data?.message || "Verifique se o insumo está em uso.",
-      color: "error",
-    });
+      title: 'Erro ao excluir',
+      description: error.data?.message || 'Verifique se o insumo está em uso.',
+      color: 'error'
+    })
   }
-};
+}
 </script>
 
 <template>
@@ -172,21 +172,24 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Total de Insumos</span
-          >
+          >Total de Insumos</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-500/10"
           >
-            <UIcon name="i-heroicons-cube" class="h-5 w-5 text-primary-500" />
+            <UIcon
+              name="i-heroicons-cube"
+              class="h-5 w-5 text-primary-500"
+            />
           </div>
         </div>
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.total }}</span
-          >
+          >{{ stats.total }}</span>
         </div>
-        <p class="text-xs font-medium text-zinc-400 -mt-2">itens cadastrados</p>
+        <p class="text-xs font-medium text-zinc-400 -mt-2">
+          itens cadastrados
+        </p>
       </div>
 
       <!-- Ativos -->
@@ -196,8 +199,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Ativos</span
-          >
+          >Ativos</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 dark:bg-green-500/10"
           >
@@ -210,8 +212,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.active }}</span
-          >
+          >{{ stats.active }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           em uso na produção
@@ -225,8 +226,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Estoque Baixo</span
-          >
+          >Estoque Baixo</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-500/10"
           >
@@ -239,8 +239,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ stats.lowStock }}</span
-          >
+          >{{ stats.lowStock }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           precisam de reposição
@@ -254,8 +253,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-center justify-between gap-2">
           <span
             class="text-[10px] font-black uppercase tracking-widest leading-tight text-zinc-400"
-            >Valor em Estoque</span
-          >
+          >Valor em Estoque</span>
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10"
           >
@@ -268,8 +266,7 @@ const deleteMaterial = async (id: number) => {
         <div class="flex items-baseline gap-1">
           <span
             class="text-3xl font-black text-zinc-900 tabular-nums dark:text-white"
-            >{{ formatCurrency(stats.totalValue) }}</span
-          >
+          >{{ formatCurrency(stats.totalValue) }}</span>
         </div>
         <p class="text-xs font-medium text-zinc-400 -mt-2">
           custo total armazenado
@@ -283,7 +280,7 @@ const deleteMaterial = async (id: number) => {
         body: 'p-0 sm:p-0',
         header:
           'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
+        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
       }"
       class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
     >
@@ -318,8 +315,15 @@ const deleteMaterial = async (id: number) => {
       </template>
 
       <!-- Loading State -->
-      <div v-if="loadingMaterials" class="space-y-4 py-4">
-        <USkeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-xl" />
+      <div
+        v-if="loadingMaterials"
+        class="space-y-4 py-4"
+      >
+        <USkeleton
+          v-for="i in 5"
+          :key="i"
+          class="h-12 w-full rounded-xl"
+        />
       </div>
 
       <!-- Empty State -->
@@ -352,7 +356,10 @@ const deleteMaterial = async (id: number) => {
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto">
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -413,7 +420,10 @@ const deleteMaterial = async (id: number) => {
                 </div>
               </td>
               <td class="px-4 py-4">
-                <UBadge :color="typeConfig[m.type].color" variant="subtle">
+                <UBadge
+                  :color="typeConfig[m.type].color"
+                  variant="subtle"
+                >
                   {{ typeConfig[m.type].label }}
                 </UBadge>
               </td>
@@ -468,9 +478,9 @@ const deleteMaterial = async (id: number) => {
                           label: 'Excluir',
                           icon: 'i-heroicons-trash',
                           color: 'error',
-                          onSelect: () => deleteMaterial(m.id),
-                        },
-                      ],
+                          onSelect: () => deleteMaterial(m.id)
+                        }
+                      ]
                     ]"
                   >
                     <UButton
@@ -488,7 +498,10 @@ const deleteMaterial = async (id: number) => {
         </table>
       </div>
 
-      <template v-if="totalPages > 1" #footer>
+      <template
+        v-if="totalPages > 1"
+        #footer
+      >
         <div class="flex items-center justify-between">
           <p
             class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400"

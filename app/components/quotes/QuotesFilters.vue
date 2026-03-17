@@ -1,40 +1,21 @@
 <script setup lang="ts">
-import type {
-  Transaction,
-  TransactionType,
-  TransactionStatus
-} from '~/types/transactions'
+import type { QuoteStatus } from '~/types/sales'
 
 const search = defineModel<string>('search')
-const typeFilter = defineModel<TransactionType | 'all'>('typeFilter')
-const statusFilter = defineModel<TransactionStatus | 'all'>('statusFilter')
+const statusFilter = defineModel<QuoteStatus | 'all'>('statusFilter')
 const dateStart = defineModel<string>('dateStart')
 const dateEnd = defineModel<string>('dateEnd')
 
 defineProps<{
-  loadingPDF: boolean
-  hasTransactions: boolean
+  statusOpts: { label: string, value: string }[]
+  hasRecords: boolean
 }>()
 
-const emit = defineEmits(['download', 'exportCsv', 'exportExcel', 'clear'])
-
-const TYPE_OPTS = [
-  { label: 'Todos os tipos', value: 'all' },
-  { label: 'Receita', value: 'income' },
-  { label: 'Despesa', value: 'expense' }
-]
-
-const STATUS_OPTS = [
-  { label: 'Todos os status', value: 'all' },
-  { label: 'Pendente', value: 'pending' },
-  { label: 'Pago', value: 'paid' },
-  { label: 'Cancelado', value: 'cancelled' }
-]
+const emit = defineEmits(['exportCsv', 'exportExcel', 'exportPdf', 'clear'])
 
 const isFiltered = computed(() => {
   return (
     search.value
-    || typeFilter.value !== 'all'
     || statusFilter.value !== 'all'
     || dateStart.value
     || dateEnd.value
@@ -48,25 +29,14 @@ const isFiltered = computed(() => {
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
   >
     <div class="flex flex-col gap-6">
+      <!-- Search & Status Row -->
       <div class="flex flex-col lg:flex-row gap-4 items-end">
         <div class="flex-1 w-full">
           <UFormField label="Pesquisar">
             <UInput
               v-model="search"
               icon="i-heroicons-magnifying-glass"
-              placeholder="Descrição, categoria, forma de pagamento..."
-              class="w-full"
-              size="lg"
-            />
-          </UFormField>
-        </div>
-
-        <div class="w-full lg:w-48">
-          <UFormField label="Tipo">
-            <USelect
-              v-model="typeFilter"
-              :items="TYPE_OPTS"
-              value-attribute="value"
+              placeholder="Buscar cliente, nº, documento..."
               class="w-full"
               size="lg"
             />
@@ -77,7 +47,7 @@ const isFiltered = computed(() => {
           <UFormField label="Status">
             <USelect
               v-model="statusFilter"
-              :items="STATUS_OPTS"
+              :items="statusOpts"
               value-attribute="value"
               class="w-full"
               size="lg"
@@ -109,6 +79,7 @@ const isFiltered = computed(() => {
         </div>
       </div>
 
+      <!-- Date Range & Export Row -->
       <div
         class="flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/50"
       >
@@ -146,7 +117,7 @@ const isFiltered = computed(() => {
             variant="outline"
             icon="i-heroicons-table-cells"
             size="sm"
-            :disabled="!hasTransactions"
+            :disabled="!hasRecords"
             @click="emit('exportCsv')"
           >
             CSV
@@ -156,7 +127,7 @@ const isFiltered = computed(() => {
             variant="outline"
             icon="i-heroicons-document-text"
             size="sm"
-            :disabled="!hasTransactions"
+            :disabled="!hasRecords"
             @click="emit('exportExcel')"
           >
             Excel
@@ -166,9 +137,8 @@ const isFiltered = computed(() => {
             variant="outline"
             icon="i-heroicons-arrow-down-tray"
             size="sm"
-            :loading="loadingPDF"
-            :disabled="!hasTransactions"
-            @click="emit('download')"
+            :disabled="!hasRecords"
+            @click="emit('exportPdf')"
           >
             PDF
           </UButton>

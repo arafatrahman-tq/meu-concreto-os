@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { formatISODate } from '~/utils/formatters'
 
 definePageMeta({ layout: 'default' })
 useSeoMeta({ title: 'Agendamentos | Meu Concreto' })
@@ -93,7 +94,7 @@ const defaultForm: ScheduleForm = {
   location: '',
   status: 'pending',
   type: 'concrete_delivery',
-  date: new Date().toLocaleDateString('sv'),
+  date: formatISODate(new Date()),
   startTime: '08:00',
   endTime: '10:00',
   saleId: null
@@ -225,7 +226,7 @@ const openEdit = (schedule: Schedule) => {
     location: schedule.location || '',
     status: schedule.status,
     type: schedule.type,
-    date: new Date(schedule.date).toLocaleDateString('sv'),
+    date: formatISODate(schedule.date),
     startTime: schedule.startTime || '08:00',
     endTime: schedule.endTime || '10:00',
     saleId: schedule.saleId || null
@@ -456,7 +457,10 @@ const getTypeIcon = (type: ScheduleType) => {
               />
             </div>
           </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter" :class="kpi.color">
+          <p
+            class="text-3xl font-black tabular-nums tracking-tighter"
+            :class="kpi.color"
+          >
             {{ kpi.value }}
           </p>
           <div class="flex items-center gap-1.5 -mt-2">
@@ -940,7 +944,10 @@ const getTypeIcon = (type: ScheduleType) => {
           >
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary-100 dark:bg-primary-500/20">
-                <UIcon :name="getTypeIcon(deleteTarget.type)" class="w-4 h-4 text-primary-500" />
+                <UIcon
+                  :name="getTypeIcon(deleteTarget.type)"
+                  class="w-4 h-4 text-primary-500"
+                />
               </div>
               <div>
                 <p class="text-sm font-bold text-zinc-900 dark:text-white">

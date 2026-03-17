@@ -3,13 +3,13 @@ import { formatCurrency } from '~/utils/formatters'
 
 /**
  * BaseDeleteModal - Componente especializado para confirmação de exclusão
- * 
+ *
  * Props:
  * - target: Objeto a ser deletado (deve ter id, name)
  * - targetLabel: Label do tipo (ex: "Venda", "Orçamento")
  * - targetPrefix: Prefixo para o ID (ex: "#" para "#0001")
  * - displayValue: Valor opcional a ser exibido (ex: total da venda)
- * 
+ *
  * Slots:
  * - preview: Conteúdo customizado do preview (opcional)
  */
@@ -32,12 +32,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  confirm: []
+  'confirm': []
 }>()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit('update:open', val)
+  set: val => emit('update:open', val)
 })
 
 const formattedId = computed(() => {
@@ -95,7 +95,10 @@ const formattedValue = computed(() => {
           <p class="text-sm font-bold text-zinc-900 dark:text-white">
             {{ formattedId }} - {{ target.name || targetLabel }}
           </p>
-          <p v-if="formattedValue" class="text-xs text-zinc-400">
+          <p
+            v-if="formattedValue"
+            class="text-xs text-zinc-400"
+          >
             {{ formattedValue }}
           </p>
         </div>

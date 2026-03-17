@@ -1,14 +1,14 @@
 <script setup lang="ts">
 defineProps<{
-  topSellers: any[];
-}>();
+  topSellers: any[]
+}>()
 </script>
 
 <template>
   <UCard
     class="flex flex-col h-full rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
     :ui="{
-      header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
+      header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800'
     }"
   >
     <template #header>
@@ -36,8 +36,13 @@ defineProps<{
       v-if="topSellers.length === 0"
       class="flex flex-col items-center justify-center py-10 text-zinc-400 flex-1"
     >
-      <UIcon name="i-heroicons-users" class="w-10 h-10 mb-2 opacity-40" />
-      <p class="text-sm font-bold">Nenhuma venda com vendedor</p>
+      <UIcon
+        name="i-heroicons-users"
+        class="w-10 h-10 mb-2 opacity-40"
+      />
+      <p class="text-sm font-bold">
+        Nenhuma venda com vendedor
+      </p>
     </div>
 
     <div

@@ -1,110 +1,110 @@
 <script setup lang="ts">
-import type { User } from "~/types/users";
-import { ROLE_LABELS } from "~/utils/constants";
-import { maskPhone } from "~/utils/formatters";
+import type { User } from '~/types/users'
+import { ROLE_LABELS } from '~/utils/constants'
+import { maskPhone } from '~/utils/formatters'
 
 const props = defineProps<{
-  user: User;
-}>();
+  user: User
+}>()
 
 const emit = defineEmits<{
-  (e: "updated"): void;
-}>();
+  (e: 'updated'): void
+}>()
 
-const toast = useToast();
+const toast = useToast()
 
 const profileForm = reactive({
-  name: "",
-  phone: "",
-});
+  name: '',
+  phone: ''
+})
 
-const profileErrors = reactive<Record<string, string>>({});
+const profileErrors = reactive<Record<string, string>>({})
 
 const clearErrors = () => {
-  for (const key in profileErrors) delete profileErrors[key];
-};
+  for (const key in profileErrors) delete profileErrors[key]
+}
 
 watch(
   () => props.user,
   (newUser) => {
     if (newUser) {
-      profileForm.name = newUser.name ?? "";
-      profileForm.phone = newUser.phone ?? "";
+      profileForm.name = newUser.name ?? ''
+      profileForm.phone = newUser.phone ?? ''
     }
   },
   { immediate: true }
-);
+)
 
 watch(
   () => profileForm.phone,
   (val) => {
-    const masked = maskPhone(val);
-    if (masked !== val) profileForm.phone = masked;
+    const masked = maskPhone(val)
+    if (masked !== val) profileForm.phone = masked
   }
-);
+)
 
 const validate = (): boolean => {
-  clearErrors();
-  let isValid = true;
+  clearErrors()
+  let isValid = true
 
   if (!profileForm.name || profileForm.name.trim().length < 3) {
-    profileErrors.name = "O nome deve ter pelo menos 3 caracteres.";
-    isValid = false;
+    profileErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
+    isValid = false
   }
 
   if (profileForm.phone) {
-    const digits = profileForm.phone.replace(/\D/g, "");
+    const digits = profileForm.phone.replace(/\D/g, '')
     if (digits.length < 10) {
-      profileErrors.phone = "Telefone inválido (mínimo 10 dígitos com DDD).";
-      isValid = false;
+      profileErrors.phone = 'Telefone inválido (mínimo 10 dígitos com DDD).'
+      isValid = false
     }
   }
 
-  return isValid;
-};
+  return isValid
+}
 
-const loadingSave = ref(false);
+const loadingSave = ref(false)
 
 const handleSave = async () => {
-  if (!validate()) return;
-  if (!props.user?.id) return;
+  if (!validate()) return
+  if (!props.user?.id) return
 
-  loadingSave.value = true;
+  loadingSave.value = true
   try {
     await $fetch(`/api/users/${props.user.id}`, {
-      method: "PUT",
+      method: 'PUT',
       body: {
         name: profileForm.name.trim(),
-        phone: profileForm.phone.trim() || undefined,
-      },
-    });
+        phone: profileForm.phone.trim() || undefined
+      }
+    })
 
     // Update local user object (shared via useAuth usually)
     // if (props.user) props.user.name = profileForm.name.trim()
-    emit("updated");
+    emit('updated')
 
     toast.add({
-      title: "Perfil atualizado",
-      description: "Seus dados foram salvos com sucesso.",
-      color: "success",
-      icon: "i-heroicons-check-circle",
-    });
+      title: 'Perfil atualizado',
+      description: 'Seus dados foram salvos com sucesso.',
+      color: 'success',
+      icon: 'i-heroicons-check-circle'
+    })
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }; message?: string };
+    const err = e as { data?: { message?: string }, message?: string }
     toast.add({
-      title: "Erro ao salvar",
-      description: err?.data?.message ?? err?.message ?? "Tente novamente.",
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
+      title: 'Erro ao salvar',
+      description: err?.data?.message ?? err?.message ?? 'Tente novamente.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 
 const roleLabel = computed(() => {
-  return ROLE_LABELS[props.user?.role ?? "user"] ?? "Usuário";
-});
+  return ROLE_LABELS[props.user?.role ?? 'user'] ?? 'Usuário'
+})
 </script>
 
 <template>
@@ -135,7 +135,11 @@ const roleLabel = computed(() => {
     <div class="space-y-4">
       <!-- Name + Phone -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField label="Nome" required :error="profileErrors.name">
+        <UFormField
+          label="Nome"
+          required
+          :error="profileErrors.name"
+        >
           <UInput
             v-model="profileForm.name"
             placeholder="Seu nome completo"
@@ -144,7 +148,10 @@ const roleLabel = computed(() => {
             size="lg"
           />
         </UFormField>
-        <UFormField label="Telefone" :error="profileErrors.phone">
+        <UFormField
+          label="Telefone"
+          :error="profileErrors.phone"
+        >
           <UInput
             v-model="profileForm.phone"
             placeholder="(00) 00000-0000"

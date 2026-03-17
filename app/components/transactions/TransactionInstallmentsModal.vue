@@ -1,219 +1,219 @@
 <script setup lang="ts">
-import type { PaymentMethod } from "~/types/payment-methods";
-import type { Transaction } from "~/types/transactions";
+import type { PaymentMethod } from '~/types/payment-methods'
+import type { Transaction } from '~/types/transactions'
 
 const props = defineProps<{
-  open: boolean;
-  transaction: Transaction | null;
-}>();
+  open: boolean
+  transaction: Transaction | null
+}>()
 
 const emit = defineEmits<{
-  (e: "update:open", value: boolean): void;
-  (e: "saved"): void;
-}>();
+  (e: 'update:open', value: boolean): void
+  (e: 'saved'): void
+}>()
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (value) => emit("update:open", value),
-});
+  set: value => emit('update:open', value)
+})
 
-const loadingSave = ref(false);
+const loadingSave = ref(false)
 const formErrors = reactive<Record<string, string>>({
-  installments: "",
-  intervalDays: "",
-  firstDueDate: "",
-  base: "",
-});
+  installments: '',
+  intervalDays: '',
+  firstDueDate: '',
+  base: ''
+})
 
 const form = reactive({
   installments: 2,
   intervalDays: 30,
-  firstDueDate: "",
-});
+  firstDueDate: ''
+})
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL'
+})
 
 const { data: pmData } = useFetch<{ paymentMethods: PaymentMethod[] }>(
-  "/api/payment-methods",
+  '/api/payment-methods',
   {
-    query: { companyId, active: "true" },
-    watch: [companyId],
-  },
-);
+    query: { companyId, active: 'true' },
+    watch: [companyId]
+  }
+)
 
-const paymentMethods = computed(() => pmData.value?.paymentMethods ?? []);
+const paymentMethods = computed(() => pmData.value?.paymentMethods ?? [])
 
 const selectedPaymentMethod = computed(() => {
-  const name = props.transaction?.paymentMethod?.trim().toLowerCase();
-  if (!name) return null;
+  const name = props.transaction?.paymentMethod?.trim().toLowerCase()
+  if (!name) return null
 
   return (
-    paymentMethods.value.find((pm) => pm.name.trim().toLowerCase() === name) ??
-    null
-  );
-});
+    paymentMethods.value.find(pm => pm.name.trim().toLowerCase() === name)
+    ?? null
+  )
+})
 
 const clearErrors = () => {
-  formErrors.installments = "";
-  formErrors.intervalDays = "";
-  formErrors.firstDueDate = "";
-  formErrors.base = "";
-};
+  formErrors.installments = ''
+  formErrors.intervalDays = ''
+  formErrors.firstDueDate = ''
+  formErrors.base = ''
+}
 
 const calculateSmartDefaults = () => {
-  const method = selectedPaymentMethod.value;
+  const method = selectedPaymentMethod.value
 
   if (method?.details?.maxInstallments && method.details.maxInstallments > 1) {
     form.installments = Math.min(
       Math.max(method.details.maxInstallments, 2),
-      12,
-    );
-  } else if (method?.type === "credit_card") {
-    form.installments = 3;
-  } else if (method?.type === "boleto") {
-    form.installments = 2;
+      12
+    )
+  } else if (method?.type === 'credit_card') {
+    form.installments = 3
+  } else if (method?.type === 'boleto') {
+    form.installments = 2
   } else {
-    form.installments = 2;
+    form.installments = 2
   }
 
-  if (method?.type === "pix" || method?.type === "cash") {
-    form.intervalDays = 7;
+  if (method?.type === 'pix' || method?.type === 'cash') {
+    form.intervalDays = 7
   } else {
-    form.intervalDays = 30;
+    form.intervalDays = 30
   }
-};
+}
 
 const defaultFirstDueDate = computed(() => {
-  if (!props.transaction) return "";
+  if (!props.transaction) return ''
 
   if (props.transaction.dueDate) {
     return new Date(props.transaction.dueDate as string | number)
       .toISOString()
-      .slice(0, 10);
+      .slice(0, 10)
   }
 
   if (props.transaction.date) {
     return new Date(props.transaction.date as string | number)
       .toISOString()
-      .slice(0, 10);
+      .slice(0, 10)
   }
 
-  return new Date().toISOString().slice(0, 10);
-});
+  return new Date().toISOString().slice(0, 10)
+})
 
 watch(
   () => props.open,
   (open) => {
-    if (!open) return;
-    clearErrors();
-    calculateSmartDefaults();
-    form.firstDueDate = defaultFirstDueDate.value;
-  },
-);
+    if (!open) return
+    clearErrors()
+    calculateSmartDefaults()
+    form.firstDueDate = defaultFirstDueDate.value
+  }
+)
 
 const previewInstallments = computed(() => {
-  if (!props.transaction || form.installments < 2) return [];
+  if (!props.transaction || form.installments < 2) return []
 
-  const total = props.transaction.amount;
-  const base = Math.floor(total / form.installments);
-  const remainder = total - base * form.installments;
-  const startDate = new Date(`${form.firstDueDate}T12:00:00`);
+  const total = props.transaction.amount
+  const base = Math.floor(total / form.installments)
+  const remainder = total - base * form.installments
+  const startDate = new Date(`${form.firstDueDate}T12:00:00`)
 
   return Array.from({ length: form.installments }).map((_, index) => {
-    const number = index + 1;
-    const amount = number === form.installments ? base + remainder : base;
-    const dueDate = new Date(startDate);
-    dueDate.setDate(dueDate.getDate() + index * form.intervalDays);
+    const number = index + 1
+    const amount = number === form.installments ? base + remainder : base
+    const dueDate = new Date(startDate)
+    dueDate.setDate(dueDate.getDate() + index * form.intervalDays)
 
     return {
       number,
       total: form.installments,
       amount,
-      dueDateLabel: new Intl.DateTimeFormat("pt-BR").format(dueDate),
-    };
-  });
-});
+      dueDateLabel: new Intl.DateTimeFormat('pt-BR').format(dueDate)
+    }
+  })
+})
 
 const validate = () => {
-  clearErrors();
-  let valid = true;
+  clearErrors()
+  let valid = true
 
   if (!props.transaction) {
-    formErrors.base = "Selecione um lançamento válido.";
-    valid = false;
+    formErrors.base = 'Selecione um lançamento válido.'
+    valid = false
   }
 
   if (form.installments < 2 || form.installments > 36) {
-    formErrors.installments = "Informe entre 2 e 36 parcelas.";
-    valid = false;
+    formErrors.installments = 'Informe entre 2 e 36 parcelas.'
+    valid = false
   }
 
   if (form.intervalDays < 1 || form.intervalDays > 365) {
-    formErrors.intervalDays = "Informe intervalo entre 1 e 365 dias.";
-    valid = false;
+    formErrors.intervalDays = 'Informe intervalo entre 1 e 365 dias.'
+    valid = false
   }
 
   if (!form.firstDueDate) {
-    formErrors.firstDueDate = "Informe a data de vencimento inicial.";
-    valid = false;
+    formErrors.firstDueDate = 'Informe a data de vencimento inicial.'
+    valid = false
   }
 
-  return valid;
-};
+  return valid
+}
 
 const submit = async () => {
   if (!validate() || !props.transaction) {
-    return;
+    return
   }
 
-  loadingSave.value = true;
+  loadingSave.value = true
 
   try {
     await $fetch(`/api/transactions/${props.transaction.id}/installments`, {
-      method: "POST",
+      method: 'POST',
       body: {
         companyId: companyId.value,
         installments: form.installments,
         intervalDays: form.intervalDays,
-        firstDueDate: `${form.firstDueDate}T12:00:00.000Z`,
-      },
-    });
+        firstDueDate: `${form.firstDueDate}T12:00:00.000Z`
+      }
+    })
 
     toast.add({
-      title: "Parcelamento criado",
+      title: 'Parcelamento criado',
       description: `${form.installments} parcelas foram geradas com sucesso.`,
-      color: "success",
-      icon: "i-heroicons-receipt-percent",
-    });
+      color: 'success',
+      icon: 'i-heroicons-receipt-percent'
+    })
 
-    isOpen.value = false;
-    emit("saved");
+    isOpen.value = false
+    emit('saved')
   } catch (error: unknown) {
     const err = error as {
-      data?: { message?: string; statusMessage?: string };
-      message?: string;
-    };
+      data?: { message?: string, statusMessage?: string }
+      message?: string
+    }
 
     toast.add({
-      title: "Erro ao gerar parcelas",
+      title: 'Erro ao gerar parcelas',
       description:
-        err?.data?.message ??
-        err?.data?.statusMessage ??
-        err?.message ??
-        "Tente novamente.",
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
+        err?.data?.message
+        ?? err?.data?.statusMessage
+        ?? err?.message
+        ?? 'Tente novamente.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 </script>
 
 <template>

@@ -59,45 +59,45 @@ const localCancelReason = computed({
     <!-- Delete Confirmation - Usando BaseDeleteModal -->
     <BaseDeleteModal
       :open="isDeleteModalOpen"
-      @update:open="emit('update:isDeleteModalOpen', $event)"
-      :target="deleteTarget ? { 
-        id: deleteTarget.id, 
-        name: deleteTarget.customerName 
+      :target="deleteTarget ? {
+        id: deleteTarget.id,
+        name: deleteTarget.customerName
       } : null"
       target-label="Orçamento"
       target-prefix="#"
       :display-value="deleteTarget?.total"
       :loading="loadingDelete"
+      @update:open="emit('update:isDeleteModalOpen', $event)"
       @confirm="handleDelete"
     />
 
     <!-- Confirm Delete Entity (Motorista/Bombeador) - Usando BaseEntityActionModal -->
     <BaseEntityActionModal
       :open="isConfirmDeleteModalOpen"
-      @update:open="emit('update:isConfirmDeleteModalOpen', $event)"
       :type="confirmDeleteData.type"
       action="delete"
       :entity-name="confirmDeleteData.name"
       :loading="isDeletingMeta"
+      @update:open="emit('update:isConfirmDeleteModalOpen', $event)"
       @confirm="handleConfirmDelete"
     />
 
     <!-- Confirm Create Entity (Driver/Pumper) - Usando BaseEntityActionModal -->
     <BaseEntityActionModal
       :open="isConfirmCreateModalOpen"
-      @update:open="emit('update:isConfirmCreateModalOpen', $event)"
       :type="confirmCreateData.type"
       action="create"
       :entity-name="confirmCreateData.name"
       :loading="isCreatingMeta"
+      @update:open="emit('update:isConfirmCreateModalOpen', $event)"
       @confirm="handleConfirmCreate"
     />
 
     <!-- MODAL — Convert to Sale (Promotion) -->
     <UModal
       :open="isPromoteModalOpen"
-      @update:open="emit('update:isPromoteModalOpen', $event)"
       title="Gerar Venda"
+      @update:open="emit('update:isPromoteModalOpen', $event)"
     >
       <template #body>
         <div class="px-6 py-4 space-y-4">
@@ -169,7 +169,6 @@ const localCancelReason = computed({
     <!-- MODAL — Cancelar Orçamento - Usando BaseConfirmModal -->
     <BaseConfirmModal
       :open="isCancelModalOpen"
-      @update:open="emit('update:isCancelModalOpen', $event)"
       title="Cancelar Orçamento"
       confirm-label="Confirmar Cancelamento"
       confirm-color="warning"
@@ -177,6 +176,7 @@ const localCancelReason = computed({
       confirm-icon="i-heroicons-no-symbol"
       :loading="loadingCancel"
       cancel-label="Voltar"
+      @update:open="emit('update:isCancelModalOpen', $event)"
       @confirm="emit('cancel')"
     >
       <p class="text-sm text-zinc-600 dark:text-zinc-400">

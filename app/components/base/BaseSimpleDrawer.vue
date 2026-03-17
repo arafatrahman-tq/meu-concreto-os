@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseSimpleDrawer - Drawer simplificado para formulários básicos
- * 
+ *
  * Ideal para: Insumos, Produtos, Clientes, Formas de Pagamento
  * Com poucos campos e estrutura simples
  */
@@ -16,23 +16,23 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: []
+  'save': []
 }>()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit('update:open', val)
+  set: val => emit('update:open', val)
 })
 
 const title = computed(() => {
-  return props.isEditing 
-    ? `Editar ${props.entityName}` 
+  return props.isEditing
+    ? `Editar ${props.entityName}`
     : `Novo ${props.entityName}`
 })
 
 const saveLabel = computed(() => {
-  return props.isEditing 
-    ? 'Salvar Alterações' 
+  return props.isEditing
+    ? 'Salvar Alterações'
     : `Criar ${props.entityName}`
 })
 </script>

@@ -1,30 +1,30 @@
-import { getHeader } from "h3";
-import { db } from "../../utils/db";
-import { schedules, whatsappSettings, companies } from "../../database/schema";
-import { eq, and, lte, gte } from "drizzle-orm";
+import { getHeader } from 'h3'
+import { db } from '../../utils/db'
+import { schedules, whatsappSettings, companies } from '../../database/schema'
+import { eq, and, lte, gte } from 'drizzle-orm'
 import {
   getWhatsappConfig,
   normalizeRecipientList,
-  sendWhatsappMessage,
-} from "../../utils/whatsapp";
-import { ptBR } from "date-fns/locale";
-import { formatInAppTime } from "../../utils/timezone";
+  sendWhatsappMessage
+} from '../../utils/whatsapp'
+import { ptBR } from 'date-fns/locale'
+import { formatInAppTime } from '../../utils/timezone'
 
 export default defineEventHandler(async (event) => {
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) {
     throw createError({
       statusCode: 500,
-      message: "CRON_SECRET não configurado no ambiente.",
-    });
+      message: 'CRON_SECRET não configurado no ambiente.'
+    })
   }
 
-  const authHeader = getHeader(event, "authorization");
+  const authHeader = getHeader(event, 'authorization')
   if (authHeader !== `Bearer ${cronSecret}`) {
-    throw createError({ statusCode: 401, message: "Não autorizado" });
+    throw createError({ statusCode: 401, message: 'Não autorizado' })
   }
 
-  const results: any[] = [];
+  const results: any[] = []
 
   try {
     // 1. Fetch all companies that have reminders enabled
@@ -32,13 +32,13 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(whatsappSettings)
       .where(eq(whatsappSettings.schedulesReminderEnabled, true))
-      .all();
+      .all()
 
     for (const setting of companiesWithReminders) {
-      const now = new Date();
-      const leadTimeMs =
-        (setting.schedulesReminderLeadTimeHours || 24) * 60 * 60 * 1000;
-      const targetDate = new Date(now.getTime() + leadTimeMs);
+      const now = new Date()
+      const leadTimeMs
+        = (setting.schedulesReminderLeadTimeHours || 24) * 60 * 60 * 1000
+      const targetDate = new Date(now.getTime() + leadTimeMs)
 
       // 2. Find schedules for this company that haven't sent WA yet and are within the window
       // We look for schedules between NOW and NOW + LEAD_TIME
@@ -51,37 +51,37 @@ export default defineEventHandler(async (event) => {
             eq(schedules.whatsappSent, false),
             // We ignore completed/cancelled
             gte(schedules.date, now),
-            lte(schedules.date, targetDate),
-          ),
+            lte(schedules.date, targetDate)
+          )
         )
-        .all();
+        .all()
 
-      if (pendingSchedules.length === 0) continue;
+      if (pendingSchedules.length === 0) continue
 
       const company = await db
         .select({ name: companies.name })
         .from(companies)
         .where(eq(companies.id, setting.companyId))
-        .get();
+        .get()
 
-      const config = await getWhatsappConfig(setting.companyId);
+      const config = await getWhatsappConfig(setting.companyId)
       if (!config || !config.isConnected) {
         console.warn(
-          `[Reminders] Skipping company ${setting.companyId}: WA not connected.`,
-        );
-        continue;
+          `[Reminders] Skipping company ${setting.companyId}: WA not connected.`
+        )
+        continue
       }
 
       for (const schedule of pendingSchedules) {
         const formattedDate = formatInAppTime(
           new Date(schedule.date),
-          "dd 'de' MMMM",
-          ptBR,
-        );
-        const timeStr = schedule.startTime ? ` às ${schedule.startTime}` : "";
+          'dd \'de\' MMMM',
+          ptBR
+        )
+        const timeStr = schedule.startTime ? ` às ${schedule.startTime}` : ''
 
         const message = [
-          `🔔 *LEMBRETE DE AGENDAMENTO — ${company?.name || "Meu Concreto"}*`,
+          `🔔 *LEMBRETE DE AGENDAMENTO — ${company?.name || 'Meu Concreto'}*`,
           ``,
           `Olá! Passando para lembrar do agendamento:`,
           `📌 *${schedule.title}*`,
@@ -89,21 +89,21 @@ export default defineEventHandler(async (event) => {
           schedule.location ? `📍 Local: ${schedule.location}` : null,
           ``,
           `_Por favor, confirme se houver qualquer alteração._`,
-          `_Enviado por Meu Concreto_`,
+          `_Enviado por Meu Concreto_`
         ]
           .filter(Boolean)
-          .join("\n");
+          .join('\n')
 
         // Send to list of recipients (internal) AND to the customer specifically
         const recipients = normalizeRecipientList(
-          setting.schedulesReminderRecipients,
-        );
+          setting.schedulesReminderRecipients
+        )
         if (schedule.customerPhone) {
-          recipients.push(schedule.customerPhone);
+          recipients.push(schedule.customerPhone)
         }
 
         // De-duplicate numbers
-        const uniqueRecipients = [...new Set(recipients)];
+        const uniqueRecipients = [...new Set(recipients)]
 
         if (uniqueRecipients.length > 0) {
           try {
@@ -111,30 +111,30 @@ export default defineEventHandler(async (event) => {
               {
                 apiUrl: config.apiUrl,
                 apiKey: config.apiKey,
-                phoneNumber: config.phoneNumber,
+                phoneNumber: config.phoneNumber
               },
               uniqueRecipients,
-              message,
-            );
+              message
+            )
 
             // 3. Mark as sent so we don't spam
             if (sendResult.sent.length > 0) {
               await db
                 .update(schedules)
                 .set({ whatsappSent: true, updatedAt: new Date() })
-                .where(eq(schedules.id, schedule.id));
+                .where(eq(schedules.id, schedule.id))
 
               results.push({
                 scheduleId: schedule.id,
                 sent: true,
-                recipients: uniqueRecipients.length,
-              });
+                recipients: uniqueRecipients.length
+              })
             }
           } catch (err) {
             console.error(
               `[Reminders] Failed to send reminders for schedule ${schedule.id}:`,
-              err,
-            );
+              err
+            )
           }
         }
       }
@@ -143,14 +143,14 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       processed: results.length,
-      details: results,
-    };
+      details: results
+    }
   } catch (err: any) {
-    console.error("[Reminders] Global task error:", err);
+    console.error('[Reminders] Global task error:', err)
     throw createError({
       statusCode: 500,
-      message: "Error processing reminders",
-      data: { message: err.message },
-    });
+      message: 'Error processing reminders',
+      data: { message: err.message }
+    })
   }
-});
+})

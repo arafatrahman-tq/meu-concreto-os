@@ -1,166 +1,166 @@
 <script setup lang="ts">
-import type { Product, ProductForm, MixDesign } from "~/types/products";
+import type { Product, ProductForm, MixDesign } from '~/types/products'
 
 const props = defineProps<{
-  open: boolean;
-  product?: Product | null;
-  mixDesigns: MixDesign[];
-}>();
+  open: boolean
+  product?: Product | null
+  mixDesigns: MixDesign[]
+}>()
 
 const emit = defineEmits<{
-  (e: "update:open", value: boolean): void;
-  (e: "saved"): void;
-}>();
+  (e: 'update:open', value: boolean): void
+  (e: 'saved'): void
+}>()
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit("update:open", val),
-});
+  set: val => emit('update:open', val)
+})
 
-const isEditing = computed(() => !!props.product);
-const loadingSave = ref(false);
+const isEditing = computed(() => !!props.product)
+const loadingSave = ref(false)
 
 const form = reactive<ProductForm>({
-  name: "",
-  description: "",
-  type: "concrete",
-  unit: "m3",
+  name: '',
+  description: '',
+  type: 'concrete',
+  unit: 'm3',
   price: 0,
-  sku: "",
+  sku: '',
   fck: undefined,
   slump: undefined,
-  stoneSize: "",
+  stoneSize: '',
   mixDesignId: undefined,
-  active: true,
-});
+  active: true
+})
 
-const formErrors = reactive<Record<keyof ProductForm | string, string>>({});
+const formErrors = reactive<Record<keyof ProductForm | string, string>>({})
 
 const clearErrors = () => {
-  for (const key in formErrors) delete formErrors[key];
-};
+  for (const key in formErrors) delete formErrors[key]
+}
 
 const validateForm = (): boolean => {
-  clearErrors();
-  let isValid = true;
+  clearErrors()
+  let isValid = true
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
-    isValid = false;
+    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
+    isValid = false
   }
 
   if (form.price < 0) {
-    formErrors.price = "O preço não pode ser negativo.";
-    isValid = false;
+    formErrors.price = 'O preço não pode ser negativo.'
+    isValid = false
   }
 
   if (!form.type) {
-    formErrors.type = "Selecione o tipo do produto.";
-    isValid = false;
+    formErrors.type = 'Selecione o tipo do produto.'
+    isValid = false
   }
 
   if (!form.unit) {
-    formErrors.unit = "Selecione a unidade de medida.";
-    isValid = false;
+    formErrors.unit = 'Selecione a unidade de medida.'
+    isValid = false
   }
 
-  return isValid;
-};
+  return isValid
+}
 
 const toOptionalInt = (value: unknown): number | undefined => {
-  if (value === "" || value === null || value === undefined) return undefined;
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? undefined : Math.trunc(parsed);
-};
+  if (value === '' || value === null || value === undefined) return undefined
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? undefined : Math.trunc(parsed)
+}
 
 const resetForm = () => {
-  form.name = "";
-  form.description = "";
-  form.type = "concrete";
-  form.unit = "m3";
-  form.price = 0;
-  form.sku = "";
-  form.fck = undefined;
-  form.slump = undefined;
-  form.stoneSize = "";
-  form.mixDesignId = undefined;
-  form.active = true;
-  clearErrors();
-};
+  form.name = ''
+  form.description = ''
+  form.type = 'concrete'
+  form.unit = 'm3'
+  form.price = 0
+  form.sku = ''
+  form.fck = undefined
+  form.slump = undefined
+  form.stoneSize = ''
+  form.mixDesignId = undefined
+  form.active = true
+  clearErrors()
+}
 
 watch(
   () => props.product,
   (p) => {
     if (p) {
-      form.name = p.name;
-      form.description = p.description ?? "";
-      form.type = p.type;
-      form.unit = p.unit;
-      form.price = p.price / 100;
-      form.sku = p.sku ?? "";
-      form.active = p.active;
-      form.mixDesignId = p.mixDesignId ?? undefined;
+      form.name = p.name
+      form.description = p.description ?? ''
+      form.type = p.type
+      form.unit = p.unit
+      form.price = p.price / 100
+      form.sku = p.sku ?? ''
+      form.active = p.active
+      form.mixDesignId = p.mixDesignId ?? undefined
       nextTick(() => {
-        form.fck = p.fck ?? undefined;
-        form.slump = p.slump ?? undefined;
-        form.stoneSize = p.stoneSize ?? "";
-      });
-      clearErrors();
+        form.fck = p.fck ?? undefined
+        form.slump = p.slump ?? undefined
+        form.stoneSize = p.stoneSize ?? ''
+      })
+      clearErrors()
     } else {
-      resetForm();
+      resetForm()
     }
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 watch(
   () => form.mixDesignId,
   (newId) => {
-    if (!newId || form.type !== "concrete") return;
-    const mix = props.mixDesigns.find((m) => m.id === newId);
+    if (!newId || form.type !== 'concrete') return
+    const mix = props.mixDesigns.find(m => m.id === newId)
     if (mix) {
-      if (mix.fck !== null && mix.fck !== undefined) form.fck = mix.fck;
-      if (mix.slump !== null && mix.slump !== undefined) form.slump = mix.slump;
-      if (mix.stoneSize) form.stoneSize = mix.stoneSize;
+      if (mix.fck !== null && mix.fck !== undefined) form.fck = mix.fck
+      if (mix.slump !== null && mix.slump !== undefined) form.slump = mix.slump
+      if (mix.stoneSize) form.stoneSize = mix.stoneSize
     }
-  },
-);
+  }
+)
 
 watch(
   () => form.type,
   (newType) => {
-    if (newType !== "concrete") {
-      form.fck = undefined;
-      form.slump = undefined;
-      form.stoneSize = "";
-      if (newType !== "pump" && newType !== "rental") {
-        form.unit = "un";
-      } else if (newType === "pump") {
-        form.unit = "m3";
-      } else if (newType === "rental") {
-        form.unit = "hr";
+    if (newType !== 'concrete') {
+      form.fck = undefined
+      form.slump = undefined
+      form.stoneSize = ''
+      if (newType !== 'pump' && newType !== 'rental') {
+        form.unit = 'un'
+      } else if (newType === 'pump') {
+        form.unit = 'm3'
+      } else if (newType === 'rental') {
+        form.unit = 'hr'
       }
     } else {
-      form.unit = "m3";
+      form.unit = 'm3'
     }
-  },
-);
+  }
+)
 
 const handleSave = async () => {
   if (!validateForm()) {
     toast.add({
-      title: "Atenção",
-      description: "Corrija os campos destacados em vermelho.",
-      color: "error",
-      icon: "i-heroicons-exclamation-triangle",
-    });
-    return;
+      title: 'Atenção',
+      description: 'Corrija os campos destacados em vermelho.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-triangle'
+    })
+    return
   }
 
-  loadingSave.value = true;
+  loadingSave.value = true
   try {
     const payload = {
       ...(isEditing.value ? {} : { companyId: companyId.value }),
@@ -174,64 +174,64 @@ const handleSave = async () => {
       slump: toOptionalInt(form.slump),
       stoneSize: form.stoneSize.trim() || undefined,
       mixDesignId: toOptionalInt(form.mixDesignId),
-      active: form.active,
-    };
+      active: form.active
+    }
 
     if (isEditing.value && props.product) {
       await $fetch(`/api/products/${props.product.id}`, {
-        method: "PUT",
-        body: payload,
-      });
+        method: 'PUT',
+        body: payload
+      })
       toast.add({
-        title: "Produto atualizado",
+        title: 'Produto atualizado',
         description: `"${form.name}" foi atualizado com sucesso.`,
-        color: "success",
-        icon: "i-heroicons-check-circle",
-      });
+        color: 'success',
+        icon: 'i-heroicons-check-circle'
+      })
     } else {
-      await $fetch("/api/products", { method: "POST", body: payload });
+      await $fetch('/api/products', { method: 'POST', body: payload })
       toast.add({
-        title: "Produto criado",
+        title: 'Produto criado',
         description: `"${form.name}" foi adicionado ao catálogo.`,
-        color: "success",
-        icon: "i-heroicons-check-circle",
-      });
+        color: 'success',
+        icon: 'i-heroicons-check-circle'
+      })
     }
 
-    isOpen.value = false;
-    emit("saved");
+    isOpen.value = false
+    emit('saved')
   } catch (e: any) {
     toast.add({
-      title: "Erro ao salvar",
-      description: e?.data?.message || "Erro ao salvar produto.",
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
+      title: 'Erro ao salvar',
+      description: e?.data?.message || 'Erro ao salvar produto.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 
 const mixDesignOptions = computed(() =>
-  props.mixDesigns.map((m) => ({ label: m.name, value: m.id })),
-);
+  props.mixDesigns.map(m => ({ label: m.name, value: m.id }))
+)
 
 const UNIT_OPTS = [
-  { label: "m³ — metros cúbicos", value: "m3" },
-  { label: "m³ faltante — metros cúbicos faltantes", value: "m3_faltante" },
-  { label: "un — unidade", value: "un" },
-  { label: "hr — hora", value: "hr" },
-  { label: "kg — quilograma", value: "kg" },
-  { label: "ton — tonelada", value: "ton" },
-];
+  { label: 'm³ — metros cúbicos', value: 'm3' },
+  { label: 'm³ faltante — metros cúbicos faltantes', value: 'm3_faltante' },
+  { label: 'un — unidade', value: 'un' },
+  { label: 'hr — hora', value: 'hr' },
+  { label: 'kg — quilograma', value: 'kg' },
+  { label: 'ton — tonelada', value: 'ton' }
+]
 
 const TYPE_FORM_OPTS = [
-  { label: "Concreto", value: "concrete" },
-  { label: "Bombeamento", value: "pump" },
-  { label: "Aditivo", value: "additive" },
-  { label: "Locação", value: "rental" },
-  { label: "Outro", value: "other" },
-];
+  { label: 'Concreto', value: 'concrete' },
+  { label: 'Bombeamento', value: 'pump' },
+  { label: 'Aditivo', value: 'additive' },
+  { label: 'Locação', value: 'rental' },
+  { label: 'Outro', value: 'other' }
+]
 </script>
 
 <template>
@@ -243,7 +243,10 @@ const TYPE_FORM_OPTS = [
     @save="handleSave"
   >
     <!-- Seção: Identificação e Preço -->
-    <BaseDrawerSection title="Identificação e Preço" variant="card">
+    <BaseDrawerSection
+      title="Identificação e Preço"
+      variant="card"
+    >
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <UFormField
           label="Nome do Produto/Serviço"
@@ -260,7 +263,11 @@ const TYPE_FORM_OPTS = [
           />
         </UFormField>
 
-        <UFormField label="Tipo" required :error="formErrors.type">
+        <UFormField
+          label="Tipo"
+          required
+          :error="formErrors.type"
+        >
           <USelect
             v-model="form.type"
             :items="TYPE_FORM_OPTS"
@@ -273,7 +280,11 @@ const TYPE_FORM_OPTS = [
           />
         </UFormField>
 
-        <UFormField label="Unidade" required :error="formErrors.unit">
+        <UFormField
+          label="Unidade"
+          required
+          :error="formErrors.unit"
+        >
           <USelect
             v-model="form.unit"
             :items="UNIT_OPTS"
@@ -313,7 +324,10 @@ const TYPE_FORM_OPTS = [
           />
         </UFormField>
 
-        <UFormField label="Descrição" class="col-span-full">
+        <UFormField
+          label="Descrição"
+          class="col-span-full"
+        >
           <UTextarea
             v-model="form.description"
             placeholder="Detalhes, características técnicas, condições de uso..."
@@ -399,7 +413,10 @@ const TYPE_FORM_OPTS = [
     </Transition>
 
     <!-- Seção: Configurações -->
-    <BaseDrawerSection title="Configurações" variant="card">
+    <BaseDrawerSection
+      title="Configurações"
+      variant="card"
+    >
       <div
         class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-700"
       >
@@ -411,7 +428,10 @@ const TYPE_FORM_OPTS = [
             Produtos inativos não aparecem na seleção de orçamentos e vendas
           </p>
         </div>
-        <USwitch v-model="form.active" size="md" />
+        <USwitch
+          v-model="form.active"
+          size="md"
+        />
       </div>
     </BaseDrawerSection>
   </BaseSimpleDrawer>

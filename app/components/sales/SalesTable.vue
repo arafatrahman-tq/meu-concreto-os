@@ -6,8 +6,6 @@ import { normalizeSaleStatus } from "~/utils/status";
 const props = defineProps<{
   sales: Sale[];
   loading: boolean;
-  search: string;
-  statusFilter: SaleStatusFilter;
   page: number;
   pageSize: number;
   totalPages: number;
@@ -21,8 +19,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:search": [value: string];
-  "update:statusFilter": [value: SaleStatusFilter];
   "update:page": [value: number];
   edit: [sale: Sale];
   delete: [sale: Sale];
@@ -31,16 +27,6 @@ const emit = defineEmits<{
   sendPdf: [sale: Sale];
   updateStatus: [sale: Sale, next: SaleStatus];
 }>();
-
-const localSearch = computed({
-  get: () => props.search,
-  set: (val) => emit("update:search", val),
-});
-
-const localStatusFilter = computed({
-  get: () => props.statusFilter,
-  set: (val) => emit("update:statusFilter", val),
-});
 
 const localPage = computed({
   get: () => props.page,
@@ -277,23 +263,6 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
           >
             Lista de Vendas
           </h3>
-        </div>
-        <div class="flex items-center gap-2">
-          <UInput
-            v-model="localSearch"
-            icon="i-heroicons-magnifying-glass"
-            placeholder="Buscar cliente, nº..."
-            size="sm"
-            class="w-44 lg:w-56"
-          />
-          <USelect
-            v-model="localStatusFilter"
-            :items="STATUS_OPTS"
-            value-key="value"
-            label-key="label"
-            size="sm"
-            class="w-36"
-          />
         </div>
       </div>
     </template>

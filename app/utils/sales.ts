@@ -6,6 +6,7 @@ export const makeNewItem = (): FormItem => ({
   productName: '',
   description: '',
   unit: 'm3',
+  countAsConcreteVolume: true,
   quantity: 1,
   unitPrice: 0,
   fck: null,

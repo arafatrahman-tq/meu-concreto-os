@@ -1,97 +1,97 @@
 <script setup lang="ts">
 const props = defineProps<{
-  companyId: number | null;
-}>();
+  companyId: number | null
+}>()
 
-const emit = defineEmits(["updated"]);
+const emit = defineEmits(['updated'])
 
-const toast = useToast();
+const toast = useToast()
 
 const {
   data: companyData,
   pending: loadingCompany,
-  refresh: refreshCompany,
+  refresh: refreshCompany
 } = await useFetch<{
   company: {
-    pdfNotes?: string | null;
-  };
-}>(() => `/api/companies/${props.companyId}`);
+    pdfNotes?: string | null
+  }
+}>(() => `/api/companies/${props.companyId}`)
 
-const companyRaw = computed(() => companyData.value?.company ?? null);
+const companyRaw = computed(() => companyData.value?.company ?? null)
 
 const pdfNotesForm = reactive({
-  pdfNotes: "",
-});
+  pdfNotes: ''
+})
 
-const companyErrors = reactive<Record<string, string>>({});
+const companyErrors = reactive<Record<string, string>>({})
 
 const clearErrors = () => {
-  for (const key in companyErrors) delete companyErrors[key];
-};
+  for (const key in companyErrors) delete companyErrors[key]
+}
 
 watch(
   companyRaw,
   (c) => {
-    if (!c) return;
-    pdfNotesForm.pdfNotes = c.pdfNotes ?? "";
+    if (!c) return
+    pdfNotesForm.pdfNotes = c.pdfNotes ?? ''
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 const validate = (): boolean => {
-  clearErrors();
+  clearErrors()
   // Validação opcional - campo pode ser vazio
   if (pdfNotesForm.pdfNotes && pdfNotesForm.pdfNotes.length > 5000) {
-    companyErrors.pdfNotes =
-      "As observações não podem ultrapassar 5000 caracteres.";
-    return false;
+    companyErrors.pdfNotes
+      = 'As observações não podem ultrapassar 5000 caracteres.'
+    return false
   }
-  return true;
-};
+  return true
+}
 
-const loadingSave = ref(false);
+const loadingSave = ref(false)
 
 const handleSave = async () => {
-  if (!validate()) return;
+  if (!validate()) return
 
-  loadingSave.value = true;
+  loadingSave.value = true
   try {
     await $fetch(`/api/companies/${props.companyId}/pdf-notes`, {
-      method: "PUT",
+      method: 'PUT',
       body: {
-        pdfNotes: pdfNotesForm.pdfNotes.trim() || null,
-      },
-    });
+        pdfNotes: pdfNotesForm.pdfNotes.trim() || null
+      }
+    })
     toast.add({
-      title: "Observações salvas",
-      description: "As observações do PDF foram atualizadas com sucesso.",
-      color: "success",
-      icon: "i-heroicons-check-circle",
-    });
-    await refreshCompany();
-    emit("updated");
+      title: 'Observações salvas',
+      description: 'As observações do PDF foram atualizadas com sucesso.',
+      color: 'success',
+      icon: 'i-heroicons-check-circle'
+    })
+    await refreshCompany()
+    emit('updated')
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string }; message?: string };
+    const err = e as { data?: { message?: string }, message?: string }
     toast.add({
-      title: "Erro ao salvar",
-      description: err?.data?.message ?? err?.message ?? "Tente novamente.",
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
+      title: 'Erro ao salvar',
+      description: err?.data?.message ?? err?.message ?? 'Tente novamente.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
-};
+}
 
 // Preview do conteúdo em HTML
-const showPreview = ref(false);
+const showPreview = ref(false)
 </script>
 
 <template>
   <UCard
     :ui="{
       header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      body: 'p-4 sm:p-6',
+      body: 'p-4 sm:p-6'
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
   >
@@ -111,11 +111,17 @@ const showPreview = ref(false);
       </div>
     </template>
 
-    <div v-if="loadingCompany" class="space-y-4 p-1">
+    <div
+      v-if="loadingCompany"
+      class="space-y-4 p-1"
+    >
       <USkeleton class="h-32 rounded-xl" />
     </div>
 
-    <div v-else class="space-y-4">
+    <div
+      v-else
+      class="space-y-4"
+    >
       <!-- Info alert -->
       <UAlert
         color="info"

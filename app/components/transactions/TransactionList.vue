@@ -2,132 +2,132 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus,
-} from "~/types/transactions";
+  TransactionStatus
+} from '~/types/transactions'
 
 const props = defineProps<{
-  transactions: Transaction[];
-  page: number;
-  pageSize: number;
+  transactions: Transaction[]
+  page: number
+  pageSize: number
   statusConfig: Record<
     TransactionStatus,
-    { label: string; color: string; icon: string }
-  >;
+    { label: string, color: string, icon: string }
+  >
   typeConfig: Record<
     TransactionType,
-    { label: string; color: string; icon: string; sign: string }
-  >;
+    { label: string, color: string, icon: string, sign: string }
+  >
   statusActions: Record<
     TransactionStatus,
-    { next: TransactionStatus; label: string }[]
-  >;
-}>();
+    { next: TransactionStatus, label: string }[]
+  >
+}>()
 
 const emit = defineEmits([
-  "edit",
-  "updateStatus",
-  "delete",
-  "generateInstallments",
-  "update:page",
-]);
+  'edit',
+  'updateStatus',
+  'delete',
+  'generateInstallments',
+  'update:page'
+])
 
 const currentPage = computed({
   get: () => props.page,
-  set: (v) => emit("update:page", v),
-});
+  set: v => emit('update:page', v)
+})
 
 const topLevelTransactions = computed(() =>
-  props.transactions.filter((t) => !t.parentTransactionId),
-);
+  props.transactions.filter(t => !t.parentTransactionId)
+)
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(topLevelTransactions.value.length / props.pageSize)),
-);
+  Math.max(1, Math.ceil(topLevelTransactions.value.length / props.pageSize))
+)
 
 const pagedTopLevelTransactions = computed(() => {
-  const start = (currentPage.value - 1) * props.pageSize;
-  return topLevelTransactions.value.slice(start, start + props.pageSize);
-});
+  const start = (currentPage.value - 1) * props.pageSize
+  return topLevelTransactions.value.slice(start, start + props.pageSize)
+})
 
-const selectedTransactionIds = ref<number[]>([]);
+const selectedTransactionIds = ref<number[]>([])
 
 const pageTotal = computed(() =>
   pagedTopLevelTransactions.value.reduce((sum, tx) => {
-    const signed = tx.type === "income" ? tx.amount : -tx.amount;
-    return sum + signed;
-  }, 0),
-);
+    const signed = tx.type === 'income' ? tx.amount : -tx.amount
+    return sum + signed
+  }, 0)
+)
 
 const formatCurrency = (cents: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(cents / 100);
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(cents / 100)
 
 const formatDate = (v: string | number | null | undefined) =>
   v
-    ? new Intl.DateTimeFormat("pt-BR").format(new Date(v as string | number))
-    : "—";
+    ? new Intl.DateTimeFormat('pt-BR').format(new Date(v as string | number))
+    : '—'
 
 const getVolume = (sale: any) => {
-  if (!sale || !sale.items) return 0;
+  if (!sale || !sale.items) return 0
 
   const shouldCountConcreteVolume = (item: {
-    unit?: string | null;
-    countAsConcreteVolume?: boolean;
+    unit?: string | null
+    countAsConcreteVolume?: boolean
   }) => {
-    if (item.unit === "m3") return item.countAsConcreteVolume !== false;
-    if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
-    return false;
-  };
+    if (item.unit === 'm3') return item.countAsConcreteVolume !== false
+    if (item.unit === 'm3_faltante') return item.countAsConcreteVolume === true
+    return false
+  }
 
   return sale.items
     .filter((i: any) => shouldCountConcreteVolume(i))
-    .reduce((acc: number, i: any) => acc + (i.quantity || 0), 0);
-};
+    .reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)
+}
 
-const expandedParentIds = ref<number[]>([]);
+const expandedParentIds = ref<number[]>([])
 
 const childrenByParent = computed(() => {
-  const grouped = new Map<number, Transaction[]>();
+  const grouped = new Map<number, Transaction[]>()
 
   for (const t of props.transactions) {
-    if (!t.parentTransactionId) continue;
-    const list = grouped.get(t.parentTransactionId) ?? [];
-    list.push(t);
-    grouped.set(t.parentTransactionId, list);
+    if (!t.parentTransactionId) continue
+    const list = grouped.get(t.parentTransactionId) ?? []
+    list.push(t)
+    grouped.set(t.parentTransactionId, list)
   }
 
   for (const [, list] of grouped) {
     list.sort(
       (a, b) =>
-        (a.installmentNumber ?? 0) - (b.installmentNumber ?? 0) ||
-        new Date(a.date as string | number).getTime() -
-          new Date(b.date as string | number).getTime(),
-    );
+        (a.installmentNumber ?? 0) - (b.installmentNumber ?? 0)
+        || new Date(a.date as string | number).getTime()
+        - new Date(b.date as string | number).getTime()
+    )
   }
 
-  return grouped;
-});
+  return grouped
+})
 
 const visibleRows = computed(() => {
   const rows: Array<{
-    tx: Transaction;
-    isChild: boolean;
-    isExpandable: boolean;
-    childCount: number;
-  }> = [];
+    tx: Transaction
+    isChild: boolean
+    isExpandable: boolean
+    childCount: number
+  }> = []
 
   for (const tx of pagedTopLevelTransactions.value) {
-    const children = childrenByParent.value.get(tx.id) ?? [];
-    const isExpandable = tx.isInstallmentParent && children.length > 0;
+    const children = childrenByParent.value.get(tx.id) ?? []
+    const isExpandable = tx.isInstallmentParent && children.length > 0
 
     rows.push({
       tx,
       isChild: false,
       isExpandable,
-      childCount: children.length,
-    });
+      childCount: children.length
+    })
 
     if (isExpandable && expandedParentIds.value.includes(tx.id)) {
       for (const child of children) {
@@ -135,155 +135,155 @@ const visibleRows = computed(() => {
           tx: child,
           isChild: true,
           isExpandable: false,
-          childCount: 0,
-        });
+          childCount: 0
+        })
       }
     }
   }
 
-  return rows;
-});
+  return rows
+})
 
 const visibleTransactionIds = computed(() =>
-  visibleRows.value.map((r) => r.tx.id),
-);
+  visibleRows.value.map(r => r.tx.id)
+)
 
 const allVisibleSelected = computed(
   () =>
-    visibleTransactionIds.value.length > 0 &&
-    visibleTransactionIds.value.every((id) =>
-      selectedTransactionIds.value.includes(id),
-    ),
-);
+    visibleTransactionIds.value.length > 0
+    && visibleTransactionIds.value.every(id =>
+      selectedTransactionIds.value.includes(id)
+    )
+)
 
 const selectedTotal = computed(() =>
   visibleRows.value
-    .filter((row) => selectedTransactionIds.value.includes(row.tx.id))
+    .filter(row => selectedTransactionIds.value.includes(row.tx.id))
     .reduce((sum, row) => {
-      const signed = row.tx.type === "income" ? row.tx.amount : -row.tx.amount;
-      return sum + signed;
-    }, 0),
-);
+      const signed = row.tx.type === 'income' ? row.tx.amount : -row.tx.amount
+      return sum + signed
+    }, 0)
+)
 
 const hasSelectedRows = computed(() =>
-  visibleRows.value.some((row) =>
-    selectedTransactionIds.value.includes(row.tx.id),
-  ),
-);
+  visibleRows.value.some(row =>
+    selectedTransactionIds.value.includes(row.tx.id)
+  )
+)
 
 const displayedTotal = computed(() =>
-  hasSelectedRows.value ? selectedTotal.value : pageTotal.value,
-);
+  hasSelectedRows.value ? selectedTotal.value : pageTotal.value
+)
 
 const totalLabel = computed(() => {
-  const selectedCount = visibleRows.value.filter((row) =>
-    selectedTransactionIds.value.includes(row.tx.id),
-  ).length;
+  const selectedCount = visibleRows.value.filter(row =>
+    selectedTransactionIds.value.includes(row.tx.id)
+  ).length
   return selectedCount > 0
     ? `Total Selecionado (${selectedCount})`
-    : "Total da Página";
-});
+    : 'Total da Página'
+})
 
 const selectedRows = computed(() =>
-  visibleRows.value.filter((row) =>
-    selectedTransactionIds.value.includes(row.tx.id),
-  ),
-);
+  visibleRows.value.filter(row =>
+    selectedTransactionIds.value.includes(row.tx.id)
+  )
+)
 
-const selectedCount = computed(() => selectedRows.value.length);
+const selectedCount = computed(() => selectedRows.value.length)
 
 const clearSelection = () => {
-  selectedTransactionIds.value = [];
-};
+  selectedTransactionIds.value = []
+}
 
 const exportSelectedCsv = () => {
-  if (typeof window === "undefined" || selectedRows.value.length === 0) return;
+  if (typeof window === 'undefined' || selectedRows.value.length === 0) return
 
   const escape = (value: unknown) =>
-    `"${String(value ?? "").replace(/"/g, '""')}"`;
+    `"${String(value ?? '').replace(/"/g, '""')}"`
   const header = [
-    "id",
-    "descricao",
-    "tipo",
-    "status",
-    "valor_centavos",
-    "data",
-  ];
-  const lines = selectedRows.value.map((row) =>
+    'id',
+    'descricao',
+    'tipo',
+    'status',
+    'valor_centavos',
+    'data'
+  ]
+  const lines = selectedRows.value.map(row =>
     [
       row.tx.id,
       row.tx.description,
       row.tx.type,
       row.tx.status,
       row.tx.amount,
-      row.tx.date,
+      row.tx.date
     ]
       .map(escape)
-      .join(","),
-  );
+      .join(',')
+  )
 
-  const csv = [header.join(","), ...lines].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `transacoes-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
+  const csv = [header.join(','), ...lines].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `transacoes-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
-const toggleAllVisible = (value: boolean | "indeterminate") => {
-  if (!value || value === "indeterminate") {
+const toggleAllVisible = (value: boolean | 'indeterminate') => {
+  if (!value || value === 'indeterminate') {
     selectedTransactionIds.value = selectedTransactionIds.value.filter(
-      (id) => !visibleTransactionIds.value.includes(id),
-    );
-    return;
+      id => !visibleTransactionIds.value.includes(id)
+    )
+    return
   }
 
   const merged = new Set([
     ...selectedTransactionIds.value,
-    ...visibleTransactionIds.value,
-  ]);
-  selectedTransactionIds.value = Array.from(merged);
-};
+    ...visibleTransactionIds.value
+  ])
+  selectedTransactionIds.value = Array.from(merged)
+}
 
-const toggleTransaction = (id: number, value: boolean | "indeterminate") => {
-  if (!value || value === "indeterminate") {
+const toggleTransaction = (id: number, value: boolean | 'indeterminate') => {
+  if (!value || value === 'indeterminate') {
     selectedTransactionIds.value = selectedTransactionIds.value.filter(
-      (x) => x !== id,
-    );
-    return;
+      x => x !== id
+    )
+    return
   }
 
   if (!selectedTransactionIds.value.includes(id)) {
-    selectedTransactionIds.value = [...selectedTransactionIds.value, id];
+    selectedTransactionIds.value = [...selectedTransactionIds.value, id]
   }
-};
+}
 
-const isExpanded = (id: number) => expandedParentIds.value.includes(id);
+const isExpanded = (id: number) => expandedParentIds.value.includes(id)
 
 const toggleParent = (id: number) => {
   if (isExpanded(id)) {
-    expandedParentIds.value = expandedParentIds.value.filter((v) => v !== id);
-    return;
+    expandedParentIds.value = expandedParentIds.value.filter(v => v !== id)
+    return
   }
 
-  expandedParentIds.value = [...expandedParentIds.value, id];
-};
+  expandedParentIds.value = [...expandedParentIds.value, id]
+}
 
 watch(totalPages, (pages) => {
   if (currentPage.value > pages) {
-    currentPage.value = pages;
+    currentPage.value = pages
   }
-});
+})
 
 watch(visibleTransactionIds, (ids) => {
-  selectedTransactionIds.value = selectedTransactionIds.value.filter((id) =>
-    ids.includes(id),
-  );
-});
+  selectedTransactionIds.value = selectedTransactionIds.value.filter(id =>
+    ids.includes(id)
+  )
+})
 </script>
 
 <template>
@@ -291,7 +291,7 @@ watch(visibleTransactionIds, (ids) => {
     :ui="{
       body: 'p-0 sm:p-0',
       header: 'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
+      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
@@ -396,7 +396,7 @@ watch(visibleTransactionIds, (ids) => {
               'group transition-all duration-200',
               row.isChild
                 ? 'bg-zinc-50/70 dark:bg-zinc-800/30'
-                : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40',
+                : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40'
             ]"
           >
             <td class="px-3 py-4 text-center">
@@ -412,8 +412,7 @@ watch(visibleTransactionIds, (ids) => {
               >
                 <span
                   class="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-primary-600 transition-colors"
-                  >{{ row.tx.description }}</span
-                >
+                >{{ row.tx.description }}</span>
                 <div class="flex items-center gap-2">
                   <UButton
                     v-if="row.isExpandable"
@@ -431,8 +430,7 @@ watch(visibleTransactionIds, (ids) => {
                   <span
                     v-if="row.tx.category"
                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                    >{{ row.tx.category }}</span
-                  >
+                  >{{ row.tx.category }}</span>
                   <span
                     v-if="row.tx.sale"
                     class="text-[11px] font-bold text-zinc-400"
@@ -458,9 +456,9 @@ watch(visibleTransactionIds, (ids) => {
                   </div>
                   <span
                     v-if="
-                      row.tx.parentTransactionId &&
-                      row.tx.installmentNumber &&
-                      row.tx.installmentTotal
+                      row.tx.parentTransactionId
+                        && row.tx.installmentNumber
+                        && row.tx.installmentTotal
                     "
                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400"
                   >
@@ -484,13 +482,12 @@ watch(visibleTransactionIds, (ids) => {
                     typeConfig[row.tx.type].color === 'success'
                       ? 'bg-green-500'
                       : 'bg-red-500',
-                    'w-1.5 h-1.5 rounded-full',
+                    'w-1.5 h-1.5 rounded-full'
                   ]"
                 />
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-400"
-                  >{{ typeConfig[row.tx.type].label }}</span
-                >
+                >{{ typeConfig[row.tx.type].label }}</span>
               </div>
             </td>
             <td class="px-4 py-4 text-right">
@@ -519,27 +516,30 @@ watch(visibleTransactionIds, (ids) => {
               <div class="flex flex-col">
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-300"
-                  >{{ formatDate(row.tx.date) }}</span
-                >
+                >{{ formatDate(row.tx.date) }}</span>
                 <span
                   v-if="row.tx.dueDate"
                   class="text-[10px] text-zinc-400 font-medium"
-                  >Ven: {{ formatDate(row.tx.dueDate) }}</span
-                >
+                >Ven: {{ formatDate(row.tx.dueDate) }}</span>
               </div>
             </td>
             <td class="px-4 py-4 hidden xl:table-cell">
-              <div v-if="row.tx.paymentMethod" class="flex items-center gap-2">
+              <div
+                v-if="row.tx.paymentMethod"
+                class="flex items-center gap-2"
+              >
                 <UIcon
                   name="i-lucide-credit-card"
                   class="w-3.5 h-3.5 text-zinc-400"
                 />
                 <span
                   class="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight"
-                  >{{ row.tx.paymentMethod }}</span
-                >
+                >{{ row.tx.paymentMethod }}</span>
               </div>
-              <span v-else class="text-zinc-300 dark:text-zinc-700">—</span>
+              <span
+                v-else
+                class="text-zinc-300 dark:text-zinc-700"
+              >—</span>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2 transition-all">
@@ -567,16 +567,16 @@ watch(visibleTransactionIds, (ids) => {
                     statusActions[row.tx.status].map((a) => ({
                       label: a.label,
                       icon: statusConfig[a.next].icon,
-                      onSelect: () => emit('updateStatus', row.tx, a.next),
+                      onSelect: () => emit('updateStatus', row.tx, a.next)
                     })),
                     [
                       {
                         label: 'Excluir Lançamento',
                         icon: 'i-heroicons-trash',
                         color: 'error' as const,
-                        onSelect: () => emit('delete', row.tx),
-                      },
-                    ],
+                        onSelect: () => emit('delete', row.tx)
+                      }
+                    ]
                   ]"
                 >
                   <UButton
@@ -612,13 +612,19 @@ watch(visibleTransactionIds, (ids) => {
                 }}{{ formatCurrency(Math.abs(displayedTotal)) }}
               </span>
             </td>
-            <td colspan="4" class="px-6 py-3" />
+            <td
+              colspan="4"
+              class="px-6 py-3"
+            />
           </tr>
         </tfoot>
       </table>
     </div>
 
-    <template v-if="totalPages > 1" #footer>
+    <template
+      v-if="totalPages > 1"
+      #footer
+    >
       <div class="flex items-center justify-between">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
           Página {{ currentPage }} de {{ totalPages }}

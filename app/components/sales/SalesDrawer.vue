@@ -1,108 +1,108 @@
 <script setup lang="ts">
-import type { KnownCustomer, SaleForm } from "~/types/sales";
-import { formatCurrency, maskPhone, maskDocument } from "~/utils/formatters";
+import type { KnownCustomer, SaleForm } from '~/types/sales'
+import { formatCurrency, maskPhone, maskDocument } from '~/utils/formatters'
 
 const props = defineProps<{
-  open: boolean;
-  isEditing: boolean;
-  loadingSave: boolean;
-  form: SaleForm;
-  linkedQuoteId: number | null;
-  selectedCustomer: KnownCustomer | undefined;
-  customerSearchTerm: string;
-  knownCustomers: KnownCustomer[];
-  customerRegisteredAddress: string;
-  useDeliveryAddress: boolean;
-  sellerOptions: any[];
-  driverOptions: any[];
-  pumperOptions: any[];
-  productOptions: any[];
-  paymentMethodOptions: any[];
-  subtotalBRL: number;
-  totalBRL: number;
-  formErrors: Record<string, string>;
-  mixDesigns: any[];
-}>();
+  open: boolean
+  isEditing: boolean
+  loadingSave: boolean
+  form: SaleForm
+  linkedQuoteId: number | null
+  selectedCustomer: KnownCustomer | undefined
+  customerSearchTerm: string
+  knownCustomers: KnownCustomer[]
+  customerRegisteredAddress: string
+  useDeliveryAddress: boolean
+  sellerOptions: any[]
+  driverOptions: any[]
+  pumperOptions: any[]
+  productOptions: any[]
+  paymentMethodOptions: any[]
+  subtotalBRL: number
+  totalBRL: number
+  formErrors: Record<string, string>
+  mixDesigns: any[]
+}>()
 
 const emit = defineEmits<{
-  "update:open": [value: boolean];
-  "update:customerSearchTerm": [value: string];
-  "update:selectedCustomer": [value: KnownCustomer | undefined];
-  "update:useDeliveryAddress": [value: boolean];
-  save: [];
-  addItem: [];
-  removeItem: [idx: number];
-  productSelect: [idx: number, productId: number | null];
-  mixDesignSelect: [idx: number, mixDesignId: number | null];
-  customerSelect: [customer: KnownCustomer];
-  createDriver: [name: string];
-  deleteDriver: [driver: { id: number; name: string }];
-  createPumper: [name: string];
-  deletePumper: [pumper: { id: number; name: string }];
-}>();
+  'update:open': [value: boolean]
+  'update:customerSearchTerm': [value: string]
+  'update:selectedCustomer': [value: KnownCustomer | undefined]
+  'update:useDeliveryAddress': [value: boolean]
+  'save': []
+  'addItem': []
+  'removeItem': [idx: number]
+  'productSelect': [idx: number, productId: number | null]
+  'mixDesignSelect': [idx: number, mixDesignId: number | null]
+  'customerSelect': [customer: KnownCustomer]
+  'createDriver': [name: string]
+  'deleteDriver': [driver: { id: number, name: string }]
+  'createPumper': [name: string]
+  'deletePumper': [pumper: { id: number, name: string }]
+}>()
 
 const isDrawerOpen = computed({
   get: () => props.open,
-  set: (val) => emit("update:open", val),
-});
+  set: val => emit('update:open', val)
+})
 
 const localCustomerSearchTerm = computed({
   get: () => props.customerSearchTerm,
-  set: (val) => emit("update:customerSearchTerm", val),
-});
+  set: val => emit('update:customerSearchTerm', val)
+})
 
 const localSelectedCustomer = computed({
   get: () => props.selectedCustomer,
-  set: (val) => emit("update:selectedCustomer", val),
-});
+  set: val => emit('update:selectedCustomer', val)
+})
 
 const localUseDeliveryAddress = computed({
   get: () => props.useDeliveryAddress,
-  set: (val) => emit("update:useDeliveryAddress", val),
-});
+  set: val => emit('update:useDeliveryAddress', val)
+})
 
 const STATUS_OPTS = [
-  { label: "Aberta", value: "open" },
-  { label: "Pendente", value: "in_progress" },
-  { label: "Concluído", value: "completed" },
-  { label: "Cancelado", value: "cancelled" },
-];
+  { label: 'Aberta', value: 'open' },
+  { label: 'Pendente', value: 'in_progress' },
+  { label: 'Concluído', value: 'completed' },
+  { label: 'Cancelado', value: 'cancelled' }
+]
 
 const ITEM_UNIT_OPTS = [
-  { label: "m³", value: "m3" },
-  { label: "m³ faltante", value: "m3_faltante" },
-  { label: "un", value: "un" },
-  { label: "hr", value: "hr" },
-  { label: "kg", value: "kg" },
-  { label: "ton", value: "ton" },
-];
+  { label: 'm³', value: 'm3' },
+  { label: 'm³ faltante', value: 'm3_faltante' },
+  { label: 'un', value: 'un' },
+  { label: 'hr', value: 'hr' },
+  { label: 'kg', value: 'kg' },
+  { label: 'ton', value: 'ton' }
+]
 
 const selectedDriver = computed({
   get: () =>
-    props.driverOptions.filter((d) => props.form.driverIds.includes(d.value)),
+    props.driverOptions.filter(d => props.form.driverIds.includes(d.value)),
   set: (val: any[]) => {
-    props.form.driverIds = val.map((v) => v.value);
-  },
-});
+    props.form.driverIds = val.map(v => v.value)
+  }
+})
 
 const selectedPumper = computed({
   get: () =>
-    props.pumperOptions.find((p) => p.value === props.form.pumperId) ||
-    props.pumperOptions[0],
+    props.pumperOptions.find(p => p.value === props.form.pumperId)
+    || props.pumperOptions[0],
   set: (val: any) => {
-    props.form.pumperId = val?.value ?? 0;
-  },
-});
+    props.form.pumperId = val?.value ?? 0
+  }
+})
 
-const onDeleteDriver = (e: Event, driver: { id: number; name: string }) => {
-  e.stopPropagation();
-  emit("deleteDriver", driver);
-};
+const onDeleteDriver = (e: Event, driver: { id: number, name: string }) => {
+  e.stopPropagation()
+  emit('deleteDriver', driver)
+}
 
-const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
-  e.stopPropagation();
-  emit("deletePumper", pumper);
-};
+const onDeletePumper = (e: Event, pumper: { id: number, name: string }) => {
+  e.stopPropagation()
+  emit('deletePumper', pumper)
+}
 </script>
 
 <template>
@@ -134,7 +134,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
           <h4
             class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
           >
-            <UIcon name="i-heroicons-user" class="w-4 h-4 text-primary-500" />
+            <UIcon
+              name="i-heroicons-user"
+              class="w-4 h-4 text-primary-500"
+            />
             Dados do Cliente
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -158,7 +161,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 by="name"
                 :class="{
                   'bg-red-50 dark:bg-red-500/10 transition-colors':
-                    formErrors.customerName,
+                    formErrors.customerName
                 }"
                 @update:model-value="(v: any) => v && emit('customerSelect', v)"
                 @update:search-term="
@@ -264,7 +267,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                     : 'Endereço de Entrega'
                 "
                 :class="{
-                  hidden: customerRegisteredAddress && !localUseDeliveryAddress,
+                  hidden: customerRegisteredAddress && !localUseDeliveryAddress
                 }"
               >
                 <UInput
@@ -315,7 +318,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                         @click="
                           onDeleteDriver($event, {
                             id: item.value,
-                            name: item.label,
+                            name: item.label
                           })
                         "
                       />
@@ -359,7 +362,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                         @click="
                           onDeletePumper($event, {
                             id: item.value,
-                            name: item.label,
+                            name: item.label
                           })
                         "
                       />
@@ -391,7 +394,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
             <h4
               class="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2"
             >
-              <UIcon name="i-lucide-package" class="w-4 h-4" />
+              <UIcon
+                name="i-lucide-package"
+                class="w-4 h-4"
+              />
               Itens da Venda
             </h4>
             <UButton
@@ -416,7 +422,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 @click="emit('removeItem', idx)"
               >
-                <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+                <UIcon
+                  name="i-heroicons-trash"
+                  class="w-4 h-4"
+                />
               </button>
 
               <UFormField label="Produto">
@@ -530,7 +539,7 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                     />
                     {{
                       formatCurrency(
-                        Math.round(item.quantity * item.unitPrice * 100),
+                        Math.round(item.quantity * item.unitPrice * 100)
                       )
                     }}
                   </div>
@@ -661,7 +670,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
                 size="lg"
               />
             </UFormField>
-            <UFormField label="Desconto (R$)" :error="formErrors.discount">
+            <UFormField
+              label="Desconto (R$)"
+              :error="formErrors.discount"
+            >
               <UInput
                 v-model.number="form.discount"
                 type="number"
@@ -676,7 +688,10 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
               <div
                 class="flex items-center h-12 px-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-sm font-black text-primary-600 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-500/20"
               >
-                <UIcon name="i-heroicons-banknotes" class="w-4 h-4 mr-2" />
+                <UIcon
+                  name="i-heroicons-banknotes"
+                  class="w-4 h-4 mr-2"
+                />
                 {{ formatCurrency(Math.round(totalBRL * 100)) }}
               </div>
             </UFormField>

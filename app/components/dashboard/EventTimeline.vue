@@ -1,50 +1,50 @@
 <script setup lang="ts">
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 interface DashboardEvent {
-  id: string;
-  dateMs: number;
-  title: string;
-  description: string;
-  amount: number;
-  amountTone: "positive" | "negative" | "neutral";
-  tag: string;
+  id: string
+  dateMs: number
+  title: string
+  description: string
+  amount: number
+  amountTone: 'positive' | 'negative' | 'neutral'
+  tag: string
 }
 
 const props = defineProps<{
-  events: DashboardEvent[];
-}>();
+  events: DashboardEvent[]
+}>()
 
-const page = ref(1);
-const pageSize = 4;
+const page = ref(1)
+const pageSize = 4
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil((props.events?.length ?? 0) / pageSize)),
-);
+  Math.max(1, Math.ceil((props.events?.length ?? 0) / pageSize))
+)
 
 const paginatedEvents = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return props.events.slice(start, start + pageSize);
-});
+  const start = (page.value - 1) * pageSize
+  return props.events.slice(start, start + pageSize)
+})
 
 watch(
   () => props.events.length,
   () => {
     if (page.value > totalPages.value) {
-      page.value = totalPages.value;
+      page.value = totalPages.value
     }
-  },
-);
+  }
+)
 
 const formatCurrency = (cents: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(cents / 100);
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(cents / 100)
 
 const formatDateTime = (dateMs: number) =>
-  format(new Date(dateMs), "dd/MM HH:mm", { locale: ptBR });
+  format(new Date(dateMs), 'dd/MM HH:mm', { locale: ptBR })
 </script>
 
 <template>
@@ -52,7 +52,7 @@ const formatDateTime = (dateMs: number) =>
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
     :ui="{
       header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      body: 'p-4 sm:p-6',
+      body: 'p-4 sm:p-6'
     }"
   >
     <template #header>
@@ -66,7 +66,10 @@ const formatDateTime = (dateMs: number) =>
       </div>
     </template>
 
-    <div v-if="events.length" class="space-y-3">
+    <div
+      v-if="events.length"
+      class="space-y-3"
+    >
       <div
         v-for="event in paginatedEvents"
         :key="event.id"
@@ -111,7 +114,10 @@ const formatDateTime = (dateMs: number) =>
         </div>
       </div>
 
-      <div v-if="totalPages > 1" class="flex items-center justify-between pt-2">
+      <div
+        v-if="totalPages > 1"
+        class="flex items-center justify-between pt-2"
+      >
         <p class="text-xs text-zinc-500 font-bold">
           Página {{ page }} de {{ totalPages }}
         </p>

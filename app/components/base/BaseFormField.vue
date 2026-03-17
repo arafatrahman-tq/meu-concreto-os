@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseFormField - Wrapper para UFormField com consistência
- * 
+ *
  * Aplica estilos consistentes e suporte a estados de erro
  */
 

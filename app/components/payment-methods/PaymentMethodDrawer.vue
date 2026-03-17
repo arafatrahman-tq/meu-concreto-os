@@ -3,189 +3,189 @@ import type {
   PaymentMethod,
   PaymentMethodDetails,
   PaymentMethodForm,
-  MethodType,
-} from "~/types/payment-methods";
-import { TYPE_CONFIG, PIX_KEY_TYPES } from "~/types/payment-methods";
+  MethodType
+} from '~/types/payment-methods'
+import { TYPE_CONFIG, PIX_KEY_TYPES } from '~/types/payment-methods'
 
 const props = defineProps<{
-  open: boolean;
-  paymentMethod: PaymentMethod | null;
-}>();
+  open: boolean
+  paymentMethod: PaymentMethod | null
+}>()
 
 const emit = defineEmits<{
-  (e: "update:open", value: boolean): void;
-  (e: "saved"): void;
-}>();
+  (e: 'update:open', value: boolean): void
+  (e: 'saved'): void
+}>()
 
-const { companyId } = useAuth();
-const toast = useToast();
+const { companyId } = useAuth()
+const toast = useToast()
 
 const isDrawerOpen = computed({
   get: () => props.open,
-  set: (val) => emit("update:open", val),
-});
+  set: val => emit('update:open', val)
+})
 
-const isEditing = computed(() => !!props.paymentMethod);
-const loadingSave = ref(false);
+const isEditing = computed(() => !!props.paymentMethod)
+const loadingSave = ref(false)
 
 const TYPE_OPTS = Object.entries(TYPE_CONFIG).map(([value, cfg]) => ({
   value: value as MethodType,
   label: cfg.label,
-  icon: cfg.icon,
-}));
+  icon: cfg.icon
+}))
 
 const form = reactive<PaymentMethodForm>({
-  name: "",
-  type: "other",
+  name: '',
+  type: 'other',
   active: true,
   isDefault: false,
   maxInstallments: null,
   interestRate: null,
-  pixKey: "",
-  pixKeyType: "cpf",
-  bankName: "",
-  accountInfo: "",
-  instructions: "",
-});
+  pixKey: '',
+  pixKeyType: 'cpf',
+  bankName: '',
+  accountInfo: '',
+  instructions: ''
+})
 
-const formErrors = reactive<Record<keyof PaymentMethodForm | string, string>>({});
+const formErrors = reactive<Record<keyof PaymentMethodForm | string, string>>({})
 
 const clearErrors = () => {
-  for (const key in formErrors) delete formErrors[key];
-};
+  for (const key in formErrors) delete formErrors[key]
+}
 
 const validateForm = (): boolean => {
-  clearErrors();
-  let isValid = true;
+  clearErrors()
+  let isValid = true
 
   if (!form.name || form.name.trim().length < 3) {
-    formErrors.name = "O nome deve ter pelo menos 3 caracteres.";
-    isValid = false;
+    formErrors.name = 'O nome deve ter pelo menos 3 caracteres.'
+    isValid = false
   }
 
   if (!form.type) {
-    formErrors.type = "Selecione o tipo de pagamento.";
-    isValid = false;
+    formErrors.type = 'Selecione o tipo de pagamento.'
+    isValid = false
   }
 
-  return isValid;
-};
+  return isValid
+}
 
 const showCardDetails = computed(
-  () => form.type === "credit_card" || form.type === "debit_card",
-);
-const showPixDetails = computed(() => form.type === "pix");
+  () => form.type === 'credit_card' || form.type === 'debit_card'
+)
+const showPixDetails = computed(() => form.type === 'pix')
 const showBankDetails = computed(
-  () => form.type === "boleto" || form.type === "transfer",
-);
+  () => form.type === 'boleto' || form.type === 'transfer'
+)
 
 function resetForm() {
-  form.name = "";
-  form.type = "other";
-  form.active = true;
-  form.isDefault = false;
-  form.maxInstallments = null;
-  form.interestRate = null;
-  form.pixKey = "";
-  form.pixKeyType = "cpf";
-  form.bankName = "";
-  form.accountInfo = "";
-  form.instructions = "";
+  form.name = ''
+  form.type = 'other'
+  form.active = true
+  form.isDefault = false
+  form.maxInstallments = null
+  form.interestRate = null
+  form.pixKey = ''
+  form.pixKeyType = 'cpf'
+  form.bankName = ''
+  form.accountInfo = ''
+  form.instructions = ''
 }
 
 watch(
   () => props.paymentMethod,
   (m) => {
     if (m) {
-      clearErrors();
-      form.name = m.name;
-      form.type = m.type;
-      form.active = !!m.active;
-      form.isDefault = !!m.isDefault;
-      const d = m.details ?? {};
-      form.maxInstallments = d.maxInstallments ?? null;
-      form.interestRate = d.interestRate ?? null;
-      form.pixKey = d.pixKey ?? "";
-      form.pixKeyType = d.pixKeyType ?? "cpf";
-      form.bankName = d.bankName ?? "";
-      form.accountInfo = d.accountInfo ?? "";
-      form.instructions = d.instructions ?? "";
+      clearErrors()
+      form.name = m.name
+      form.type = m.type
+      form.active = !!m.active
+      form.isDefault = !!m.isDefault
+      const d = m.details ?? {}
+      form.maxInstallments = d.maxInstallments ?? null
+      form.interestRate = d.interestRate ?? null
+      form.pixKey = d.pixKey ?? ''
+      form.pixKeyType = d.pixKeyType ?? 'cpf'
+      form.bankName = d.bankName ?? ''
+      form.accountInfo = d.accountInfo ?? ''
+      form.instructions = d.instructions ?? ''
     } else {
-      resetForm();
-      clearErrors();
+      resetForm()
+      clearErrors()
     }
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 function buildDetails() {
-  const d: PaymentMethodDetails = {};
+  const d: PaymentMethodDetails = {}
   if (showCardDetails.value) {
-    if (form.maxInstallments) d.maxInstallments = form.maxInstallments;
-    if (form.interestRate !== null) d.interestRate = form.interestRate;
+    if (form.maxInstallments) d.maxInstallments = form.maxInstallments
+    if (form.interestRate !== null) d.interestRate = form.interestRate
   } else if (showPixDetails.value) {
-    if (form.pixKey) d.pixKey = form.pixKey;
-    if (form.pixKeyType) d.pixKeyType = form.pixKeyType;
+    if (form.pixKey) d.pixKey = form.pixKey
+    if (form.pixKeyType) d.pixKeyType = form.pixKeyType
   } else if (showBankDetails.value) {
-    if (form.bankName) d.bankName = form.bankName;
-    if (form.accountInfo) d.accountInfo = form.accountInfo;
-    if (form.instructions) d.instructions = form.instructions;
+    if (form.bankName) d.bankName = form.bankName
+    if (form.accountInfo) d.accountInfo = form.accountInfo
+    if (form.instructions) d.instructions = form.instructions
   }
-  return Object.keys(d).length ? d : undefined;
+  return Object.keys(d).length ? d : undefined
 }
 
 async function handleSave() {
-  if (!validateForm()) return;
+  if (!validateForm()) return
 
-  loadingSave.value = true;
+  loadingSave.value = true
   try {
     const payload = {
       name: form.name.trim(),
       type: form.type,
       active: form.active,
       isDefault: form.isDefault,
-      details: buildDetails(),
-    };
+      details: buildDetails()
+    }
 
     if (isEditing.value && props.paymentMethod?.id) {
       await $fetch(`/api/payment-methods/${props.paymentMethod.id}`, {
-        method: "PUT",
-        body: payload,
-      });
+        method: 'PUT',
+        body: payload
+      })
       toast.add({
-        title: "Atualizada com sucesso",
+        title: 'Atualizada com sucesso',
         description: `"${form.name}" foi atualizada.`,
-        color: "success",
-        icon: "i-heroicons-check-circle",
-      });
+        color: 'success',
+        icon: 'i-heroicons-check-circle'
+      })
     } else {
-      await $fetch("/api/payment-methods", {
-        method: "POST",
-        body: { companyId: companyId.value, ...payload },
-      });
+      await $fetch('/api/payment-methods', {
+        method: 'POST',
+        body: { companyId: companyId.value, ...payload }
+      })
       toast.add({
-        title: "Cadastrada com sucesso",
+        title: 'Cadastrada com sucesso',
         description: `"${form.name}" foi adicionada.`,
-        color: "success",
-        icon: "i-heroicons-check-circle",
-      });
+        color: 'success',
+        icon: 'i-heroicons-check-circle'
+      })
     }
-    emit("saved");
-    isDrawerOpen.value = false;
+    emit('saved')
+    isDrawerOpen.value = false
   } catch (e: any) {
-    const errorData = e?.data;
-    const err =
-      (errorData?.message ?? errorData?.statusMessage) ||
-      e?.message ||
-      "Erro desconhecido";
+    const errorData = e?.data
+    const err
+      = (errorData?.message ?? errorData?.statusMessage)
+        || e?.message
+        || 'Erro desconhecido'
     toast.add({
-      title: "Erro ao salvar",
+      title: 'Erro ao salvar',
       description: err,
-      color: "error",
-      icon: "i-heroicons-exclamation-circle",
-    });
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   } finally {
-    loadingSave.value = false;
+    loadingSave.value = false
   }
 }
 </script>
@@ -198,9 +198,16 @@ async function handleSave() {
     :loading="loadingSave"
     @save="handleSave"
   >
-    <form id="payment-method-form" class="flex flex-col gap-8" @submit.prevent="handleSave">
+    <form
+      id="payment-method-form"
+      class="flex flex-col gap-8"
+      @submit.prevent="handleSave"
+    >
       <!-- Seção: Geral -->
-      <BaseDrawerSection title="Geral" icon="i-heroicons-credit-card">
+      <BaseDrawerSection
+        title="Geral"
+        icon="i-heroicons-credit-card"
+      >
         <UFormField
           label="Nome da Forma"
           required
@@ -215,7 +222,11 @@ async function handleSave() {
           />
         </UFormField>
 
-        <UFormField label="Tipo de Pagamento" required :error="formErrors.type">
+        <UFormField
+          label="Tipo de Pagamento"
+          required
+          :error="formErrors.type"
+        >
           <USelectMenu
             v-model="form.type"
             :items="TYPE_OPTS"
@@ -237,7 +248,10 @@ async function handleSave() {
       <USeparator />
 
       <!-- Seção: Configurações -->
-      <BaseDrawerSection title="Configurações" variant="card">
+      <BaseDrawerSection
+        title="Configurações"
+        variant="card"
+      >
         <!-- Status -->
         <div class="flex items-center justify-between gap-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
           <div class="flex items-center gap-3">
@@ -246,7 +260,7 @@ async function handleSave() {
                 'w-8 h-8 rounded-lg flex items-center justify-center',
                 form.active
                   ? 'bg-primary-100 dark:bg-primary-500/10 text-primary-500'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
+                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'
               ]"
             >
               <UIcon
@@ -255,13 +269,18 @@ async function handleSave() {
               />
             </div>
             <div>
-              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Status da Forma</p>
+              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Status da Forma
+              </p>
               <p class="text-xs text-zinc-500 dark:text-zinc-400">
                 {{ form.active ? "Disponível para uso nos módulos" : "Oculta do sistema temporariamente" }}
               </p>
             </div>
           </div>
-          <USwitch v-model="form.active" color="success" />
+          <USwitch
+            v-model="form.active"
+            color="success"
+          />
         </div>
 
         <!-- Padrão -->
@@ -272,19 +291,27 @@ async function handleSave() {
                 'w-8 h-8 rounded-lg flex items-center justify-center',
                 form.isDefault
                   ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-500'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500',
+                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'
               ]"
             >
-              <UIcon name="i-heroicons-star" class="w-4 h-4" />
+              <UIcon
+                name="i-heroicons-star"
+                class="w-4 h-4"
+              />
             </div>
             <div>
-              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Padrão do Sistema</p>
+              <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Padrão do Sistema
+              </p>
               <p class="text-xs text-zinc-500 dark:text-zinc-400">
                 {{ form.isDefault ? "Selecionada automaticamente em novas vendas" : "Não é a forma padrão" }}
               </p>
             </div>
           </div>
-          <USwitch v-model="form.isDefault" color="success" />
+          <USwitch
+            v-model="form.isDefault"
+            color="success"
+          />
         </div>
       </BaseDrawerSection>
 

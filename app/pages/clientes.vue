@@ -3,14 +3,14 @@ import type {
   Customer,
   CustomerQuote,
   CustomerSale,
-  ActivityFilter,
-} from "~/types/customers";
-import { CUSTOMER_ACTIVITY_OPTS } from "~/types/customers";
+  ActivityFilter
+} from '~/types/customers'
+import { CUSTOMER_ACTIVITY_OPTS } from '~/types/customers'
 
-definePageMeta({ layout: "default" });
-useSeoMeta({ title: "Clientes | Meu Concreto" });
+definePageMeta({ layout: 'default' })
+useSeoMeta({ title: 'Clientes | Meu Concreto' })
 
-const { companyId } = useAuth();
+const { companyId } = useAuth()
 
 // ─────────────────────────────────────────────
 // Data
@@ -18,251 +18,251 @@ const { companyId } = useAuth();
 const {
   data: customersData,
   pending: loadingCustomers,
-  refresh: refreshCustomers,
-} = await useFetch(() => `/api/customers?companyId=${companyId.value}`);
+  refresh: refreshCustomers
+} = await useFetch(() => `/api/customers?companyId=${companyId.value}`)
 
 // Also fetch quotes and sales for detail drawer
 const { data: quotesData } = await useFetch(
   () => `/api/quotes?companyId=${companyId.value}`,
-  { default: () => ({ quotes: [] }) },
-);
+  { default: () => ({ quotes: [] }) }
+)
 const { data: salesData } = await useFetch(
   () => `/api/sales?companyId=${companyId.value}`,
-  { default: () => ({ sales: [] }) },
-);
+  { default: () => ({ sales: [] }) }
+)
 
 const customers = computed<Customer[]>(
-  () => (customersData.value as { customers: Customer[] })?.customers ?? [],
-);
+  () => (customersData.value as { customers: Customer[] })?.customers ?? []
+)
 const allQuotes = computed<CustomerQuote[]>(
-  () => (quotesData.value as { quotes: CustomerQuote[] })?.quotes ?? [],
-);
+  () => (quotesData.value as { quotes: CustomerQuote[] })?.quotes ?? []
+)
 const allSales = computed<CustomerSale[]>(
-  () => (salesData.value as { sales: CustomerSale[] })?.sales ?? [],
-);
+  () => (salesData.value as { sales: CustomerSale[] })?.sales ?? []
+)
 
 // ─────────────────────────────────────────────
 // Formatters & Utils
 // ─────────────────────────────────────────────
 const formatRelative = (ms: number) => {
-  if (!ms) return "—";
-  const diff = Date.now() - ms;
-  const days = Math.floor(diff / 86_400_000);
-  if (days === 0) return "Hoje";
-  if (days === 1) return "Ontem";
-  if (days < 30) return `${days}d atrás`;
-  if (days < 365) return `${Math.floor(days / 30)}m atrás`;
-  return `${Math.floor(days / 365)}a atrás`;
-};
+  if (!ms) return '—'
+  const diff = Date.now() - ms
+  const days = Math.floor(diff / 86_400_000)
+  if (days === 0) return 'Hoje'
+  if (days === 1) return 'Ontem'
+  if (days < 30) return `${days}d atrás`
+  if (days < 365) return `${Math.floor(days / 30)}m atrás`
+  return `${Math.floor(days / 365)}a atrás`
+}
 
 const maskDocument = (doc: string) => {
-  if (!doc) return "—";
-  return doc.length === 11 ? formatCPF(doc) : formatCNPJ(doc);
-};
+  if (!doc) return '—'
+  return doc.length === 11 ? formatCPF(doc) : formatCNPJ(doc)
+}
 
 // Initials avatar
 const initials = (name: string) => {
-  const parts = name.trim().split(" ").filter(Boolean);
+  const parts = name.trim().split(' ').filter(Boolean)
   if (parts.length >= 2)
     return (
-      (parts[0]?.charAt(0) ?? "") + (parts[parts.length - 1]?.charAt(0) ?? "")
-    ).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-};
+      (parts[0]?.charAt(0) ?? '') + (parts[parts.length - 1]?.charAt(0) ?? '')
+    ).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
 
 const AVATAR_COLORS = [
-  "bg-green-500",
-  "bg-blue-500",
-  "bg-purple-500",
-  "bg-amber-500",
-  "bg-rose-500",
-  "bg-teal-500",
-  "bg-indigo-500",
-  "bg-orange-500",
-];
+  'bg-green-500',
+  'bg-blue-500',
+  'bg-purple-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-teal-500',
+  'bg-indigo-500',
+  'bg-orange-500'
+]
 const avatarColor = (name: string) => {
-  const hash = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-};
+  const hash = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
 
 // ─────────────────────────────────────────────
 // KPI Stats
 // ─────────────────────────────────────────────
-const now = new Date();
-const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+const now = new Date()
+const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
 
 const stats = computed(() => {
-  const all = customers.value;
+  const all = customers.value
   const newThisMonth = all.filter(
-    (c) => (c.createdAt || c.lastActivityAt) >= startOfMonth,
-  ).length;
-  const buyers = all.filter((c) => c.totalSpent > 0);
-  const totalSpent = buyers.reduce((s, c) => s + c.totalSpent, 0);
-  const avgTicket = buyers.length ? Math.round(totalSpent / buyers.length) : 0;
+    c => (c.createdAt || c.lastActivityAt) >= startOfMonth
+  ).length
+  const buyers = all.filter(c => c.totalSpent > 0)
+  const totalSpent = buyers.reduce((s, c) => s + c.totalSpent, 0)
+  const avgTicket = buyers.length ? Math.round(totalSpent / buyers.length) : 0
   return {
     total: all.length,
     newThisMonth,
     totalSpent,
     avgTicket,
-    buyers: buyers.length,
-  };
-});
+    buyers: buyers.length
+  }
+})
 
 const kpiItems = computed(() => [
   {
-    label: "Total de Clientes",
+    label: 'Total de Clientes',
     value: stats.value.total,
     suffix: `${stats.value.buyers} com compras realizadas`,
-    icon: "i-heroicons-user-group",
-    color: "text-primary-500",
-    bg: "bg-primary-50 dark:bg-primary-500/10",
+    icon: 'i-heroicons-user-group',
+    color: 'text-primary-500',
+    bg: 'bg-primary-50 dark:bg-primary-500/10'
   },
   {
-    label: "Ativos no Mês",
+    label: 'Ativos no Mês',
     value: stats.value.newThisMonth,
-    suffix: "com interação neste mês",
-    icon: "i-heroicons-arrow-trending-up",
-    color: "text-blue-500",
-    bg: "bg-blue-50 dark:bg-blue-500/10",
+    suffix: 'com interação neste mês',
+    icon: 'i-heroicons-arrow-trending-up',
+    color: 'text-blue-500',
+    bg: 'bg-blue-50 dark:bg-blue-500/10'
   },
   {
-    label: "Receita Total",
+    label: 'Receita Total',
     value: formatCurrency(stats.value.totalSpent),
-    suffix: "em vendas concluídas",
-    icon: "i-heroicons-banknotes",
-    color: "text-green-500",
-    bg: "bg-green-50 dark:bg-green-500/10",
+    suffix: 'em vendas concluídas',
+    icon: 'i-heroicons-banknotes',
+    color: 'text-green-500',
+    bg: 'bg-green-50 dark:bg-green-500/10'
   },
   {
-    label: "Ticket Médio",
+    label: 'Ticket Médio',
     value: formatCurrency(stats.value.avgTicket),
-    suffix: "por cliente comprador",
-    icon: "i-heroicons-receipt-percent",
-    color: "text-amber-500",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-  },
-]);
+    suffix: 'por cliente comprador',
+    icon: 'i-heroicons-receipt-percent',
+    color: 'text-amber-500',
+    bg: 'bg-amber-50 dark:bg-amber-500/10'
+  }
+])
 
 // ─────────────────────────────────────────────
 // Filter & Search
 // ─────────────────────────────────────────────
-const search = ref("");
-const activityFilter = ref<ActivityFilter>("all");
-const page = ref(1);
-const pageSize = 12;
+const search = ref('')
+const activityFilter = ref<ActivityFilter>('all')
+const page = ref(1)
+const pageSize = 12
 
 const filteredCustomers = computed(() => {
-  const q = search.value.toLowerCase();
+  const q = search.value.toLowerCase()
   return customers.value.filter((c) => {
-    const matchSearch =
-      !q ||
-      c.name.toLowerCase().includes(q) ||
-      c.document.includes(q) ||
-      c.phone.includes(q);
+    const matchSearch
+      = !q
+        || c.name.toLowerCase().includes(q)
+        || c.document.includes(q)
+        || c.phone.includes(q)
 
-    const matchFilter =
-      activityFilter.value === "all" ||
-      (activityFilter.value === "buyers" && c.totalSpent > 0) ||
-      (activityFilter.value === "prospects" &&
-        c.totalSpent === 0 &&
-        c.quotesCount > 0) ||
-      (activityFilter.value === "inactive" &&
-        Date.now() - c.lastActivityAt > 90 * 86_400_000);
+    const matchFilter
+      = activityFilter.value === 'all'
+        || (activityFilter.value === 'buyers' && c.totalSpent > 0)
+        || (activityFilter.value === 'prospects'
+          && c.totalSpent === 0
+          && c.quotesCount > 0)
+        || (activityFilter.value === 'inactive'
+          && Date.now() - c.lastActivityAt > 90 * 86_400_000)
 
-    return matchSearch && matchFilter;
-  });
-});
+    return matchSearch && matchFilter
+  })
+})
 
 const paginatedCustomers = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return filteredCustomers.value.slice(start, start + pageSize);
-});
+  const start = (page.value - 1) * pageSize
+  return filteredCustomers.value.slice(start, start + pageSize)
+})
 
 const totalPages = computed(() =>
-  Math.ceil(filteredCustomers.value.length / pageSize),
-);
+  Math.ceil(filteredCustomers.value.length / pageSize)
+)
 
 watch([search, activityFilter], () => {
-  page.value = 1;
-});
+  page.value = 1
+})
 
 // ─────────────────────────────────────────────
 // Drawer — Customer detail
 // ─────────────────────────────────────────────
-const isDetailOpen = ref(false);
-const selectedCustomer = ref<Customer | null>(null);
-const drawerTab = ref("quotes");
+const isDetailOpen = ref(false)
+const selectedCustomer = ref<Customer | null>(null)
+const drawerTab = ref('quotes')
 
 const DRAWER_TABS = [
-  { label: "Orçamentos", value: "quotes", icon: "i-heroicons-document-text" },
-  { label: "Vendas", value: "sales", icon: "i-heroicons-shopping-cart" },
-];
+  { label: 'Orçamentos', value: 'quotes', icon: 'i-heroicons-document-text' },
+  { label: 'Vendas', value: 'sales', icon: 'i-heroicons-shopping-cart' }
+]
 
 const openDetail = (c: Customer) => {
-  selectedCustomer.value = c;
-  drawerTab.value = "quotes";
-  isDetailOpen.value = true;
-};
+  selectedCustomer.value = c
+  drawerTab.value = 'quotes'
+  isDetailOpen.value = true
+}
 
 const customerQuotes = computed(() => {
-  if (!selectedCustomer.value) return [];
-  const { document, name } = selectedCustomer.value;
+  if (!selectedCustomer.value) return []
+  const { document, name } = selectedCustomer.value
   return allQuotes.value.filter(
     (q: CustomerQuote) =>
-      (document && q.customerDocument === document) || q.customerName === name,
-  );
-});
+      (document && q.customerDocument === document) || q.customerName === name
+  )
+})
 
 const customerSales = computed(() => {
-  if (!selectedCustomer.value) return [];
-  const { document, name } = selectedCustomer.value;
+  if (!selectedCustomer.value) return []
+  const { document, name } = selectedCustomer.value
   return allSales.value.filter(
     (s: CustomerSale) =>
-      (document && s.customerDocument === document) || s.customerName === name,
-  );
-});
+      (document && s.customerDocument === document) || s.customerName === name
+  )
+})
 
 // ─────────────────────────────────────────────
 // Status configs
 // ─────────────────────────────────────────────
-const quoteStatusConfig: Record<string, { label: string; color: string }> = {
-  draft: { label: "Rascunho", color: "neutral" },
-  negotiation: { label: "Em negociação", color: "info" },
-  sent: { label: "Em negociação", color: "info" },
-  approved: { label: "Aprovado", color: "success" },
-  closed: { label: "Encerrado", color: "warning" },
-  rejected: { label: "Encerrado", color: "warning" },
-  expired: { label: "Encerrado", color: "warning" },
-};
-const saleStatusConfig: Record<string, { label: string; color: string }> = {
-  open: { label: "Aberta", color: "warning" },
-  pending: { label: "Aberta", color: "warning" },
-  confirmed: { label: "Pendente", color: "info" },
-  in_progress: { label: "Pendente", color: "info" },
-  completed: { label: "Concluído", color: "success" },
-  cancelled: { label: "Cancelado", color: "error" },
-};
+const quoteStatusConfig: Record<string, { label: string, color: string }> = {
+  draft: { label: 'Rascunho', color: 'neutral' },
+  negotiation: { label: 'Em negociação', color: 'info' },
+  sent: { label: 'Em negociação', color: 'info' },
+  approved: { label: 'Aprovado', color: 'success' },
+  closed: { label: 'Encerrado', color: 'warning' },
+  rejected: { label: 'Encerrado', color: 'warning' },
+  expired: { label: 'Encerrado', color: 'warning' }
+}
+const saleStatusConfig: Record<string, { label: string, color: string }> = {
+  open: { label: 'Aberta', color: 'warning' },
+  pending: { label: 'Aberta', color: 'warning' },
+  confirmed: { label: 'Pendente', color: 'info' },
+  in_progress: { label: 'Pendente', color: 'info' },
+  completed: { label: 'Concluído', color: 'success' },
+  cancelled: { label: 'Cancelado', color: 'error' }
+}
 
 const quoteStatus = (s: string) =>
-  quoteStatusConfig[s] ?? quoteStatusConfig["draft"]!;
+  quoteStatusConfig[s] ?? quoteStatusConfig['draft']!
 const saleStatus = (s: string) =>
-  saleStatusConfig[s] ?? saleStatusConfig["open"]!;
+  saleStatusConfig[s] ?? saleStatusConfig['open']!
 
 // ─────────────────────────────────────────────
 // Drawer — Form
 // ─────────────────────────────────────────────
-const isDrawerOpen = ref(false);
-const editingCustomer = ref<Customer | null>(null);
+const isDrawerOpen = ref(false)
+const editingCustomer = ref<Customer | null>(null)
 
 const openCreate = () => {
-  editingCustomer.value = null;
-  isDrawerOpen.value = true;
-};
+  editingCustomer.value = null
+  isDrawerOpen.value = true
+}
 
 const openEdit = (c: Customer) => {
-  editingCustomer.value = c;
-  isDrawerOpen.value = true;
-};
+  editingCustomer.value = c
+  isDrawerOpen.value = true
+}
 </script>
 
 <template>
@@ -291,7 +291,11 @@ const openEdit = (c: Customer) => {
     <!-- ── KPI Strip (Design System compliant) ── -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
       <template v-if="loadingCustomers">
-        <USkeleton v-for="i in 4" :key="i" class="h-28 rounded-3xl" />
+        <USkeleton
+          v-for="i in 4"
+          :key="i"
+          class="h-28 rounded-3xl"
+        />
       </template>
       <template v-else>
         <div
@@ -308,10 +312,13 @@ const openEdit = (c: Customer) => {
             <div
               :class="[
                 kpi.bg,
-                'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0',
+                'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0'
               ]"
             >
-              <UIcon :name="kpi.icon" :class="['w-6 h-6', kpi.color]" />
+              <UIcon
+                :name="kpi.icon"
+                :class="['w-6 h-6', kpi.color]"
+              />
             </div>
           </div>
           <p
@@ -340,7 +347,7 @@ const openEdit = (c: Customer) => {
         body: 'p-0 sm:p-0',
         header:
           'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
+        footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
       }"
       class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
     >
@@ -379,7 +386,11 @@ const openEdit = (c: Customer) => {
         v-if="loadingCustomers"
         class="divide-y divide-zinc-100 dark:divide-zinc-800/50"
       >
-        <div v-for="i in 6" :key="i" class="px-6 py-4">
+        <div
+          v-for="i in 6"
+          :key="i"
+          class="px-6 py-4"
+        >
           <USkeleton class="h-12 rounded-xl" />
         </div>
       </div>
@@ -414,7 +425,10 @@ const openEdit = (c: Customer) => {
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto">
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -488,8 +502,14 @@ const openEdit = (c: Customer) => {
                 <div
                   class="text-xs text-zinc-500 dark:text-zinc-400 space-y-0.5"
                 >
-                  <p v-if="c.phone" class="flex items-center gap-1">
-                    <UIcon name="i-heroicons-phone" class="w-3 h-3" />
+                  <p
+                    v-if="c.phone"
+                    class="flex items-center gap-1"
+                  >
+                    <UIcon
+                      name="i-heroicons-phone"
+                      class="w-3 h-3"
+                    />
                     {{ maskPhone(c.phone) }}
                   </p>
                   <p
@@ -574,7 +594,10 @@ const openEdit = (c: Customer) => {
               </td>
 
               <!-- Actions (Design System: Edit + Dropdown) -->
-              <td class="px-6 py-4 text-right" @click.stop>
+              <td
+                class="px-6 py-4 text-right"
+                @click.stop
+              >
                 <div class="flex items-center justify-end gap-1 transition-all">
                   <UButton
                     color="neutral"
@@ -590,7 +613,7 @@ const openEdit = (c: Customer) => {
                         {
                           label: 'Ver histórico',
                           icon: 'i-heroicons-clock',
-                          onSelect: () => openDetail(c),
+                          onSelect: () => openDetail(c)
                         },
                         {
                           label: 'Novo Orçamento',
@@ -602,9 +625,9 @@ const openEdit = (c: Customer) => {
                                 customerName: c.name,
                                 customerDocument: c.document || undefined,
                                 customerPhone: c.phone || undefined,
-                                customerAddress: c.address || undefined,
-                              },
-                            }),
+                                customerAddress: c.address || undefined
+                              }
+                            })
                         },
                         {
                           label: 'Nova Venda',
@@ -616,11 +639,11 @@ const openEdit = (c: Customer) => {
                                 customerName: c.name,
                                 customerDocument: c.document || undefined,
                                 customerPhone: c.phone || undefined,
-                                customerAddress: c.address || undefined,
-                              },
-                            }),
-                        },
-                      ],
+                                customerAddress: c.address || undefined
+                              }
+                            })
+                        }
+                      ]
                     ]"
                   >
                     <UButton
@@ -639,7 +662,10 @@ const openEdit = (c: Customer) => {
       </div>
 
       <!-- Pagination -->
-      <template v-if="totalPages > 1" #footer>
+      <template
+        v-if="totalPages > 1"
+        #footer
+      >
         <div class="flex items-center justify-between">
           <p
             class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400"
@@ -722,8 +748,8 @@ const openEdit = (c: Customer) => {
                     customerName: selectedCustomer.name,
                     customerDocument: selectedCustomer.document || undefined,
                     customerPhone: selectedCustomer.phone || undefined,
-                    customerAddress: selectedCustomer.address || undefined,
-                  },
+                    customerAddress: selectedCustomer.address || undefined
+                  }
                 })
               "
             >
@@ -742,8 +768,8 @@ const openEdit = (c: Customer) => {
                     customerName: selectedCustomer.name,
                     customerDocument: selectedCustomer.document || undefined,
                     customerPhone: selectedCustomer.phone || undefined,
-                    customerAddress: selectedCustomer.address || undefined,
-                  },
+                    customerAddress: selectedCustomer.address || undefined
+                  }
                 })
               "
             >
@@ -845,18 +871,26 @@ const openEdit = (c: Customer) => {
                 "
                 @click="drawerTab = tab.value"
               >
-                <UIcon :name="tab.icon" class="w-3.5 h-3.5" />
+                <UIcon
+                  :name="tab.icon"
+                  class="w-3.5 h-3.5"
+                />
                 {{ tab.label }}
               </button>
             </div>
 
             <!-- Quotes list -->
-            <div v-if="drawerTab === 'quotes'" class="space-y-3">
+            <div
+              v-if="drawerTab === 'quotes'"
+              class="space-y-3"
+            >
               <div
                 v-if="customerQuotes.length === 0"
                 class="flex flex-col items-center py-12 text-zinc-400"
               >
-                <p class="text-sm font-bold">Nenhum orçamento</p>
+                <p class="text-sm font-bold">
+                  Nenhum orçamento
+                </p>
               </div>
               <div
                 v-for="q in customerQuotes"
@@ -885,19 +919,23 @@ const openEdit = (c: Customer) => {
                   </UBadge>
                   <span
                     class="text-sm font-black text-zinc-900 dark:text-white shrink-0 tabular-nums"
-                    >{{ formatCurrency(q.total) }}</span
-                  >
+                  >{{ formatCurrency(q.total) }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Sales list -->
-            <div v-if="drawerTab === 'sales'" class="space-y-3">
+            <div
+              v-if="drawerTab === 'sales'"
+              class="space-y-3"
+            >
               <div
                 v-if="customerSales.length === 0"
                 class="flex flex-col items-center py-12 text-zinc-400"
               >
-                <p class="text-sm font-bold">Nenhuma venda</p>
+                <p class="text-sm font-bold">
+                  Nenhuma venda
+                </p>
               </div>
               <div
                 v-for="s in customerSales"
@@ -926,8 +964,7 @@ const openEdit = (c: Customer) => {
                   </UBadge>
                   <span
                     class="text-sm font-black text-zinc-900 dark:text-white shrink-0 tabular-nums"
-                    >{{ formatCurrency(s.total) }}</span
-                  >
+                  >{{ formatCurrency(s.total) }}</span>
                 </div>
               </div>
             </div>

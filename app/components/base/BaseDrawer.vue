@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * BaseDrawer - Componente base para drawers (USlideover)
- * 
+ *
  * Fornece estrutura consistente com:
  * - Título dinâmico (novo/editar)
  * - Corpo scrollável
@@ -23,12 +23,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: []
+  'save': []
 }>()
 
 const isOpen = computed({
   get: () => props.open,
-  set: (val) => emit('update:open', val)
+  set: val => emit('update:open', val)
 })
 
 const displayTitle = computed(() => {
@@ -53,9 +53,9 @@ const sizeClasses = {
     :title="displayTitle"
     :description="description"
     side="right"
-    :ui="{ 
+    :ui="{
       content: sizeClasses[size || 'lg'],
-      footer: 'p-0 block' 
+      footer: 'p-0 block'
     }"
   >
     <template #body>

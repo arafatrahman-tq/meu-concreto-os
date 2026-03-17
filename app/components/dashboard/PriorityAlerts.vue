@@ -1,21 +1,21 @@
 <script setup lang="ts">
 interface PriorityAlert {
-  id: string;
-  color: "error" | "warning" | "info" | "success";
-  icon: string;
-  title: string;
-  description: string;
-  actionLabel: string;
-  actionTo: string;
+  id: string
+  color: 'error' | 'warning' | 'info' | 'success'
+  icon: string
+  title: string
+  description: string
+  actionLabel: string
+  actionTo: string
 }
 
 defineProps<{
-  alerts: PriorityAlert[];
-}>();
+  alerts: PriorityAlert[]
+}>()
 
 const goToAlertAction = (to: string) => {
-  navigateTo(to);
-};
+  navigateTo(to)
+}
 </script>
 
 <template>
@@ -23,7 +23,7 @@ const goToAlertAction = (to: string) => {
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm"
     :ui="{
       header: 'px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      body: 'p-4 sm:p-6',
+      body: 'p-4 sm:p-6'
     }"
   >
     <template #header>
@@ -51,8 +51,8 @@ const goToAlertAction = (to: string) => {
             label: alert.actionLabel,
             color: 'neutral',
             variant: 'ghost',
-            onClick: () => goToAlertAction(alert.actionTo),
-          },
+            onClick: () => goToAlertAction(alert.actionTo)
+          }
         ]"
         class="rounded-2xl"
       />

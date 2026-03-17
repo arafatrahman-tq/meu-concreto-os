@@ -5,50 +5,50 @@ import {
   quotes,
   companies,
   sellers,
-  paymentMethods,
-} from "../database/schema";
-import { saleSchema } from "../utils/schemas";
-import { db, parseDate } from "../utils/db";
-import { eq, and } from "drizzle-orm";
-import { requireCompanyAccess } from "../utils/session";
-import { createNotification } from "../utils/notifications";
+  paymentMethods
+} from '../database/schema'
+import { saleSchema } from '../utils/schemas'
+import { db, parseDate } from '../utils/db'
+import { eq, and } from 'drizzle-orm'
+import { requireCompanyAccess } from '../utils/session'
+import { createNotification } from '../utils/notifications'
 import {
   buildAlertMessage,
   getWhatsappConfig,
   normalizeRecipientList,
-  sendWhatsappPDF,
-} from "../utils/whatsapp";
-import { generateDocumentPDF, getPaymentMethodDetails } from "../utils/pdf";
+  sendWhatsappPDF
+} from '../utils/whatsapp'
+import { generateDocumentPDF, getPaymentMethodDetails } from '../utils/pdf'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-  const result = saleSchema.safeParse(body);
+  const body = await readBody(event)
+  const result = saleSchema.safeParse(body)
 
   if (!result.success) {
     throw createError({
       statusCode: 400,
-      message: "Falha na validação",
-      data: result.error.flatten(),
-    });
+      message: 'Falha na validação',
+      data: result.error.flatten()
+    })
   }
 
-  const { items, driverIds, ...saleData } = result.data;
+  const { items, driverIds, ...saleData } = result.data
 
   const resolveCountAsConcreteVolume = (item: {
-    unit?: string | null;
-    countAsConcreteVolume?: boolean;
+    unit?: string | null
+    countAsConcreteVolume?: boolean
   }) => {
-    if (typeof item.countAsConcreteVolume === "boolean") {
-      return item.countAsConcreteVolume;
+    if (typeof item.countAsConcreteVolume === 'boolean') {
+      return item.countAsConcreteVolume
     }
-    if (item.unit === "m3_faltante") return false;
-    return item.unit === "m3";
-  };
+    if (item.unit === 'm3_faltante') return false
+    return item.unit === 'm3'
+  }
 
-  const toCents = (value: number) => Math.round(value);
+  const toCents = (value: number) => Math.round(value)
 
   // Verify the caller has access to the target company (prevents cross-tenant write)
-  await requireCompanyAccess(event, saleData.companyId);
+  await requireCompanyAccess(event, saleData.companyId)
 
   // If quoteId is provided, verify it exists and belongs to the company
   if (saleData.quoteId) {
@@ -58,49 +58,49 @@ export default defineEventHandler(async (event) => {
       .where(
         and(
           eq(quotes.id, saleData.quoteId),
-          eq(quotes.companyId, saleData.companyId),
-        ),
+          eq(quotes.companyId, saleData.companyId)
+        )
       )
-      .limit(1);
+      .limit(1)
 
     if (existingQuotes.length === 0) {
       throw createError({
         statusCode: 404,
-        message: "Orçamento não encontrado ou não pertence a esta empresa",
-      });
+        message: 'Orçamento não encontrado ou não pertence a esta empresa'
+      })
     }
   }
 
   try {
     const selectedPaymentMethod = await getPaymentMethodDetails(
       saleData.companyId,
-      saleData.paymentMethod ?? null,
-    );
+      saleData.paymentMethod ?? null
+    )
 
     const selectedPaymentMethod2 = saleData.paymentMethod2
       ? await getPaymentMethodDetails(
           saleData.companyId,
-          saleData.paymentMethod2,
+          saleData.paymentMethod2
         )
-      : null;
+      : null
 
     const insertedSale = await db.transaction(async (tx) => {
       // 1. Calculate totals from items
-      let subtotal = 0;
+      let subtotal = 0
       const processedItems = items.map((item: any) => {
-        const unitPriceCents = toCents(item.unitPrice);
-        const lineTotal = Math.round(item.quantity * unitPriceCents);
-        subtotal += lineTotal;
+        const unitPriceCents = toCents(item.unitPrice)
+        const lineTotal = Math.round(item.quantity * unitPriceCents)
+        subtotal += lineTotal
         return {
           ...item,
           unitPrice: unitPriceCents,
           countAsConcreteVolume: resolveCountAsConcreteVolume(item),
-          totalPrice: lineTotal,
-        };
-      });
+          totalPrice: lineTotal
+        }
+      })
 
-      const discount = toCents(saleData.discount || 0);
-      const total = Math.max(0, subtotal - discount);
+      const discount = toCents(saleData.discount || 0)
+      const total = Math.max(0, subtotal - discount)
 
       // 2. Create Sale
       const [newSale] = await tx
@@ -113,12 +113,12 @@ export default defineEventHandler(async (event) => {
           discount,
           total,
           date: parseDate(saleData.date) ?? new Date(),
-          deliveryDate: parseDate(saleData.deliveryDate) ?? null,
+          deliveryDate: parseDate(saleData.deliveryDate) ?? null
         })
-        .returning();
+        .returning()
 
       if (!newSale) {
-        throw new Error("Falha ao criar registro da venda");
+        throw new Error('Falha ao criar registro da venda')
       }
 
       // 3. Create Sale Items
@@ -137,9 +137,9 @@ export default defineEventHandler(async (event) => {
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,
-            mixDesignId: item.mixDesignId,
-          })),
-        );
+            mixDesignId: item.mixDesignId
+          }))
+        )
       }
 
       // 4. Associate Drivers
@@ -147,24 +147,24 @@ export default defineEventHandler(async (event) => {
         await tx.insert(salesDrivers).values(
           driverIds.map((driverId: any) => ({
             saleId: newSale.id,
-            driverId,
-          })),
-        );
+            driverId
+          }))
+        )
       }
 
       // 5. Update source quote if exists
       if (saleData.quoteId) {
         await tx
           .update(quotes)
-          .set({ status: "approved", updatedAt: new Date() })
-          .where(eq(quotes.id, saleData.quoteId));
+          .set({ status: 'approved', updatedAt: new Date() })
+          .where(eq(quotes.id, saleData.quoteId))
       }
 
-      return newSale;
-    });
+      return newSale
+    })
 
     if (!insertedSale) {
-      throw new Error("Transação concluída, mas nenhuma venda retornada");
+      throw new Error('Transação concluída, mas nenhuma venda retornada')
     }
 
     // Fetch complete sale with items using query builder (validates schema relations)
@@ -173,35 +173,35 @@ export default defineEventHandler(async (event) => {
       with: {
         items: true,
         paymentMethodReference: true,
-        drivers: true,
-      },
-    });
+        drivers: true
+      }
+    })
 
     if (!sale) {
-      throw new Error("Falha ao recuperar a venda criada");
+      throw new Error('Falha ao recuperar a venda criada')
     }
 
     // ── WhatsApp PDF Push ──
     try {
-      const waSettings = await getWhatsappConfig(sale.companyId);
-      const connected = waSettings?.isConnected && waSettings?.phoneNumber;
+      const waSettings = await getWhatsappConfig(sale.companyId)
+      const connected = waSettings?.isConnected && waSettings?.phoneNumber
 
       if (
-        connected &&
-        (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
+        connected
+        && (waSettings.quotePdfToSeller || waSettings.quotePdfToCustomer)
       ) {
         const company = await db
           .select()
           .from(companies)
           .where(eq(companies.id, sale.companyId))
-          .get();
+          .get()
         const seller = sale.sellerId
           ? await db
               .select()
               .from(sellers)
               .where(eq(sellers.id, sale.sellerId))
               .get()
-          : null;
+          : null
 
         const defaultPaymentMethod = await db
           .select()
@@ -209,17 +209,17 @@ export default defineEventHandler(async (event) => {
           .where(
             and(
               eq(paymentMethods.companyId, sale.companyId),
-              eq(paymentMethods.isDefault, true),
-            ),
+              eq(paymentMethods.isDefault, true)
+            )
           )
-          .get();
+          .get()
 
-        const paymentMethodToUse =
-          selectedPaymentMethod ||
-          sale.paymentMethodReference ||
-          defaultPaymentMethod;
+        const paymentMethodToUse
+          = selectedPaymentMethod
+            || sale.paymentMethodReference
+            || defaultPaymentMethod
 
-        const paymentMethod2ToUse = selectedPaymentMethod2;
+        const paymentMethod2ToUse = selectedPaymentMethod2
 
         if (company) {
           const pdfBuffer = await generateDocumentPDF({
@@ -244,57 +244,57 @@ export default defineEventHandler(async (event) => {
               email: company.email,
               address: company.address,
               city: company.city,
-              state: company.state,
+              state: company.state
             },
-            items: (sale.items ?? []).map((i) => ({
+            items: (sale.items ?? []).map(i => ({
               productName: i.productName,
               quantity: i.quantity,
-              unit: i.unit || "m3",
+              unit: i.unit || 'm3',
               unitPrice: i.unitPrice,
               totalPrice: i.totalPrice,
               fck: i.fck || null,
               slump: i.slump || null,
-              stoneSize: i.stoneSize || null,
+              stoneSize: i.stoneSize || null
             })),
             paymentMethod: paymentMethodToUse
               ? {
                   name: paymentMethodToUse.name,
                   type: paymentMethodToUse.type,
-                  details: paymentMethodToUse.details,
+                  details: paymentMethodToUse.details
                 }
               : null,
             paymentMethod2: paymentMethod2ToUse
               ? {
                   name: paymentMethod2ToUse.name,
                   type: paymentMethod2ToUse.type,
-                  details: paymentMethod2ToUse.details,
+                  details: paymentMethod2ToUse.details
                 }
               : null,
             seller: seller
               ? {
                   name: seller.name,
                   phone: seller.phone || null,
-                  commissionRate: seller.commissionRate,
+                  commissionRate: seller.commissionRate
                 }
-              : null,
-          });
+              : null
+          })
 
           const config = {
             apiUrl: waSettings.apiUrl!,
             apiKey: waSettings.apiKey!,
-            phoneNumber: waSettings.phoneNumber!,
-          };
+            phoneNumber: waSettings.phoneNumber!
+          }
 
           const fileName = `PedidoVenda_${String(sale.id).padStart(
             5,
-            "0",
-          )}.pdf`;
+            '0'
+          )}.pdf`
           const caption = `📄 Pedido de Venda: ${
             sale.customerName
-          }\nTotal: ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(sale.total / 100)}`;
+          }\nTotal: ${new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(sale.total / 100)}`
 
           // A. Send to Seller
           if (waSettings.quotePdfToSeller) {
@@ -304,21 +304,21 @@ export default defineEventHandler(async (event) => {
                 [seller.phone],
                 pdfBuffer,
                 fileName,
-                caption,
-              );
+                caption
+              )
             } else {
               // Notification for missing seller phone
               await createNotification({
                 companyId: sale.companyId,
-                type: "user",
-                title: "Vendedor sem telefone",
+                type: 'user',
+                title: 'Vendedor sem telefone',
                 body: `O vendedor ${
-                  seller?.name || "desconhecido"
+                  seller?.name || 'desconhecido'
                 } não possui telefone cadastrado para receber o PDF do pedido #${
                   sale.id
                 }.`,
-                icon: "i-heroicons-exclamation-triangle",
-              });
+                icon: 'i-heroicons-exclamation-triangle'
+              })
             }
           }
 
@@ -330,71 +330,71 @@ export default defineEventHandler(async (event) => {
                 [sale.customerPhone],
                 pdfBuffer,
                 fileName,
-                caption,
-              );
+                caption
+              )
             } else {
               // Notification for missing customer phone
               await createNotification({
                 companyId: sale.companyId,
-                type: "sale",
-                title: "Cliente sem telefone",
+                type: 'sale',
+                title: 'Cliente sem telefone',
                 body: `O cliente ${sale.customerName} não possui telefone no pedido #${sale.id} para receber o PDF.`,
-                icon: "i-heroicons-exclamation-triangle",
-              });
+                icon: 'i-heroicons-exclamation-triangle'
+              })
             }
           }
         }
       }
     } catch (waErr) {
-      console.error("WhatsApp Push Error:", waErr);
+      console.error('WhatsApp Push Error:', waErr)
     }
 
     // Notification trigger
-    const waConfig = await getWhatsappConfig(sale.companyId);
-    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients);
-    const companyRow =
-      waConfig?.alertsEnabled && alertRecipients.length > 0
+    const waConfig = await getWhatsappConfig(sale.companyId)
+    const alertRecipients = normalizeRecipientList(waConfig?.alertRecipients)
+    const companyRow
+      = waConfig?.alertsEnabled && alertRecipients.length > 0
         ? await db
             .select({ name: companies.name })
             .from(companies)
             .where(eq(companies.id, sale.companyId))
             .get()
-        : null;
+        : null
 
-    const totalDisplay = new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(sale.total / 100);
+    const totalDisplay = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(sale.total / 100)
 
     await createNotification({
       companyId: sale.companyId,
-      type: "sale",
-      title: "Nova venda registrada",
+      type: 'sale',
+      title: 'Nova venda registrada',
       body: `${sale.customerName} — ${totalDisplay}`,
-      link: "/vendas",
-      icon: "i-heroicons-shopping-cart",
+      link: '/vendas',
+      icon: 'i-heroicons-shopping-cart',
       ...(waConfig?.alertsEnabled && alertRecipients.length > 0
         ? {
             whatsapp: {
               toNumbers: alertRecipients,
-              message: buildAlertMessage("sale", {
-                companyName: companyRow?.name ?? "Meu Concreto",
+              message: buildAlertMessage('sale', {
+                companyName: companyRow?.name ?? 'Meu Concreto',
                 customerName: sale.customerName,
                 total: sale.total,
-                id: sale.id,
-              }),
-            },
+                id: sale.id
+              })
+            }
           }
-        : {}),
-    });
+        : {})
+    })
 
-    return { sale };
+    return { sale }
   } catch (e: any) {
-    console.error("Create Sale Error:", e);
+    console.error('Create Sale Error:', e)
     throw createError({
       statusCode: 500,
-      message: "Erro interno do servidor",
-      data: { message: e.message },
-    });
+      message: 'Erro interno do servidor',
+      data: { message: e.message }
+    })
   }
-});
+})

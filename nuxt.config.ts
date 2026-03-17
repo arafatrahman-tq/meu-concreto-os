@@ -22,7 +22,8 @@ export default defineNuxtConfig({
       process.env.NUXT_SESSION_SECRET
       || 'meu-concreto-dev-only-secret-change-in-production!!',
     public: {
-      version: process.env.npm_package_version || '1.0.0'
+      version: process.env.npm_package_version || '1.0.0',
+      appTimezone: process.env.APP_TIMEZONE || process.env.REPORT_TIMEZONE || process.env.TZ || 'America/Sao_Paulo'
     }
   },
 
