@@ -791,8 +791,8 @@ const exportFilteredCsv = () => {
   const rows = filteredTransactions.value.map((t) => {
     return [
       t.id,
-      t.date ? formatISODate(new Date(t.date as string | number)) : '',
-      t.dueDate ? formatISODate(new Date(t.dueDate as string | number)) : '',
+      formatDateNumeric(t.date),
+      formatDateNumeric(t.dueDate),
       `"${t.description.replace(/"/g, '""')}"`,
       `"${t.category || ''}"`,
       t.type === 'income' ? 'Receita' : 'Despesa',
@@ -833,8 +833,8 @@ const exportFilteredExcel = async () => {
 
   const rows = filteredTransactions.value.map(t => ({
     ID: t.id,
-    Data: t.date ? formatISODate(new Date(t.date as string | number)) : '',
-    Vencimento: t.dueDate ? formatISODate(new Date(t.dueDate as string | number)) : '',
+    Data: formatDateNumeric(t.date),
+    Vencimento: formatDateNumeric(t.dueDate),
     Descrição: t.description,
     Categoria: t.category || '',
     Tipo: t.type === 'income' ? 'Receita' : 'Despesa',

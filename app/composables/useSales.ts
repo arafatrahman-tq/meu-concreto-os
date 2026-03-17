@@ -188,7 +188,7 @@ export const useSales = () => {
       [
         s.id,
         s.customerName,
-        s.createdAt,
+        formatDateNumeric(s.date),
         normalizeSaleStatus(s.status),
         s.total ?? 0
       ].map(escape).join(',')
@@ -384,7 +384,8 @@ export const useSales = () => {
 
     const rows = filteredSales.value.map(s => ({
       ID: s.id,
-      'Data/Entrega': formatISODate(new Date(s.deliveryDate as string | number)),
+      Data: formatDateNumeric(s.date),
+      Entrega: formatDateNumeric(s.deliveryDate),
       Cliente: (s as any).customerName || '',
       Status: statusConfig[s.status as keyof typeof statusConfig]?.label || s.status,
       'Total (R$)': s.total / 100,
@@ -468,13 +469,14 @@ export const useSales = () => {
     // Table
     autoTable(doc, {
       startY: 35,
-      head: [['ID', 'ENTREGA', 'CLIENTE', 'STATUS', 'VENDEDOR', 'TOTAL']],
+      head: [['ID', 'Data', 'Entrega', 'Cliente', 'Pagamento', 'Status', 'Total']],
       body: rows.map(s => [
         `#${s.id}`,
-        formatISODate(new Date(s.deliveryDate as string | number)),
-        (s as any).customerName?.toUpperCase() || '',
+        formatDateNumeric(s.date),
+        formatDateNumeric(s.deliveryDate),
+        (s as any).customerName || '',
+        s.paymentMethod || '-',
         (statusConfig[s.status as keyof typeof statusConfig]?.label || s.status).toUpperCase(),
-        ((s as any).seller?.name || '—').toUpperCase(),
         fmtCurrency(s.total)
       ]),
       theme: 'grid',

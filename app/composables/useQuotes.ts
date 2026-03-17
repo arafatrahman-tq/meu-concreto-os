@@ -368,8 +368,9 @@ export const useQuotes = () => {
     const lines = filteredQuotes.value.map(q =>
       [
         q.id,
+        q.id,
         q.customerName,
-        q.createdAt,
+        formatDateNumeric(q.date),
         normalizeQuoteStatus(q.status),
         q.total ?? 0
       ]
@@ -403,7 +404,7 @@ export const useQuotes = () => {
 
     const rows = filteredQuotes.value.map(q => ({
       ID: q.id,
-      Data: formatISODate(new Date(q.createdAt as string | number)),
+      Data: formatDateNumeric(q.date),
       Cliente: q.customerName,
       'Documento/Contato': q.customerDocument || q.customerPhone || '',
       Status: statusConfig[q.status as keyof typeof statusConfig]?.label || q.status,
@@ -491,7 +492,7 @@ export const useQuotes = () => {
       head: [['ID', 'DATA', 'CLIENTE', 'STATUS', 'VENDEDOR', 'TOTAL']],
       body: rows.map(q => [
         `#${q.id}`,
-        formatISODate(new Date(q.createdAt as string | number)),
+        formatDateNumeric(q.date),
         q.customerName.toUpperCase(),
         (statusConfig[q.status as keyof typeof statusConfig]?.label || q.status).toUpperCase(),
         ((q as any).seller?.name || '—').toUpperCase(),
