@@ -147,7 +147,9 @@ async function run() {
 
   if (!apply) {
     console.log("\nDry-run concluido. Nenhuma alteracao aplicada.");
-    console.log("Para aplicar: bun run sales:status:reconcile-billing --apply");
+    console.log(
+      "Para aplicar: bun run db:reconcile-billed-sales-status:apply",
+    );
     return;
   }
 

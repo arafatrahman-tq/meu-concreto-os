@@ -139,6 +139,120 @@ const downloadPdf = (id: number) => {
   window.open(`/api/sales/${id}/download`, "_blank");
 };
 
+const pageTotal = computed(() =>
+  props.sales.reduce((sum, sale) => sum + (sale.total || 0), 0),
+);
+
+const shouldCountConcreteVolume = (item: {
+  unit?: string | null;
+  countAsConcreteVolume?: boolean;
+}) => {
+  if (item.unit === "m3") return item.countAsConcreteVolume !== false;
+  if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
+  return false;
+};
+
+const getSaleVolume = (sale: Sale) =>
+  (sale.items ?? [])
+    .filter((item) => shouldCountConcreteVolume(item as any))
+    .reduce((sum, item: any) => sum + (item.quantity || 0), 0);
+
+const selectedSaleIds = ref<number[]>([]);
+
+const pageSaleIds = computed(() => props.sales.map((s) => s.id));
+
+const allPageSelected = computed(
+  () =>
+    pageSaleIds.value.length > 0 &&
+    pageSaleIds.value.every((id) => selectedSaleIds.value.includes(id)),
+);
+
+const selectedPageTotal = computed(() =>
+  props.sales
+    .filter((s) => selectedSaleIds.value.includes(s.id))
+    .reduce((sum, s) => sum + (s.total || 0), 0),
+);
+
+const hasSelectedRows = computed(() =>
+  props.sales.some((s) => selectedSaleIds.value.includes(s.id)),
+);
+
+const displayedTotal = computed(() =>
+  hasSelectedRows.value ? selectedPageTotal.value : pageTotal.value,
+);
+
+const totalLabel = computed(() => {
+  const selectedCount = props.sales.filter((s) =>
+    selectedSaleIds.value.includes(s.id),
+  ).length;
+  return selectedCount > 0
+    ? `Total Selecionado (${selectedCount})`
+    : "Total da Página";
+});
+
+const selectedSales = computed(() =>
+  props.sales.filter((s) => selectedSaleIds.value.includes(s.id)),
+);
+
+const selectedCount = computed(() => selectedSales.value.length);
+
+const clearSelection = () => {
+  selectedSaleIds.value = [];
+};
+
+const exportSelectedCsv = () => {
+  if (typeof window === "undefined" || selectedSales.value.length === 0) return;
+
+  const escape = (value: unknown) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const header = ["id", "cliente", "data", "status", "total_centavos"];
+  const lines = selectedSales.value.map((s) =>
+    [s.id, s.customerName, s.date, normalizeSaleStatus(s.status), s.total ?? 0]
+      .map(escape)
+      .join(","),
+  );
+
+  const csv = [header.join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vendas-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const toggleAllSales = (value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedSaleIds.value = selectedSaleIds.value.filter(
+      (id) => !pageSaleIds.value.includes(id),
+    );
+    return;
+  }
+
+  const merged = new Set([...selectedSaleIds.value, ...pageSaleIds.value]);
+  selectedSaleIds.value = Array.from(merged);
+};
+
+const toggleSale = (id: number, value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedSaleIds.value = selectedSaleIds.value.filter((x) => x !== id);
+    return;
+  }
+
+  if (!selectedSaleIds.value.includes(id)) {
+    selectedSaleIds.value = [...selectedSaleIds.value, id];
+  }
+};
+
+watch(pageSaleIds, (ids) => {
+  selectedSaleIds.value = selectedSaleIds.value.filter((id) =>
+    ids.includes(id),
+  );
+});
+
 // Legacy aliases during transition
 STATUS_ACTIONS.pending = STATUS_ACTIONS.open ?? [];
 STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
@@ -184,6 +298,38 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
       </div>
     </template>
 
+    <div
+      v-if="selectedCount > 0"
+      class="px-4 sm:px-6 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/40 flex items-center justify-between gap-3"
+    >
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+        {{ selectedCount }} selecionada(s) ·
+        {{ formatCurrency(selectedPageTotal) }}
+      </p>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          icon="i-heroicons-arrow-down-tray"
+          class="rounded-xl"
+          @click="exportSelectedCsv"
+        >
+          Exportar CSV
+        </UButton>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          icon="i-heroicons-x-mark"
+          class="rounded-xl"
+          @click="clearSelection"
+        >
+          Limpar
+        </UButton>
+      </div>
+    </div>
+
     <!-- Loading skeleton -->
     <div
       v-if="loading"
@@ -220,6 +366,12 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
+            <th class="px-3 py-4 w-10 text-center">
+              <UCheckbox
+                :model-value="allPageSelected"
+                @update:model-value="toggleAllSales"
+              />
+            </th>
             <th
               class="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 whitespace-nowrap"
             >
@@ -253,6 +405,11 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
             <th
               class="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
             >
+              M³
+            </th>
+            <th
+              class="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
+            >
               Total
             </th>
             <th class="px-6 py-4" />
@@ -264,6 +421,12 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
             :key="s.id"
             class="group hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-all duration-200"
           >
+            <td class="px-3 py-4 text-center">
+              <UCheckbox
+                :model-value="selectedSaleIds.includes(s.id)"
+                @update:model-value="(v) => toggleSale(s.id, v)"
+              />
+            </td>
             <td
               class="px-6 py-4 font-black text-zinc-400 text-xs whitespace-nowrap"
             >
@@ -352,6 +515,13 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
                   {{ getStatusDisplay(s).label }}
                 </UBadge>
               </UDropdownMenu>
+            </td>
+            <td class="px-4 py-4 text-right">
+              <span
+                class="text-xs font-black tabular-nums text-zinc-600 dark:text-zinc-300"
+              >
+                {{ getSaleVolume(s).toFixed(1) }}
+              </span>
             </td>
             <td class="px-4 py-4 text-right">
               <span
@@ -473,6 +643,24 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
             </td>
           </tr>
         </tbody>
+        <tfoot class="bg-zinc-50/70 dark:bg-zinc-800/30">
+          <tr>
+            <td
+              colspan="8"
+              class="px-6 py-3 text-right text-[10px] font-black uppercase tracking-widest text-zinc-500"
+            >
+              {{ totalLabel }}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span
+                class="font-black tabular-nums text-sm tracking-tight text-zinc-900 dark:text-white"
+              >
+                {{ formatCurrency(displayedTotal) }}
+              </span>
+            </td>
+            <td class="px-6 py-3" />
+          </tr>
+        </tfoot>
       </table>
     </div>
 

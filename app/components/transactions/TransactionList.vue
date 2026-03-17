@@ -49,6 +49,15 @@ const pagedTopLevelTransactions = computed(() => {
   return topLevelTransactions.value.slice(start, start + props.pageSize);
 });
 
+const selectedTransactionIds = ref<number[]>([]);
+
+const pageTotal = computed(() =>
+  pagedTopLevelTransactions.value.reduce((sum, tx) => {
+    const signed = tx.type === "income" ? tx.amount : -tx.amount;
+    return sum + signed;
+  }, 0),
+);
+
 const formatCurrency = (cents: number) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -135,6 +144,124 @@ const visibleRows = computed(() => {
   return rows;
 });
 
+const visibleTransactionIds = computed(() =>
+  visibleRows.value.map((r) => r.tx.id),
+);
+
+const allVisibleSelected = computed(
+  () =>
+    visibleTransactionIds.value.length > 0 &&
+    visibleTransactionIds.value.every((id) =>
+      selectedTransactionIds.value.includes(id),
+    ),
+);
+
+const selectedTotal = computed(() =>
+  visibleRows.value
+    .filter((row) => selectedTransactionIds.value.includes(row.tx.id))
+    .reduce((sum, row) => {
+      const signed = row.tx.type === "income" ? row.tx.amount : -row.tx.amount;
+      return sum + signed;
+    }, 0),
+);
+
+const hasSelectedRows = computed(() =>
+  visibleRows.value.some((row) =>
+    selectedTransactionIds.value.includes(row.tx.id),
+  ),
+);
+
+const displayedTotal = computed(() =>
+  hasSelectedRows.value ? selectedTotal.value : pageTotal.value,
+);
+
+const totalLabel = computed(() => {
+  const selectedCount = visibleRows.value.filter((row) =>
+    selectedTransactionIds.value.includes(row.tx.id),
+  ).length;
+  return selectedCount > 0
+    ? `Total Selecionado (${selectedCount})`
+    : "Total da Página";
+});
+
+const selectedRows = computed(() =>
+  visibleRows.value.filter((row) =>
+    selectedTransactionIds.value.includes(row.tx.id),
+  ),
+);
+
+const selectedCount = computed(() => selectedRows.value.length);
+
+const clearSelection = () => {
+  selectedTransactionIds.value = [];
+};
+
+const exportSelectedCsv = () => {
+  if (typeof window === "undefined" || selectedRows.value.length === 0) return;
+
+  const escape = (value: unknown) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const header = [
+    "id",
+    "descricao",
+    "tipo",
+    "status",
+    "valor_centavos",
+    "data",
+  ];
+  const lines = selectedRows.value.map((row) =>
+    [
+      row.tx.id,
+      row.tx.description,
+      row.tx.type,
+      row.tx.status,
+      row.tx.amount,
+      row.tx.date,
+    ]
+      .map(escape)
+      .join(","),
+  );
+
+  const csv = [header.join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `transacoes-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const toggleAllVisible = (value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedTransactionIds.value = selectedTransactionIds.value.filter(
+      (id) => !visibleTransactionIds.value.includes(id),
+    );
+    return;
+  }
+
+  const merged = new Set([
+    ...selectedTransactionIds.value,
+    ...visibleTransactionIds.value,
+  ]);
+  selectedTransactionIds.value = Array.from(merged);
+};
+
+const toggleTransaction = (id: number, value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedTransactionIds.value = selectedTransactionIds.value.filter(
+      (x) => x !== id,
+    );
+    return;
+  }
+
+  if (!selectedTransactionIds.value.includes(id)) {
+    selectedTransactionIds.value = [...selectedTransactionIds.value, id];
+  }
+};
+
 const isExpanded = (id: number) => expandedParentIds.value.includes(id);
 
 const toggleParent = (id: number) => {
@@ -150,6 +277,12 @@ watch(totalPages, (pages) => {
   if (currentPage.value > pages) {
     currentPage.value = pages;
   }
+});
+
+watch(visibleTransactionIds, (ids) => {
+  selectedTransactionIds.value = selectedTransactionIds.value.filter((id) =>
+    ids.includes(id),
+  );
 });
 </script>
 
@@ -180,10 +313,48 @@ watch(totalPages, (pages) => {
       </div>
     </template>
 
+    <div
+      v-if="selectedCount > 0"
+      class="px-4 sm:px-6 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/40 flex items-center justify-between gap-3"
+    >
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+        {{ selectedCount }} selecionada(s) · {{ displayedTotal >= 0 ? "+" : "-"
+        }}{{ formatCurrency(Math.abs(displayedTotal)) }}
+      </p>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          icon="i-heroicons-arrow-down-tray"
+          class="rounded-xl"
+          @click="exportSelectedCsv"
+        >
+          Exportar CSV
+        </UButton>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          icon="i-heroicons-x-mark"
+          class="rounded-xl"
+          @click="clearSelection"
+        >
+          Limpar
+        </UButton>
+      </div>
+    </div>
+
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
+            <th class="px-3 py-4 w-10 text-center">
+              <UCheckbox
+                :model-value="allVisibleSelected"
+                @update:model-value="toggleAllVisible"
+              />
+            </th>
             <th
               class="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400"
             >
@@ -228,6 +399,12 @@ watch(totalPages, (pages) => {
                 : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40',
             ]"
           >
+            <td class="px-3 py-4 text-center">
+              <UCheckbox
+                :model-value="selectedTransactionIds.includes(row.tx.id)"
+                @update:model-value="(v) => toggleTransaction(row.tx.id, v)"
+              />
+            </td>
             <td class="px-6 py-4">
               <div
                 class="flex flex-col gap-1"
@@ -414,6 +591,30 @@ watch(totalPages, (pages) => {
             </td>
           </tr>
         </tbody>
+        <tfoot class="bg-zinc-50/70 dark:bg-zinc-800/30">
+          <tr>
+            <td
+              colspan="3"
+              class="px-6 py-3 text-right text-[10px] font-black uppercase tracking-widest text-zinc-500"
+            >
+              {{ totalLabel }}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span
+                class="font-black tabular-nums text-sm tracking-tight"
+                :class="
+                  displayedTotal >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                "
+              >
+                {{ displayedTotal >= 0 ? "+" : "-"
+                }}{{ formatCurrency(Math.abs(displayedTotal)) }}
+              </span>
+            </td>
+            <td colspan="4" class="px-6 py-3" />
+          </tr>
+        </tfoot>
       </table>
     </div>
 
