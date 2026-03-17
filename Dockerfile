@@ -64,6 +64,7 @@ COPY --from=build /app/server/database/migrations ./.output/server/server/databa
 # Copy utility scripts for manual execution in production container
 COPY --from=build /app/scripts/seed.ts ./.output/server/scripts/seed.ts
 COPY --from=build /app/scripts/migrate-statuses-option-a.ts ./.output/server/scripts/migrate-statuses-option-a.ts
+COPY --from=build /app/scripts/reconcile-billed-sales-status.ts ./.output/server/scripts/reconcile-billed-sales-status.ts
 
 # Expose the application port
 EXPOSE 3000
