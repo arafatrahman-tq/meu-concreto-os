@@ -210,9 +210,13 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
   // ─────────────────────────────────────────────
   // Computed (Calculated totals)
   // ─────────────────────────────────────────────
-  const subtotalBRL = computed(() =>
-    form.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
-  );
+  const subtotalBRL = computed(() => {
+    const subtotalCents = form.items.reduce(
+      (sum, item) => sum + Math.round(item.quantity * item.unitPrice * 100),
+      0,
+    );
+    return subtotalCents / 100;
+  });
 
   const totalBRL = computed(() => {
     const t = subtotalBRL.value - form.discount;
@@ -437,7 +441,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
         pumperId: form.pumperId || null,
         status: form.status,
         validUntil: form.validUntil || null,
-        discount: (form.discount || 0) * 100, // Real to Cents
+        discount: Math.round((form.discount || 0) * 100), // Real to Cents
         paymentMethod: form.paymentMethod || null,
         paymentMethod2: form.paymentMethod2 || null,
         notes: form.notes || null,
@@ -448,7 +452,7 @@ export const useQuotesForm = (options: UseQuotesFormOptions) => {
           unit: it.unit || null,
           countAsConcreteVolume: it.countAsConcreteVolume,
           quantity: it.quantity,
-          unitPrice: (it.unitPrice || 0) * 100, // Real to Cents
+          unitPrice: Math.round((it.unitPrice || 0) * 100), // Real to Cents
           fck: it.fck || null,
           slump: it.slump || null,
           stoneSize: it.stoneSize || null,

@@ -67,6 +67,21 @@ const paymentMethodField = z.preprocess((val) => {
 
 const unitEnum = z.enum(["m3", "m3_faltante", "un", "hr", "kg", "ton"]);
 
+const centsField = z.preprocess(
+  (val) => {
+    if (typeof val === "string") {
+      const parsed = Number(val);
+      if (!Number.isNaN(parsed)) return Math.round(parsed);
+      return val;
+    }
+    if (typeof val === "number") {
+      return Math.round(val);
+    }
+    return val;
+  },
+  z.number().int().min(0, { message: "O valor deve ser não-negativo" }),
+);
+
 // --- Company Schemas ---
 export const companySchema = z.object({
   name: z
@@ -199,7 +214,7 @@ export const quoteItemSchema = z.object({
   description: z.string().optional().nullable(),
   unit: unitEnum.optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
-  unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
+  unitPrice: centsField, // Cents
   countAsConcreteVolume: z.boolean().optional(),
   // Specifics
   fck: z.number().optional().nullable(),
@@ -247,7 +262,7 @@ export const quoteSchema = z.object({
   paymentMethod: paymentMethodField.nullable().optional(),
   paymentMethod2: paymentMethodField.nullable().optional(),
 
-  discount: z.number().min(0).default(0), // Cents
+  discount: centsField.default(0), // Cents
   notes: z.string().optional().nullable(),
 
   items: z
@@ -277,7 +292,7 @@ export const saleItemSchema = z.object({
   description: z.string().optional().nullable(),
   unit: unitEnum.optional().nullable(),
   quantity: z.number().min(0.1, { message: "A quantidade deve ser positiva" }),
-  unitPrice: z.number().min(0, { message: "O preço deve ser não-negativo" }), // Cents
+  unitPrice: centsField, // Cents
   countAsConcreteVolume: z.boolean().optional(),
   // Specifics
   fck: z.number().optional().nullable(),
@@ -324,7 +339,7 @@ export const saleSchema = z.object({
     ])
     .optional(),
 
-  discount: z.number().min(0).default(0), // Cents
+  discount: centsField.default(0), // Cents
   paymentMethod: paymentMethodField.nullable().optional(),
   paymentMethod2: paymentMethodField.nullable().optional(),
   paymentMethodId: z.number().int().optional().nullable(),

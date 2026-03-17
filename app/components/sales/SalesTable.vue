@@ -50,7 +50,7 @@ const localPage = computed({
 const STATUS_OPTS = [
   { label: "Todos os Status", value: "all" },
   { label: "Aberta", value: "open" },
-  { label: "Em Atendimento", value: "in_progress" },
+  { label: "Pendente", value: "in_progress" },
   { label: "Concluída", value: "completed" },
   { label: "Cancelado", value: "cancelled" },
 ];
@@ -62,12 +62,12 @@ const statusConfig: Record<
   open: { label: "Aberta", color: "neutral", icon: "i-heroicons-clock" },
   pending: { label: "Pendente", color: "neutral", icon: "i-heroicons-clock" },
   confirmed: {
-    label: "Em Atendimento",
+    label: "Pendente",
     color: "warning",
     icon: "i-heroicons-truck",
   },
   in_progress: {
-    label: "Em Atendimento",
+    label: "Pendente",
     color: "warning",
     icon: "i-heroicons-truck",
   },
@@ -85,11 +85,11 @@ const statusConfig: Record<
 
 const STATUS_ACTIONS: Record<string, { label: string; next: SaleStatus }[]> = {
   open: [
-    { label: "Iniciar Atendimento", next: "in_progress" },
+    { label: "Marcar como Pendente", next: "in_progress" },
     { label: "Cancelar", next: "cancelled" },
   ],
   in_progress: [
-    { label: "Finalizar Atendimento", next: "completed" },
+    { label: "Marcar como Concluída", next: "completed" },
     { label: "Voltar para Aberta", next: "open" },
     { label: "Cancelar", next: "cancelled" },
   ],
@@ -140,8 +140,8 @@ const downloadPdf = (id: number) => {
 };
 
 // Legacy aliases during transition
-STATUS_ACTIONS.pending = STATUS_ACTIONS.open;
-STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress;
+STATUS_ACTIONS.pending = STATUS_ACTIONS.open ?? [];
+STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
 </script>
 
 <template>

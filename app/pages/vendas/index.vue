@@ -127,7 +127,7 @@ const kpiItems = computed(() => [
     bg: "bg-primary-50 dark:bg-primary-500/10",
   },
   {
-    label: "Abertas e em atendimento",
+    label: "Abertas e pendentes",
     value: stats.value.inProgress,
     suffix: "operações ativas",
     icon: "i-heroicons-truck",

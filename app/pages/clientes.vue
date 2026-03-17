@@ -237,8 +237,8 @@ const quoteStatusConfig: Record<string, { label: string; color: string }> = {
 const saleStatusConfig: Record<string, { label: string; color: string }> = {
   open: { label: "Aberta", color: "warning" },
   pending: { label: "Aberta", color: "warning" },
-  confirmed: { label: "Em Atendimento", color: "info" },
-  in_progress: { label: "Em Atendimento", color: "info" },
+  confirmed: { label: "Pendente", color: "info" },
+  in_progress: { label: "Pendente", color: "info" },
   completed: { label: "Concluído", color: "success" },
   cancelled: { label: "Cancelado", color: "error" },
 };

@@ -52,6 +52,7 @@ export default defineEventHandler(async (event) => {
     if (item.unit === "m3_faltante") return false;
     return item.unit === "m3";
   };
+  const toCents = (value: number) => Math.round(value);
   const isManagerOrAdmin =
     event.context.auth?.role === "admin" ||
     event.context.auth?.role === "manager";
@@ -82,7 +83,7 @@ export default defineEventHandler(async (event) => {
       let subtotal = currentQuote.subtotal;
       const discount =
         normalizedQuoteData.discount !== undefined
-          ? normalizedQuoteData.discount
+          ? toCents(normalizedQuoteData.discount)
           : currentQuote.discount;
 
       // If items are being updated, recalculate subtotal
@@ -93,7 +94,8 @@ export default defineEventHandler(async (event) => {
         // Insert new items and sum subtotal
         subtotal = 0;
         const itemsToInsert = normalizedItems.map((item) => {
-          const itemTotal = Math.round(item.quantity * item.unitPrice);
+          const unitPriceCents = toCents(item.unitPrice);
+          const itemTotal = Math.round(item.quantity * unitPriceCents);
           subtotal += itemTotal;
           return {
             quoteId: quoteId,
@@ -102,12 +104,13 @@ export default defineEventHandler(async (event) => {
             description: item.description,
             unit: item.unit,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            unitPrice: unitPriceCents,
             totalPrice: itemTotal,
             countAsConcreteVolume: resolveCountAsConcreteVolume(item),
             fck: item.fck,
             slump: item.slump,
             stoneSize: item.stoneSize,
+            mixDesignId: item.mixDesignId,
           };
         });
 

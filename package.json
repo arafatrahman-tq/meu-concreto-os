@@ -16,7 +16,9 @@
     "db:deploy": "bunx drizzle-kit migrate",
     "db:studio": "bunx drizzle-kit studio",
     "status:migrate": "bun run scripts/migrate-statuses-option-a.ts",
-    "status:migrate:apply": "bun run scripts/migrate-statuses-option-a.ts --apply"
+    "status:migrate:apply": "bun run scripts/migrate-statuses-option-a.ts --apply",
+    "sales:status:reconcile-billing": "bun run scripts/reconcile-billed-sales-status.ts",
+    "sales:status:reconcile-billing:apply": "bun run scripts/reconcile-billed-sales-status.ts --apply"
   },
   "dependencies": {
     "@iconify-json/heroicons": "^1.2.3",

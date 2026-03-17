@@ -45,6 +45,8 @@ export default defineEventHandler(async (event) => {
     return item.unit === "m3";
   };
 
+  const toCents = (value: number) => Math.round(value);
+
   // Verify the caller has access to the target company (prevents cross-tenant write)
   await requireCompanyAccess(event, saleData.companyId);
 
@@ -86,16 +88,19 @@ export default defineEventHandler(async (event) => {
       // 1. Calculate totals from items
       let subtotal = 0;
       const processedItems = items.map((item: any) => {
-        const lineTotal = Math.round(item.quantity * item.unitPrice);
+        const unitPriceCents = toCents(item.unitPrice);
+        const lineTotal = Math.round(item.quantity * unitPriceCents);
         subtotal += lineTotal;
         return {
           ...item,
+          unitPrice: unitPriceCents,
           countAsConcreteVolume: resolveCountAsConcreteVolume(item),
           totalPrice: lineTotal,
         };
       });
 
-      const total = Math.max(0, subtotal - (saleData.discount || 0));
+      const discount = toCents(saleData.discount || 0);
+      const total = Math.max(0, subtotal - discount);
 
       // 2. Create Sale
       const [newSale] = await tx
@@ -105,6 +110,7 @@ export default defineEventHandler(async (event) => {
           paymentMethodId:
             selectedPaymentMethod?.id ?? saleData.paymentMethodId ?? null,
           subtotal,
+          discount,
           total,
           date: parseDate(saleData.date) ?? new Date(),
           deliveryDate: parseDate(saleData.deliveryDate) ?? null,

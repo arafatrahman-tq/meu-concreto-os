@@ -45,15 +45,18 @@ export default defineEventHandler(async (event) => {
     return item.unit === "m3";
   };
 
+  const toCents = (value: number) => Math.round(value);
+
   // Verify the caller has access to the target company (prevents cross-tenant write)
   await requireCompanyAccess(event, quoteData.companyId);
 
   // Calculate totals
   const subtotal = items.reduce(
-    (sum, item) => sum + Math.round(item.quantity * item.unitPrice),
+    (sum, item) => sum + Math.round(item.quantity * toCents(item.unitPrice)),
     0,
   );
-  const total = Math.max(0, subtotal - quoteData.discount);
+  const discount = toCents(quoteData.discount);
+  const total = Math.max(0, subtotal - discount);
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -77,7 +80,7 @@ export default defineEventHandler(async (event) => {
           paymentMethod2: quoteData.paymentMethod2,
           notes: quoteData.notes,
           subtotal,
-          discount: quoteData.discount,
+          discount,
           total,
         })
         .returning()
@@ -86,14 +89,14 @@ export default defineEventHandler(async (event) => {
       // 2. Create Items
       if (items.length > 0) {
         const itemsToInsert = items.map((item) => ({
-          totalPrice: Math.round(item.quantity * item.unitPrice),
+          totalPrice: Math.round(item.quantity * toCents(item.unitPrice)),
           quoteId: newQuote.id,
           productId: item.productId,
           productName: item.productName,
           description: item.description,
           unit: item.unit,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
+          unitPrice: toCents(item.unitPrice),
           countAsConcreteVolume: resolveCountAsConcreteVolume(item),
           fck: item.fck,
           slump: item.slump,

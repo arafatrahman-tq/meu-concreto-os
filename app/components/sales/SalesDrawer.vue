@@ -63,7 +63,7 @@ const localUseDeliveryAddress = computed({
 
 const STATUS_OPTS = [
   { label: "Aberta", value: "open" },
-  { label: "Em Atendimento", value: "in_progress" },
+  { label: "Pendente", value: "in_progress" },
   { label: "Concluído", value: "completed" },
   { label: "Cancelado", value: "cancelled" },
 ];

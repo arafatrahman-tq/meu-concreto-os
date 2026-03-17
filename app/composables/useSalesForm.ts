@@ -383,10 +383,11 @@ export const useSalesForm = (options: {
   // Totals
   // ─────────────────────────────────────────────
   const subtotalBRL = computed(() => {
-    return form.items.reduce(
-      (acc, item) => acc + item.quantity * item.unitPrice,
+    const subtotalCents = form.items.reduce(
+      (acc, item) => acc + Math.round(item.quantity * item.unitPrice * 100),
       0,
     );
+    return subtotalCents / 100;
   });
 
   const totalBRL = computed(() => {

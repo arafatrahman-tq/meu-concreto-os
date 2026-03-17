@@ -57,6 +57,7 @@ export default defineEventHandler(async (event) => {
     if (item.unit === "m3_faltante") return false;
     return item.unit === "m3";
   };
+  const toCents = (value: number) => Math.round(value);
 
   try {
     const updatedSale = await db.transaction(async (tx) => {
@@ -81,7 +82,8 @@ export default defineEventHandler(async (event) => {
         // Insert new items and calc subtotal
         let subtotal = 0;
         const processedItems = items.map((item) => {
-          const lineTotal = Math.round(item.quantity * item.unitPrice);
+          const unitPriceCents = toCents(item.unitPrice);
+          const lineTotal = Math.round(item.quantity * unitPriceCents);
           subtotal += lineTotal;
           return {
             productId: item.productId,
@@ -89,7 +91,7 @@ export default defineEventHandler(async (event) => {
             description: item.description,
             unit: item.unit,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            unitPrice: unitPriceCents,
             totalPrice: lineTotal,
             countAsConcreteVolume: resolveCountAsConcreteVolume(item),
             fck: item.fck,
@@ -108,7 +110,10 @@ export default defineEventHandler(async (event) => {
       }
 
       // 3. Calculate new total
-      const discount = saleData.discount ?? currentSale.discount;
+      const discount =
+        saleData.discount !== undefined
+          ? toCents(saleData.discount)
+          : currentSale.discount;
       const total = Math.max(0, newSubtotal - discount);
 
       // 4. Update Drivers if provided
