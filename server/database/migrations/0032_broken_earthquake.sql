@@ -1,0 +1,1 @@
+ALTER TABLE `companies` ADD `pdf_notes` text;
