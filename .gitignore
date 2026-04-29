@@ -1,0 +1,33 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local MCP configs (may contain API keys)
+.agent/mcp_config.json
+.agent/**/mcp_config.json
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+
