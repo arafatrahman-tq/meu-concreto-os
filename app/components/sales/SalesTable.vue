@@ -1,247 +1,264 @@
 <script setup lang="ts">
-import type { Sale, SaleStatus, SaleStatusFilter } from '~/types/sales'
-import { formatCurrency, formatDate } from '~/utils/formatters'
-import { normalizeSaleStatus } from '~/utils/status'
+import type { Sale, SaleStatus, SaleStatusFilter } from "~/types/sales";
+import { formatCurrency, formatDate } from "~/utils/formatters";
+import { normalizeSaleStatus } from "~/utils/status";
 
 const props = defineProps<{
-  sales: Sale[]
-  loading: boolean
-  page: number
-  pageSize: number
-  totalPages: number
+  sales: Sale[];
+  loading: boolean;
+  page: number;
+  pageSize: number;
+  totalPages: number;
   stats: {
-    total: number
-    inProgress: number
-    completed: number
-    totalValue: number
-  }
-  isSendingPdf: number | null
-}>()
+    total: number;
+    inProgress: number;
+    completed: number;
+    totalValue: number;
+  };
+  isSendingPdf: number | null;
+}>();
 
 const emit = defineEmits<{
-  'update:page': [value: number]
-  'edit': [sale: Sale]
-  'delete': [sale: Sale]
-  'cancel': [sale: Sale]
-  'bill': [sale: Sale]
-  'sendPdf': [sale: Sale]
-  'updateStatus': [sale: Sale, next: SaleStatus]
-}>()
+  "update:page": [value: number];
+  edit: [sale: Sale];
+  delete: [sale: Sale];
+  cancel: [sale: Sale];
+  bill: [sale: Sale];
+  sendPdf: [sale: Sale];
+  updateStatus: [sale: Sale, next: SaleStatus];
+}>();
 
 const localPage = computed({
   get: () => props.page,
-  set: val => emit('update:page', val)
-})
+  set: (val) => emit("update:page", val),
+});
 
 const STATUS_OPTS = [
-  { label: 'Todos os Status', value: 'all' },
-  { label: 'Aberta', value: 'open' },
-  { label: 'Pendente', value: 'in_progress' },
-  { label: 'Concluída', value: 'completed' },
-  { label: 'Cancelado', value: 'cancelled' }
-]
+  { label: "Todos os Status", value: "all" },
+  { label: "Aberta", value: "open" },
+  { label: "Pendente", value: "in_progress" },
+  { label: "Concluída", value: "completed" },
+  { label: "Cancelado", value: "cancelled" },
+];
 
 const statusConfig: Record<
   SaleStatus,
-  { label: string, color: string, icon: string }
+  { label: string; color: string; icon: string }
 > = {
-  open: { label: 'Aberta', color: 'neutral', icon: 'i-heroicons-clock' },
-  pending: { label: 'Pendente', color: 'neutral', icon: 'i-heroicons-clock' },
+  open: { label: "Aberta", color: "neutral", icon: "i-heroicons-clock" },
+  pending: { label: "Pendente", color: "neutral", icon: "i-heroicons-clock" },
   confirmed: {
-    label: 'Pendente',
-    color: 'warning',
-    icon: 'i-heroicons-truck'
+    label: "Pendente",
+    color: "warning",
+    icon: "i-heroicons-truck",
   },
   in_progress: {
-    label: 'Pendente',
-    color: 'warning',
-    icon: 'i-heroicons-truck'
+    label: "Pendente",
+    color: "warning",
+    icon: "i-heroicons-truck",
   },
   completed: {
-    label: 'Concluída',
-    color: 'success',
-    icon: 'i-heroicons-check-badge'
+    label: "Concluída",
+    color: "success",
+    icon: "i-heroicons-check-badge",
   },
   cancelled: {
-    label: 'Cancelado',
-    color: 'error',
-    icon: 'i-heroicons-x-circle'
-  }
-}
+    label: "Cancelado",
+    color: "error",
+    icon: "i-heroicons-x-circle",
+  },
+};
 
-const STATUS_ACTIONS: Record<string, { label: string, next: SaleStatus }[]> = {
+const STATUS_ACTIONS: Record<string, { label: string; next: SaleStatus }[]> = {
   open: [
-    { label: 'Marcar como Pendente', next: 'in_progress' },
-    { label: 'Cancelar', next: 'cancelled' }
+    { label: "Marcar como Pendente", next: "in_progress" },
+    { label: "Cancelar", next: "cancelled" },
   ],
   in_progress: [
-    { label: 'Marcar como Concluída', next: 'completed' },
-    { label: 'Voltar para Aberta', next: 'open' },
-    { label: 'Cancelar', next: 'cancelled' }
+    { label: "Marcar como Concluída", next: "completed" },
+    { label: "Voltar para Aberta", next: "open" },
+    { label: "Cancelar", next: "cancelled" },
   ],
   completed: [],
-  cancelled: [{ label: 'Reabrir como Aberta', next: 'open' }]
-}
+  cancelled: [{ label: "Reabrir como Aberta", next: "open" }],
+};
 
 const getStatusActions = (status: SaleStatus) => {
-  const canonical = normalizeSaleStatus(status)
-  return STATUS_ACTIONS[canonical] ?? []
-}
+  const canonical = normalizeSaleStatus(status);
+  return STATUS_ACTIONS[canonical] ?? [];
+};
 
-const isBilled = (s: Sale) => !!s.transactions?.length
+const isBilled = (s: Sale) => !!s.transactions?.length;
 
 const getStatusDisplay = (s: Sale) => {
-  const canonical = normalizeSaleStatus(s.status)
-  return statusConfig[canonical]
-}
+  const canonical = normalizeSaleStatus(s.status);
+  return statusConfig[canonical];
+};
 const isLocked = (s: Sale) => {
-  const status = normalizeSaleStatus(s.status)
-  if (status === 'cancelled') return true
-  if (status === 'completed') return !isAdmin.value
-  return false
-}
+  const status = normalizeSaleStatus(s.status);
+  if (status === "cancelled") return true;
+  if (status === "completed") return !isAdmin.value;
+  return false;
+};
 
-const { user } = useAuth()
-const isAdmin = computed(() => user.value?.role === 'admin')
+const { user } = useAuth();
+const isAdmin = computed(() => user.value?.role === "admin");
 
 const canDelete = (s: Sale) => {
-  const status = normalizeSaleStatus(s.status)
-  if (status === 'cancelled') return false
-  if (status === 'completed') return isAdmin.value
-  return true
-}
+  const status = normalizeSaleStatus(s.status);
+  if (status === "cancelled") return false;
+  if (status === "completed") return isAdmin.value;
+  return true;
+};
 
-const canCancel = (s: Sale) => normalizeSaleStatus(s.status) !== 'cancelled'
+const canCancel = (s: Sale) => normalizeSaleStatus(s.status) !== "cancelled";
 
 const deleteTooltip = (s: Sale) => {
-  const status = normalizeSaleStatus(s.status)
-  if (status === 'cancelled') return 'Não é possível excluir vendas canceladas'
-  if (status === 'completed' && !isAdmin.value)
-    return 'Apenas administradores podem excluir vendas concluídas'
-  return 'Excluir'
-}
+  const status = normalizeSaleStatus(s.status);
+  if (status === "cancelled") return "Não é possível excluir vendas canceladas";
+  if (status === "completed" && !isAdmin.value)
+    return "Apenas administradores podem excluir vendas concluídas";
+  return "Excluir";
+};
 
-const downloadPdf = (id: number) => {
-  window.open(`/api/sales/${id}/download`, '_blank')
-}
+const isDownloading = ref(false);
+
+const downloadPdf = async (id: number) => {
+  try {
+    isDownloading.value = true;
+    const blob = await $fetch<Blob>(`/api/sales/${id}/download`, {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+  } catch (error) {
+    console.error("Erro ao baixar o PDF:", error);
+    alert(
+      "Erro ao baixar o PDF. Verifique se o dispositivo está autorizado ou refaça o login.",
+    );
+  } finally {
+    isDownloading.value = false;
+  }
+};
 
 const pageTotal = computed(() =>
-  props.sales.reduce((sum, sale) => sum + (sale.total || 0), 0)
-)
+  props.sales.reduce((sum, sale) => sum + (sale.total || 0), 0),
+);
 
 const shouldCountConcreteVolume = (item: {
-  unit?: string | null
-  countAsConcreteVolume?: boolean
+  unit?: string | null;
+  countAsConcreteVolume?: boolean;
 }) => {
-  if (item.unit === 'm3') return item.countAsConcreteVolume !== false
-  if (item.unit === 'm3_faltante') return item.countAsConcreteVolume === true
-  return false
-}
+  if (item.unit === "m3") return item.countAsConcreteVolume !== false;
+  if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
+  return false;
+};
 
 const getSaleVolume = (sale: Sale) =>
   (sale.items ?? [])
-    .filter(item => shouldCountConcreteVolume(item as any))
-    .reduce((sum, item: any) => sum + (item.quantity || 0), 0)
+    .filter((item) => shouldCountConcreteVolume(item as any))
+    .reduce((sum, item: any) => sum + (item.quantity || 0), 0);
 
-const selectedSaleIds = ref<number[]>([])
+const selectedSaleIds = ref<number[]>([]);
 
-const pageSaleIds = computed(() => props.sales.map(s => s.id))
+const pageSaleIds = computed(() => props.sales.map((s) => s.id));
 
 const allPageSelected = computed(
   () =>
-    pageSaleIds.value.length > 0
-    && pageSaleIds.value.every(id => selectedSaleIds.value.includes(id))
-)
+    pageSaleIds.value.length > 0 &&
+    pageSaleIds.value.every((id) => selectedSaleIds.value.includes(id)),
+);
 
 const selectedPageTotal = computed(() =>
   props.sales
-    .filter(s => selectedSaleIds.value.includes(s.id))
-    .reduce((sum, s) => sum + (s.total || 0), 0)
-)
+    .filter((s) => selectedSaleIds.value.includes(s.id))
+    .reduce((sum, s) => sum + (s.total || 0), 0),
+);
 
 const hasSelectedRows = computed(() =>
-  props.sales.some(s => selectedSaleIds.value.includes(s.id))
-)
+  props.sales.some((s) => selectedSaleIds.value.includes(s.id)),
+);
 
 const displayedTotal = computed(() =>
-  hasSelectedRows.value ? selectedPageTotal.value : pageTotal.value
-)
+  hasSelectedRows.value ? selectedPageTotal.value : pageTotal.value,
+);
 
 const totalLabel = computed(() => {
-  const selectedCount = props.sales.filter(s =>
-    selectedSaleIds.value.includes(s.id)
-  ).length
+  const selectedCount = props.sales.filter((s) =>
+    selectedSaleIds.value.includes(s.id),
+  ).length;
   return selectedCount > 0
     ? `Total Selecionado (${selectedCount})`
-    : 'Total da Página'
-})
+    : "Total da Página";
+});
 
 const selectedSales = computed(() =>
-  props.sales.filter(s => selectedSaleIds.value.includes(s.id))
-)
+  props.sales.filter((s) => selectedSaleIds.value.includes(s.id)),
+);
 
-const selectedCount = computed(() => selectedSales.value.length)
+const selectedCount = computed(() => selectedSales.value.length);
 
 const clearSelection = () => {
-  selectedSaleIds.value = []
-}
+  selectedSaleIds.value = [];
+};
 
 const exportSelectedCsv = () => {
-  if (typeof window === 'undefined' || selectedSales.value.length === 0) return
+  if (typeof window === "undefined" || selectedSales.value.length === 0) return;
 
   const escape = (value: unknown) =>
-    `"${String(value ?? '').replace(/"/g, '""')}"`
-  const header = ['id', 'cliente', 'data', 'status', 'total_centavos']
-  const lines = selectedSales.value.map(s =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const header = ["id", "cliente", "data", "status", "total_centavos"];
+  const lines = selectedSales.value.map((s) =>
     [s.id, s.customerName, s.date, normalizeSaleStatus(s.status), s.total ?? 0]
       .map(escape)
-      .join(',')
-  )
+      .join(","),
+  );
 
-  const csv = [header.join(','), ...lines].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `vendas-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
+  const csv = [header.join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vendas-selecionadas-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
-const toggleAllSales = (value: boolean | 'indeterminate') => {
-  if (!value || value === 'indeterminate') {
+const toggleAllSales = (value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
     selectedSaleIds.value = selectedSaleIds.value.filter(
-      id => !pageSaleIds.value.includes(id)
-    )
-    return
+      (id) => !pageSaleIds.value.includes(id),
+    );
+    return;
   }
 
-  const merged = new Set([...selectedSaleIds.value, ...pageSaleIds.value])
-  selectedSaleIds.value = Array.from(merged)
-}
+  const merged = new Set([...selectedSaleIds.value, ...pageSaleIds.value]);
+  selectedSaleIds.value = Array.from(merged);
+};
 
-const toggleSale = (id: number, value: boolean | 'indeterminate') => {
-  if (!value || value === 'indeterminate') {
-    selectedSaleIds.value = selectedSaleIds.value.filter(x => x !== id)
-    return
+const toggleSale = (id: number, value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedSaleIds.value = selectedSaleIds.value.filter((x) => x !== id);
+    return;
   }
 
   if (!selectedSaleIds.value.includes(id)) {
-    selectedSaleIds.value = [...selectedSaleIds.value, id]
+    selectedSaleIds.value = [...selectedSaleIds.value, id];
   }
-}
+};
 
 watch(pageSaleIds, (ids) => {
-  selectedSaleIds.value = selectedSaleIds.value.filter(id =>
-    ids.includes(id)
-  )
-})
+  selectedSaleIds.value = selectedSaleIds.value.filter((id) =>
+    ids.includes(id),
+  );
+});
 
 // Legacy aliases during transition
-STATUS_ACTIONS.pending = STATUS_ACTIONS.open ?? []
-STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
+STATUS_ACTIONS.pending = STATUS_ACTIONS.open ?? [];
+STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
 </script>
 
 <template>
@@ -250,7 +267,7 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
     :ui="{
       body: 'p-0 sm:p-0',
       header: 'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
+      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
@@ -304,11 +321,7 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
       v-if="loading"
       class="divide-y divide-zinc-100 dark:divide-zinc-800/50"
     >
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="px-6 py-4"
-      >
+      <div v-for="i in 6" :key="i" class="px-6 py-4">
         <USkeleton class="h-12 rounded-xl" />
       </div>
     </div>
@@ -335,10 +348,7 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="overflow-x-auto"
-    >
+    <div v-else class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -446,39 +456,27 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
               {{ formatDate(s.date) }}
             </td>
             <td class="px-4 py-4 hidden lg:table-cell">
-              <span
-                v-if="s.deliveryDate"
-                class="text-xs text-zinc-500"
-              >
+              <span v-if="s.deliveryDate" class="text-xs text-zinc-500">
                 {{ formatDate(s.deliveryDate) }}
               </span>
-              <span
-                v-else
-                class="text-xs text-zinc-300"
-              >—</span>
+              <span v-else class="text-xs text-zinc-300">—</span>
             </td>
             <td class="px-4 py-4 hidden lg:table-cell">
-              <span
-                v-if="s.paymentMethod"
-                class="text-xs text-zinc-500"
-              >
+              <span v-if="s.paymentMethod" class="text-xs text-zinc-500">
                 {{ s.paymentMethod }}
               </span>
-              <span
-                v-else
-                class="text-xs text-zinc-300"
-              >—</span>
+              <span v-else class="text-xs text-zinc-300">—</span>
             </td>
             <td class="px-4 py-4">
               <UDropdownMenu
                 :items="
                   getStatusActions(s.status).length
                     ? [
-                      getStatusActions(s.status).map((a) => ({
-                        label: a.label,
-                        onSelect: () => emit('updateStatus', s, a.next)
-                      }))
-                    ]
+                        getStatusActions(s.status).map((a) => ({
+                          label: a.label,
+                          onSelect: () => emit('updateStatus', s, a.next),
+                        })),
+                      ]
                     : undefined
                 "
                 :disabled="getStatusActions(s.status).length === 0"
@@ -547,75 +545,75 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
                       {
                         label: 'Enviar via WhatsApp',
                         icon: 'i-simple-icons-whatsapp',
-                        onSelect: () => emit('sendPdf', s)
+                        onSelect: () => emit('sendPdf', s),
                       },
                       {
                         label: 'Baixar PDF',
                         icon: 'i-heroicons-arrow-down-tray',
-                        onSelect: () => downloadPdf(s.id)
-                      }
+                        onSelect: () => downloadPdf(s.id),
+                      },
                     ],
                     // Status actions
                     ...(getStatusActions(s.status).length
                       ? [
-                        getStatusActions(s.status).map((a) => ({
-                          label: a.label,
-                          icon:
-                            a.next === 'completed'
-                              ? 'i-heroicons-check-badge'
-                              : a.next === 'cancelled'
-                                ? 'i-heroicons-x-circle'
-                                : 'i-heroicons-arrow-path',
-                          color:
-                            a.next === 'completed'
-                              ? ('success' as const)
-                              : a.next === 'cancelled'
-                                ? ('error' as const)
-                                : undefined,
-                          onSelect: () => emit('updateStatus', s, a.next)
-                        }))
-                      ]
+                          getStatusActions(s.status).map((a) => ({
+                            label: a.label,
+                            icon:
+                              a.next === 'completed'
+                                ? 'i-heroicons-check-badge'
+                                : a.next === 'cancelled'
+                                  ? 'i-heroicons-x-circle'
+                                  : 'i-heroicons-arrow-path',
+                            color:
+                              a.next === 'completed'
+                                ? ('success' as const)
+                                : a.next === 'cancelled'
+                                  ? ('error' as const)
+                                  : undefined,
+                            onSelect: () => emit('updateStatus', s, a.next),
+                          })),
+                        ]
                       : []),
                     // Bill action
-                    ...(normalizeSaleStatus(s.status) !== 'cancelled'
-                      && !isBilled(s)
+                    ...(normalizeSaleStatus(s.status) !== 'cancelled' &&
+                    !isBilled(s)
                       ? [
-                        [
-                          {
-                            label: 'Faturar Venda',
-                            icon: 'i-heroicons-banknotes',
-                            color: 'success' as const,
-                            onSelect: () => emit('bill', s)
-                          }
+                          [
+                            {
+                              label: 'Faturar Venda',
+                              icon: 'i-heroicons-banknotes',
+                              color: 'success' as const,
+                              onSelect: () => emit('bill', s),
+                            },
+                          ],
                         ]
-                      ]
                       : []),
                     // Cancel action
                     ...(canCancel(s)
                       ? [
-                        [
-                          {
-                            label: 'Cancelar Venda',
-                            icon: 'i-heroicons-no-symbol',
-                            color: 'warning' as const,
-                            onSelect: () => emit('cancel', s)
-                          }
+                          [
+                            {
+                              label: 'Cancelar Venda',
+                              icon: 'i-heroicons-no-symbol',
+                              color: 'warning' as const,
+                              onSelect: () => emit('cancel', s),
+                            },
+                          ],
                         ]
-                      ]
                       : []),
                     // Delete action
                     ...(canDelete(s)
                       ? [
-                        [
-                          {
-                            label: 'Excluir Venda',
-                            icon: 'i-heroicons-trash',
-                            color: 'error' as const,
-                            onSelect: () => emit('delete', s)
-                          }
+                          [
+                            {
+                              label: 'Excluir Venda',
+                              icon: 'i-heroicons-trash',
+                              color: 'error' as const,
+                              onSelect: () => emit('delete', s),
+                            },
+                          ],
                         ]
-                      ]
-                      : [])
+                      : []),
                   ]"
                 >
                   <UButton
@@ -653,10 +651,7 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? []
     </div>
 
     <!-- Pagination -->
-    <template
-      v-if="totalPages > 1"
-      #footer
-    >
+    <template v-if="totalPages > 1" #footer>
       <div class="flex items-center justify-between">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
           {{ stats.total }} vendas · página {{ page }} de {{ totalPages }}

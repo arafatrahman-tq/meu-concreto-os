@@ -114,7 +114,8 @@ const ITEM_UNIT_OPTS = [
 const normalizeMoney = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
 
-const normalizeInteger = (value: number) => Math.round(value);
+const normalizeQuantity = (value: number) =>
+  Math.round((value + Number.EPSILON) * 1000) / 1000;
 
 const mixDesignOptions = computed(() =>
   props.mixDesigns.map((m) => ({
@@ -534,7 +535,9 @@ const mixDesignOptions = computed(() =>
                     class="w-full"
                     size="lg"
                     :disabled="isRestrictedEdit"
-                    @blur="item.quantity = normalizeInteger(item.quantity || 0)"
+                    @blur="
+                      item.quantity = normalizeQuantity(item.quantity || 0)
+                    "
                   />
                 </UFormField>
                 <UFormField

@@ -1,204 +1,221 @@
 <script setup lang="ts">
-import type { Quote, QuoteStatus } from '~/types/sales'
-import { formatCurrency, formatDate } from '~/utils/formatters'
-import { normalizeQuoteStatus } from '~/utils/status'
+import type { Quote, QuoteStatus } from "~/types/sales";
+import { formatCurrency, formatDate } from "~/utils/formatters";
+import { normalizeQuoteStatus } from "~/utils/status";
 
 const props = defineProps<{
-  paginatedQuotes: Quote[]
-  loadingQuotes: boolean
-  filteredQuotes: Quote[]
-  pageSize: number
-  totalPages: number
+  paginatedQuotes: Quote[];
+  loadingQuotes: boolean;
+  filteredQuotes: Quote[];
+  pageSize: number;
+  totalPages: number;
   statusConfig: Record<
     QuoteStatus,
-    { label: string, color: string, icon: string }
-  >
-  isSendingPdf: number | null
-  isUpdatingStatus?: number | null
-}>()
+    { label: string; color: string; icon: string }
+  >;
+  isSendingPdf: number | null;
+  isUpdatingStatus?: number | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'edit', q: Quote): void
-  (e: 'delete', q: Quote): void
-  (e: 'cancel', q: Quote): void
-  (e: 'duplicate', q: Quote): void
-  (e: 'sendPdf', q: Quote): void
-  (e: 'updateStatus', q: Quote, status: QuoteStatus): void
-}>()
+  (e: "edit", q: Quote): void;
+  (e: "delete", q: Quote): void;
+  (e: "cancel", q: Quote): void;
+  (e: "duplicate", q: Quote): void;
+  (e: "sendPdf", q: Quote): void;
+  (e: "updateStatus", q: Quote, status: QuoteStatus): void;
+}>();
 
-const page = defineModel<number>('page', { default: 1 })
+const page = defineModel<number>("page", { default: 1 });
 
 const STATUS_OPTS = [
-  { label: 'Todos', value: 'all' },
-  { label: 'Rascunho', value: 'draft' },
-  { label: 'Em negociação', value: 'negotiation' },
-  { label: 'Aprovado', value: 'approved' },
-  { label: 'Encerrado', value: 'closed' }
-]
+  { label: "Todos", value: "all" },
+  { label: "Rascunho", value: "draft" },
+  { label: "Em negociação", value: "negotiation" },
+  { label: "Aprovado", value: "approved" },
+  { label: "Encerrado", value: "closed" },
+];
 
-const STATUS_ACTIONS: Record<string, { next: QuoteStatus, label: string }[]> = {
-  draft: [{ next: 'negotiation', label: 'Iniciar negociação' }],
+const STATUS_ACTIONS: Record<string, { next: QuoteStatus; label: string }[]> = {
+  draft: [{ next: "negotiation", label: "Iniciar negociação" }],
   negotiation: [
-    { next: 'approved', label: 'Aprovar' },
-    { next: 'closed', label: 'Encerrar' }
+    { next: "approved", label: "Aprovar" },
+    { next: "closed", label: "Encerrar" },
   ],
   approved: [],
-  closed: [{ next: 'draft', label: 'Reabrir como Rascunho' }]
-}
+  closed: [{ next: "draft", label: "Reabrir como Rascunho" }],
+};
 
 const getStatusActions = (status: QuoteStatus) =>
   isManagerOrAdmin.value
     ? (STATUS_ACTIONS[normalizeQuoteStatus(status)] ?? [])
-    : []
+    : [];
 
-const downloadPdf = (id: number) => {
-  window.open(`/api/quotes/${id}/download`, '_blank')
-}
+const isDownloading = ref(false);
 
-const { user } = useAuth()
+const downloadPdf = async (id: number) => {
+  try {
+    isDownloading.value = true;
+    const blob = await $fetch<Blob>(`/api/quotes/${id}/download`, {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+  } catch (error) {
+    console.error("Erro ao baixar o PDF:", error);
+    alert(
+      "Erro ao baixar o PDF. Verifique se o dispositivo está autorizado ou refaça o login.",
+    );
+  } finally {
+    isDownloading.value = false;
+  }
+};
+
+const { user } = useAuth();
 const isManagerOrAdmin = computed(
-  () => user.value?.role === 'admin' || user.value?.role === 'manager'
-)
+  () => user.value?.role === "admin" || user.value?.role === "manager",
+);
 
 const isExpired = (date: string | number | null | undefined): boolean => {
-  if (!date) return false
-  const d = new Date(date)
-  return !isNaN(d.getTime()) && d < new Date()
-}
+  if (!date) return false;
+  const d = new Date(date);
+  return !isNaN(d.getTime()) && d < new Date();
+};
 
 const canEdit = (status: QuoteStatus): boolean => {
-  return true
-}
+  return true;
+};
 
 const canDelete = (status: QuoteStatus): boolean => {
-  return isManagerOrAdmin.value
-}
+  return isManagerOrAdmin.value;
+};
 
 const canCancel = (status: QuoteStatus): boolean => {
-  if (!isManagerOrAdmin.value) return false
-  return normalizeQuoteStatus(status) !== 'closed'
-}
+  if (!isManagerOrAdmin.value) return false;
+  return normalizeQuoteStatus(status) !== "closed";
+};
 
 const pageTotal = computed(() =>
-  props.paginatedQuotes.reduce((sum, quote) => sum + (quote.total || 0), 0)
-)
+  props.paginatedQuotes.reduce((sum, quote) => sum + (quote.total || 0), 0),
+);
 
 const shouldCountConcreteVolume = (item: {
-  unit?: string | null
-  countAsConcreteVolume?: boolean
+  unit?: string | null;
+  countAsConcreteVolume?: boolean;
 }) => {
-  if (item.unit === 'm3') return item.countAsConcreteVolume !== false
-  if (item.unit === 'm3_faltante') return item.countAsConcreteVolume === true
-  return false
-}
+  if (item.unit === "m3") return item.countAsConcreteVolume !== false;
+  if (item.unit === "m3_faltante") return item.countAsConcreteVolume === true;
+  return false;
+};
 
 const getQuoteVolume = (quote: Quote) =>
   (quote.items ?? [])
-    .filter(item => shouldCountConcreteVolume(item as any))
-    .reduce((sum, item: any) => sum + (item.quantity || 0), 0)
+    .filter((item) => shouldCountConcreteVolume(item as any))
+    .reduce((sum, item: any) => sum + (item.quantity || 0), 0);
 
-const selectedQuoteIds = ref<number[]>([])
+const selectedQuoteIds = ref<number[]>([]);
 
-const pageQuoteIds = computed(() => props.paginatedQuotes.map(q => q.id))
+const pageQuoteIds = computed(() => props.paginatedQuotes.map((q) => q.id));
 
 const allPageSelected = computed(
   () =>
-    pageQuoteIds.value.length > 0
-    && pageQuoteIds.value.every(id => selectedQuoteIds.value.includes(id))
-)
+    pageQuoteIds.value.length > 0 &&
+    pageQuoteIds.value.every((id) => selectedQuoteIds.value.includes(id)),
+);
 
 const selectedPageTotal = computed(() =>
   props.paginatedQuotes
-    .filter(q => selectedQuoteIds.value.includes(q.id))
-    .reduce((sum, q) => sum + (q.total || 0), 0)
-)
+    .filter((q) => selectedQuoteIds.value.includes(q.id))
+    .reduce((sum, q) => sum + (q.total || 0), 0),
+);
 
 const hasSelectedRows = computed(() =>
-  props.paginatedQuotes.some(q => selectedQuoteIds.value.includes(q.id))
-)
+  props.paginatedQuotes.some((q) => selectedQuoteIds.value.includes(q.id)),
+);
 
 const displayedTotal = computed(() =>
-  hasSelectedRows.value ? selectedPageTotal.value : pageTotal.value
-)
+  hasSelectedRows.value ? selectedPageTotal.value : pageTotal.value,
+);
 
 const totalLabel = computed(() => {
-  const selectedCount = props.paginatedQuotes.filter(q =>
-    selectedQuoteIds.value.includes(q.id)
-  ).length
+  const selectedCount = props.paginatedQuotes.filter((q) =>
+    selectedQuoteIds.value.includes(q.id),
+  ).length;
   return selectedCount > 0
     ? `Total Selecionado (${selectedCount})`
-    : 'Total da Página'
-})
+    : "Total da Página";
+});
 
 const selectedQuotes = computed(() =>
-  props.paginatedQuotes.filter(q => selectedQuoteIds.value.includes(q.id))
-)
+  props.paginatedQuotes.filter((q) => selectedQuoteIds.value.includes(q.id)),
+);
 
-const selectedCount = computed(() => selectedQuotes.value.length)
+const selectedCount = computed(() => selectedQuotes.value.length);
 
 const clearSelection = () => {
-  selectedQuoteIds.value = []
-}
+  selectedQuoteIds.value = [];
+};
 
 const exportSelectedCsv = () => {
-  if (typeof window === 'undefined' || selectedQuotes.value.length === 0)
-    return
+  if (typeof window === "undefined" || selectedQuotes.value.length === 0)
+    return;
 
   const escape = (value: unknown) =>
-    `"${String(value ?? '').replace(/"/g, '""')}"`
-  const header = ['id', 'cliente', 'data', 'status', 'total_centavos']
-  const lines = selectedQuotes.value.map(q =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const header = ["id", "cliente", "data", "status", "total_centavos"];
+  const lines = selectedQuotes.value.map((q) =>
     [
       q.id,
       q.customerName,
       q.createdAt,
       normalizeQuoteStatus(q.status),
-      q.total ?? 0
+      q.total ?? 0,
     ]
       .map(escape)
-      .join(',')
-  )
+      .join(","),
+  );
 
-  const csv = [header.join(','), ...lines].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `orcamentos-selecionados-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
+  const csv = [header.join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `orcamentos-selecionados-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
-const toggleAllQuotes = (value: boolean | 'indeterminate') => {
-  if (!value || value === 'indeterminate') {
+const toggleAllQuotes = (value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
     selectedQuoteIds.value = selectedQuoteIds.value.filter(
-      id => !pageQuoteIds.value.includes(id)
-    )
-    return
+      (id) => !pageQuoteIds.value.includes(id),
+    );
+    return;
   }
 
-  const merged = new Set([...selectedQuoteIds.value, ...pageQuoteIds.value])
-  selectedQuoteIds.value = Array.from(merged)
-}
+  const merged = new Set([...selectedQuoteIds.value, ...pageQuoteIds.value]);
+  selectedQuoteIds.value = Array.from(merged);
+};
 
-const toggleQuote = (id: number, value: boolean | 'indeterminate') => {
-  if (!value || value === 'indeterminate') {
-    selectedQuoteIds.value = selectedQuoteIds.value.filter(x => x !== id)
-    return
+const toggleQuote = (id: number, value: boolean | "indeterminate") => {
+  if (!value || value === "indeterminate") {
+    selectedQuoteIds.value = selectedQuoteIds.value.filter((x) => x !== id);
+    return;
   }
 
   if (!selectedQuoteIds.value.includes(id)) {
-    selectedQuoteIds.value = [...selectedQuoteIds.value, id]
+    selectedQuoteIds.value = [...selectedQuoteIds.value, id];
   }
-}
+};
 
 watch(pageQuoteIds, (ids) => {
-  selectedQuoteIds.value = selectedQuoteIds.value.filter(id =>
-    ids.includes(id)
-  )
-})
+  selectedQuoteIds.value = selectedQuoteIds.value.filter((id) =>
+    ids.includes(id),
+  );
+});
 </script>
 
 <template>
@@ -206,7 +223,7 @@ watch(pageQuoteIds, (ids) => {
     :ui="{
       body: 'p-0 sm:p-0',
       header: 'p-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800',
-      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800'
+      footer: 'p-4 border-t border-zinc-100 dark:border-zinc-800',
     }"
     class="rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden"
   >
@@ -260,11 +277,7 @@ watch(pageQuoteIds, (ids) => {
       v-if="loadingQuotes"
       class="divide-y divide-zinc-100 dark:divide-zinc-800/50"
     >
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="px-6 py-4"
-      >
+      <div v-for="i in 6" :key="i" class="px-6 py-4">
         <USkeleton class="h-12 rounded-xl" />
       </div>
     </div>
@@ -291,10 +304,7 @@ watch(pageQuoteIds, (ids) => {
     </div>
 
     <!-- Table -->
-    <div
-      v-else
-      class="overflow-x-auto"
-    >
+    <div v-else class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -400,16 +410,13 @@ watch(pageQuoteIds, (ids) => {
                 class="text-xs text-zinc-500"
                 :class="{
                   'text-red-500 font-bold':
-                    isExpired(q.validUntil)
-                    && normalizeQuoteStatus(q.status) !== 'approved'
+                    isExpired(q.validUntil) &&
+                    normalizeQuoteStatus(q.status) !== 'approved',
                 }"
               >
                 {{ formatDate(q.validUntil) }}
               </span>
-              <span
-                v-else
-                class="text-xs text-zinc-300"
-              >—</span>
+              <span v-else class="text-xs text-zinc-300">—</span>
             </td>
             <!-- Status -->
             <td class="px-4 py-4">
@@ -417,11 +424,11 @@ watch(pageQuoteIds, (ids) => {
                 :items="
                   getStatusActions(q.status).length
                     ? [
-                      getStatusActions(q.status).map((a) => ({
-                        label: a.label,
-                        onSelect: () => emit('updateStatus', q, a.next)
-                      }))
-                    ]
+                        getStatusActions(q.status).map((a) => ({
+                          label: a.label,
+                          onSelect: () => emit('updateStatus', q, a.next),
+                        })),
+                      ]
                     : undefined
                 "
                 :disabled="getStatusActions(q.status).length === 0"
@@ -432,11 +439,11 @@ watch(pageQuoteIds, (ids) => {
                   size="sm"
                   class="font-black uppercase tracking-widest text-[9px] rounded-full px-2.5 py-0.5 cursor-pointer"
                   :class="[
-                    getStatusActions(q.status).length
-                      && isUpdatingStatus !== q.id
+                    getStatusActions(q.status).length &&
+                    isUpdatingStatus !== q.id
                       ? 'cursor-pointer hover:opacity-70'
                       : 'cursor-default',
-                    isUpdatingStatus === q.id && 'opacity-60'
+                    isUpdatingStatus === q.id && 'opacity-60',
                   ]"
                 >
                   <template #leading>
@@ -510,66 +517,66 @@ watch(pageQuoteIds, (ids) => {
                       {
                         label: 'Enviar via WhatsApp',
                         icon: 'i-simple-icons-whatsapp',
-                        onSelect: () => emit('sendPdf', q)
+                        onSelect: () => emit('sendPdf', q),
                       },
                       {
                         label: 'Baixar PDF',
                         icon: 'i-heroicons-arrow-down-tray',
-                        onSelect: () => downloadPdf(q.id)
+                        onSelect: () => downloadPdf(q.id),
                       },
                       {
                         label: 'Duplicar como Rascunho',
                         icon: 'i-heroicons-document-duplicate',
-                        onSelect: () => emit('duplicate', q)
-                      }
+                        onSelect: () => emit('duplicate', q),
+                      },
                     ],
                     // Status actions
                     ...(getStatusActions(q.status).length
                       ? [
-                        getStatusActions(q.status).map((a) => ({
-                          label: a.label,
-                          icon:
-                            a.next === 'approved'
-                              ? 'i-heroicons-check'
-                              : a.next === 'closed'
-                                ? 'i-heroicons-x-mark'
-                                : 'i-heroicons-arrow-path',
-                          color:
-                            a.next === 'approved'
-                              ? ('success' as const)
-                              : a.next === 'closed'
-                                ? ('error' as const)
-                                : undefined,
-                          onSelect: () => emit('updateStatus', q, a.next)
-                        }))
-                      ]
+                          getStatusActions(q.status).map((a) => ({
+                            label: a.label,
+                            icon:
+                              a.next === 'approved'
+                                ? 'i-heroicons-check'
+                                : a.next === 'closed'
+                                  ? 'i-heroicons-x-mark'
+                                  : 'i-heroicons-arrow-path',
+                            color:
+                              a.next === 'approved'
+                                ? ('success' as const)
+                                : a.next === 'closed'
+                                  ? ('error' as const)
+                                  : undefined,
+                            onSelect: () => emit('updateStatus', q, a.next),
+                          })),
+                        ]
                       : []),
                     // Cancel action
                     ...(canCancel(q.status)
                       ? [
-                        [
-                          {
-                            label: 'Cancelar Orçamento',
-                            icon: 'i-heroicons-no-symbol',
-                            color: 'warning' as const,
-                            onSelect: () => emit('cancel', q)
-                          }
+                          [
+                            {
+                              label: 'Cancelar Orçamento',
+                              icon: 'i-heroicons-no-symbol',
+                              color: 'warning' as const,
+                              onSelect: () => emit('cancel', q),
+                            },
+                          ],
                         ]
-                      ]
                       : []),
                     // Delete action
                     ...(canDelete(q.status)
                       ? [
-                        [
-                          {
-                            label: 'Excluir Orçamento',
-                            icon: 'i-heroicons-trash',
-                            color: 'error' as const,
-                            onSelect: () => emit('delete', q)
-                          }
+                          [
+                            {
+                              label: 'Excluir Orçamento',
+                              icon: 'i-heroicons-trash',
+                              color: 'error' as const,
+                              onSelect: () => emit('delete', q),
+                            },
+                          ],
                         ]
-                      ]
-                      : [])
+                      : []),
                   ]"
                 >
                   <UButton
@@ -607,10 +614,7 @@ watch(pageQuoteIds, (ids) => {
     </div>
 
     <!-- Pagination -->
-    <template
-      v-if="filteredQuotes.length > pageSize"
-      #footer
-    >
+    <template v-if="filteredQuotes.length > pageSize" #footer>
       <div class="flex items-center justify-between">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
           {{ filteredQuotes.length }} orçamentos · página {{ page }} de

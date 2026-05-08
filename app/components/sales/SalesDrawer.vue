@@ -107,7 +107,8 @@ const onDeletePumper = (e: Event, pumper: { id: number; name: string }) => {
 const normalizeMoney = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
 
-const normalizeInteger = (value: number) => Math.round(value);
+const normalizeQuantity = (value: number) =>
+  Math.round((value + Number.EPSILON) * 1000) / 1000;
 </script>
 
 <template>
@@ -508,7 +509,9 @@ const normalizeInteger = (value: number) => Math.round(value);
                     icon="i-heroicons-calculator"
                     class="w-full"
                     size="lg"
-                    @blur="item.quantity = normalizeInteger(item.quantity || 0)"
+                    @blur="
+                      item.quantity = normalizeQuantity(item.quantity || 0)
+                    "
                   />
                 </UFormField>
                 <UFormField
