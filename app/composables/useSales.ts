@@ -11,7 +11,7 @@ import type {
   MixDesign,
 } from "../types/sales";
 import { normalizeSaleStatus } from "~/utils/status";
-import { parseDateInputLocal } from "~/utils/date-input";
+import { parseDateInputLocal, parseItemDate } from "~/utils/date-input";
 import { isBefore, isAfter, startOfDay, endOfDay } from "date-fns";
 
 export const useSales = () => {
@@ -139,10 +139,11 @@ export const useSales = () => {
           String(s.id).includes(search.value) ||
           (s.customerDocument ?? "").includes(search.value);
 
-        // Filtro de data
+        // Filtro de data (usa a data da venda s.date, fallback para s.createdAt)
         let matchDate = true;
-        if (s.createdAt) {
-          const itemDate = new Date(s.createdAt);
+        const targetDate = s.date || s.createdAt;
+        const itemDate = parseItemDate(targetDate);
+        if (itemDate) {
           if (dateStart.value) {
             const startLimit = parseDateInputLocal(dateStart.value);
             if (startLimit)

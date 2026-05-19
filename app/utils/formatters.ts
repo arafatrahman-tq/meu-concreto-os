@@ -2,13 +2,16 @@
 import { formatDistanceToNow } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
+import { parseItemDate } from "./date-input";
 
 export const formatDate = (
   d: Date | string | number | null | undefined,
 ): string => {
   if (!d) return "—";
+  const dateObj = parseItemDate(d);
+  if (!dateObj) return "—";
   const tz = useRuntimeConfig().public.appTimezone || "America/Sao_Paulo";
-  return formatInTimeZone(new Date(d), tz as string, "dd MMM yyyy", {
+  return formatInTimeZone(dateObj, tz as string, "dd MMM yyyy", {
     locale: ptBR,
   });
 };
@@ -17,8 +20,10 @@ export const formatDateNumeric = (
   d: Date | string | number | null | undefined,
 ): string => {
   if (!d) return "—";
+  const dateObj = parseItemDate(d);
+  if (!dateObj) return "—";
   const tz = useRuntimeConfig().public.appTimezone || "America/Sao_Paulo";
-  return formatInTimeZone(new Date(d), tz as string, "dd/MM/yyyy", {
+  return formatInTimeZone(dateObj, tz as string, "dd/MM/yyyy", {
     locale: ptBR,
   });
 };
@@ -27,8 +32,10 @@ export const formatISODate = (
   d: Date | string | number | null | undefined,
 ): string => {
   if (!d) return "";
+  const dateObj = parseItemDate(d);
+  if (!dateObj) return "";
   const tz = useRuntimeConfig().public.appTimezone || "America/Sao_Paulo";
-  return formatInTimeZone(new Date(d), tz as string, "yyyy-MM-dd");
+  return formatInTimeZone(dateObj, tz as string, "yyyy-MM-dd");
 };
 
 export const formatRelative = (

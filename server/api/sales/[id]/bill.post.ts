@@ -67,13 +67,8 @@ export default defineEventHandler(async (event) => {
         .get();
 
       // 2. Update Sale Status
-      // In the simplified model, billing can move an open sale to in progress.
-      let nextStatus = sale.status;
-      if (sale.status === "open" || sale.status === "pending") {
-        nextStatus = "in_progress";
-      } else if (sale.status === "completed") {
-        nextStatus = "billed";
-      }
+      // When billing, we move it to billed if it was completed or in_progress.
+      let nextStatus: any = "billed";
 
       await tx
         .update(sales)

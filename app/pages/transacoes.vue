@@ -2,27 +2,31 @@
 import type {
   Transaction,
   TransactionType,
-  TransactionStatus
-} from '~/types/transactions'
-import { formatDateInputPtBR, parseDateInputLocal } from '~/utils/date-input'
+  TransactionStatus,
+} from "~/types/transactions";
+import {
+  formatDateInputPtBR,
+  parseDateInputLocal,
+  parseItemDate,
+} from "~/utils/date-input";
 
-definePageMeta({ layout: 'default' })
-useSeoMeta({ title: 'Transações | Meu Concreto' })
-const route = useRoute()
+definePageMeta({ layout: "default" });
+useSeoMeta({ title: "Transações | Meu Concreto" });
+const route = useRoute();
 
-const { user, companyId } = useAuth()
-const toast = useToast()
+const { user, companyId } = useAuth();
+const toast = useToast();
 
 interface Company {
-  id: number
-  name: string
-  document: string
-  email?: string | null
-  phone?: string | null
-  address?: string | null
-  city?: string | null
-  state?: string | null
-  zip?: string | null
+  id: number;
+  name: string;
+  document: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
 }
 
 // ─────────────────────────────────────────────
@@ -31,194 +35,194 @@ interface Company {
 const {
   data: txData,
   refresh: refreshTransactions,
-  pending: loadingTx
-} = await useFetch('/api/transactions', {
+  pending: loadingTx,
+} = await useFetch("/api/transactions", {
   query: { companyId },
-  watch: [companyId]
-})
+  watch: [companyId],
+});
 
 const { data: companyData } = await useFetch<{ company: Company }>(
-  () => `/api/companies/${companyId.value}`
-)
-const company = computed(() => companyData.value?.company ?? null)
+  () => `/api/companies/${companyId.value}`,
+);
+const company = computed(() => companyData.value?.company ?? null);
 
 const transactions = computed<Transaction[]>(
   () =>
-    (txData.value as { transactions: Transaction[] } | null)?.transactions
-    ?? []
-)
+    (txData.value as { transactions: Transaction[] } | null)?.transactions ??
+    [],
+);
 
-const baseTransactions = computed(() => transactions.value)
+const baseTransactions = computed(() => transactions.value);
 
 // Logic moved to useFormatters
 
 // ─────────────────────────────────────────────
 // Filters & Search
 // ─────────────────────────────────────────────
-const search = ref('')
-const typeFilter = ref<TransactionType | 'all'>('all')
-const statusFilter = ref<TransactionStatus | 'all'>('all')
-const dateStart = ref('')
-const dateEnd = ref('')
+const search = ref("");
+const typeFilter = ref<TransactionType | "all">("all");
+const statusFilter = ref<TransactionStatus | "all">("all");
+const dateStart = ref("");
+const dateEnd = ref("");
 
 const clearFilters = () => {
-  search.value = ''
-  typeFilter.value = 'all'
-  statusFilter.value = 'all'
-  dateStart.value = ''
-  dateEnd.value = ''
-}
+  search.value = "";
+  typeFilter.value = "all";
+  statusFilter.value = "all";
+  dateStart.value = "";
+  dateEnd.value = "";
+};
 
 const filteredTransactions = computed(() => {
   return baseTransactions.value
     .filter((t) => {
-      const matchType
-        = typeFilter.value === 'all' || t.type === typeFilter.value
-      const matchStatus
-        = statusFilter.value === 'all' || t.status === statusFilter.value
-      const q = search.value.toLowerCase()
-      const matchSearch
-        = !q
-          || t.description.toLowerCase().includes(q)
-          || (t.category ?? '').toLowerCase().includes(q)
-          || (t.paymentMethod ?? '').toLowerCase().includes(q)
-          || (t.sale?.customerName ?? '').toLowerCase().includes(q)
-      const txDate = new Date(t.date as string | number)
+      const matchType =
+        typeFilter.value === "all" || t.type === typeFilter.value;
+      const matchStatus =
+        statusFilter.value === "all" || t.status === statusFilter.value;
+      const q = search.value.toLowerCase();
+      const matchSearch =
+        !q ||
+        t.description.toLowerCase().includes(q) ||
+        (t.category ?? "").toLowerCase().includes(q) ||
+        (t.paymentMethod ?? "").toLowerCase().includes(q) ||
+        (t.sale?.customerName ?? "").toLowerCase().includes(q);
+      const txDate = parseItemDate(t.date);
       const startDate = dateStart.value
         ? parseDateInputLocal(dateStart.value)
-        : null
+        : null;
       const endDate = dateEnd.value
         ? parseDateInputLocal(dateEnd.value, { endOfDay: true })
-        : null
-      const matchStart = !startDate || txDate >= startDate
-      const matchEnd = !endDate || txDate <= endDate
-      return matchType && matchStatus && matchSearch && matchStart && matchEnd
+        : null;
+      const matchStart = !startDate || (txDate && txDate >= startDate);
+      const matchEnd = !endDate || (txDate && txDate <= endDate);
+      return matchType && matchStatus && matchSearch && matchStart && matchEnd;
     })
     .sort(
       (a, b) =>
-        new Date(b.date as string | number).getTime()
-          - new Date(a.date as string | number).getTime()
-    )
-})
+        new Date(b.date as string | number).getTime() -
+        new Date(a.date as string | number).getTime(),
+    );
+});
 
 // ─────────────────────────────────────────────
 // Pagination
 // ─────────────────────────────────────────────
-const page = ref(1)
-const pageSize = ref(12)
+const page = ref(1);
+const pageSize = ref(12);
 
 watch([search, typeFilter, statusFilter, dateStart, dateEnd], () => {
-  page.value = 1
-})
+  page.value = 1;
+});
 
 onMounted(() => {
-  const queryStatus = route.query.status
-  const queryType = route.query.type
+  const queryStatus = route.query.status;
+  const queryType = route.query.type;
 
   if (
-    typeof queryStatus === 'string'
-    && ['all', 'pending', 'paid', 'cancelled'].includes(queryStatus)
+    typeof queryStatus === "string" &&
+    ["all", "pending", "paid", "cancelled"].includes(queryStatus)
   ) {
-    statusFilter.value = queryStatus as TransactionStatus | 'all'
+    statusFilter.value = queryStatus as TransactionStatus | "all";
   }
 
   if (
-    typeof queryType === 'string'
-    && ['all', 'income', 'expense'].includes(queryType)
+    typeof queryType === "string" &&
+    ["all", "income", "expense"].includes(queryType)
   ) {
-    typeFilter.value = queryType as TransactionType | 'all'
+    typeFilter.value = queryType as TransactionType | "all";
   }
-})
+});
 
 // ─────────────────────────────────────────────
 // Status / Type config
 // ─────────────────────────────────────────────
 const statusConfig: Record<
   TransactionStatus,
-  { label: string, color: string, icon: string }
+  { label: string; color: string; icon: string }
 > = {
   pending: {
-    label: 'Pendente',
-    color: 'warning',
-    icon: 'i-heroicons-clock'
+    label: "Pendente",
+    color: "warning",
+    icon: "i-heroicons-clock",
   },
   paid: {
-    label: 'Pago',
-    color: 'success',
-    icon: 'i-heroicons-check-circle'
+    label: "Pago",
+    color: "success",
+    icon: "i-heroicons-check-circle",
   },
   cancelled: {
-    label: 'Cancelado',
-    color: 'error',
-    icon: 'i-heroicons-x-circle'
-  }
-}
+    label: "Cancelado",
+    color: "error",
+    icon: "i-heroicons-x-circle",
+  },
+};
 
 const typeConfig: Record<
   TransactionType,
-  { label: string, color: string, icon: string, sign: string }
+  { label: string; color: string; icon: string; sign: string }
 > = {
   income: {
-    label: 'Receita',
-    color: 'success',
-    icon: 'i-heroicons-arrow-trending-up',
-    sign: '+'
+    label: "Receita",
+    color: "success",
+    icon: "i-heroicons-arrow-trending-up",
+    sign: "+",
   },
   expense: {
-    label: 'Despesa',
-    color: 'error',
-    icon: 'i-heroicons-arrow-trending-down',
-    sign: '-'
-  }
-}
+    label: "Despesa",
+    color: "error",
+    icon: "i-heroicons-arrow-trending-down",
+    sign: "-",
+  },
+};
 
 // ─────────────────────────────────────────────
 // KPI Summaries
 // ─────────────────────────────────────────────
 const kpis = computed(() => {
-  const all = baseTransactions.value.filter(t => !t.isInstallmentParent)
-  const now = new Date()
+  const all = baseTransactions.value.filter((t) => !t.isInstallmentParent);
+  const now = new Date();
   const startOfToday = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
-  )
-  const endOfSoon = new Date(startOfToday)
-  endOfSoon.setDate(endOfSoon.getDate() + 7)
+    now.getDate(),
+  );
+  const endOfSoon = new Date(startOfToday);
+  endOfSoon.setDate(endOfSoon.getDate() + 7);
 
-  const paid = all.filter(t => t.status === 'paid')
+  const paid = all.filter((t) => t.status === "paid");
   const income = paid
-    .filter(t => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0)
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
   const expense = paid
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0)
-  const balance = income - expense
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const balance = income - expense;
   const pending = all
-    .filter(t => t.status === 'pending')
-    .reduce((s, t) => s + t.amount, 0)
-  const pendingCount = all.filter(t => t.status === 'pending').length
+    .filter((t) => t.status === "pending")
+    .reduce((s, t) => s + t.amount, 0);
+  const pendingCount = all.filter((t) => t.status === "pending").length;
 
   const pendingWithDueDate = all.filter(
-    t => t.status === 'pending' && !!t.dueDate
-  )
+    (t) => t.status === "pending" && !!t.dueDate,
+  );
 
   const overdueTransactions = pendingWithDueDate.filter((t) => {
-    const due = new Date(t.dueDate as string | number)
-    return due < startOfToday
-  })
+    const due = new Date(t.dueDate as string | number);
+    return due < startOfToday;
+  });
 
   const dueSoonTransactions = pendingWithDueDate.filter((t) => {
-    const due = new Date(t.dueDate as string | number)
-    return due >= startOfToday && due <= endOfSoon
-  })
+    const due = new Date(t.dueDate as string | number);
+    return due >= startOfToday && due <= endOfSoon;
+  });
 
-  const overdue = overdueTransactions.reduce((sum, t) => sum + t.amount, 0)
-  const overdueCount = overdueTransactions.length
-  const dueSoon = dueSoonTransactions.reduce((sum, t) => sum + t.amount, 0)
-  const dueSoonCount = dueSoonTransactions.length
+  const overdue = overdueTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const overdueCount = overdueTransactions.length;
+  const dueSoon = dueSoonTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const dueSoonCount = dueSoonTransactions.length;
 
-  const totalCount = all.length
+  const totalCount = all.length;
   return {
     income,
     expense,
@@ -229,564 +233,564 @@ const kpis = computed(() => {
     overdueCount,
     dueSoon,
     dueSoonCount,
-    totalCount
-  }
-})
+    totalCount,
+  };
+});
 
 const smartDueAlert = computed(() => {
-  const overdueCount = kpis.value.overdueCount
-  const dueSoonCount = kpis.value.dueSoonCount
+  const overdueCount = kpis.value.overdueCount;
+  const dueSoonCount = kpis.value.dueSoonCount;
 
   if (overdueCount === 0 && dueSoonCount === 0) {
-    return null
+    return null;
   }
 
   if (overdueCount > 0) {
     return {
-      color: 'error' as const,
-      icon: 'i-heroicons-exclamation-triangle',
-      title: 'Atenção: há vencimentos em atraso',
+      color: "error" as const,
+      icon: "i-heroicons-exclamation-triangle",
+      title: "Atenção: há vencimentos em atraso",
       description: `${overdueCount} lançamento(s) vencido(s) aguardando baixa. Priorize a regularização para evitar impacto no caixa.`,
-      action: 'Ver vencidos'
-    }
+      action: "Ver vencidos",
+    };
   }
 
   return {
-    color: 'warning' as const,
-    icon: 'i-heroicons-clock',
-    title: 'Vencimentos próximos',
+    color: "warning" as const,
+    icon: "i-heroicons-clock",
+    title: "Vencimentos próximos",
     description: `${dueSoonCount} lançamento(s) vencem nos próximos 7 dias. Planeje cobranças/pagamentos para manter previsibilidade financeira.`,
-    action: 'Ver próximos vencimentos'
-  }
-})
+    action: "Ver próximos vencimentos",
+  };
+});
 
 const focusSmartDueAlert = () => {
-  statusFilter.value = 'pending'
+  statusFilter.value = "pending";
 
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   if (kpis.value.overdueCount > 0) {
-    dateStart.value = ''
-    dateEnd.value = today.toISOString().slice(0, 10)
-    return
+    dateStart.value = "";
+    dateEnd.value = today.toISOString().slice(0, 10);
+    return;
   }
 
-  const dueSoonEnd = new Date(today)
-  dueSoonEnd.setDate(dueSoonEnd.getDate() + 7)
-  dateStart.value = today.toISOString().slice(0, 10)
-  dateEnd.value = dueSoonEnd.toISOString().slice(0, 10)
-}
+  const dueSoonEnd = new Date(today);
+  dueSoonEnd.setDate(dueSoonEnd.getDate() + 7);
+  dateStart.value = today.toISOString().slice(0, 10);
+  dateEnd.value = dueSoonEnd.toISOString().slice(0, 10);
+};
 
 // Drawer state
-const isDrawerOpen = ref(false)
-const editingTransaction = ref<Transaction | null>(null)
-const isInstallmentsModalOpen = ref(false)
-const installmentsTarget = ref<Transaction | null>(null)
+const isDrawerOpen = ref(false);
+const editingTransaction = ref<Transaction | null>(null);
+const isInstallmentsModalOpen = ref(false);
+const installmentsTarget = ref<Transaction | null>(null);
 
 const openCreate = () => {
-  editingTransaction.value = null
-  isDrawerOpen.value = true
-}
+  editingTransaction.value = null;
+  isDrawerOpen.value = true;
+};
 
 const openEdit = (t: Transaction) => {
-  editingTransaction.value = t
-  isDrawerOpen.value = true
-}
+  editingTransaction.value = t;
+  isDrawerOpen.value = true;
+};
 
 const openInstallments = (t: Transaction) => {
-  installmentsTarget.value = t
-  isInstallmentsModalOpen.value = true
-}
+  installmentsTarget.value = t;
+  isInstallmentsModalOpen.value = true;
+};
 
 // ─────────────────────────────────────────────
 // Delete
 // ─────────────────────────────────────────────
-const deleteTarget = ref<Transaction | null>(null)
-const loadingDelete = ref(false)
-const isDeleteModalOpen = ref(false)
+const deleteTarget = ref<Transaction | null>(null);
+const loadingDelete = ref(false);
+const isDeleteModalOpen = ref(false);
 
 const confirmDelete = (t: Transaction) => {
-  deleteTarget.value = t
-  isDeleteModalOpen.value = true
-}
+  deleteTarget.value = t;
+  isDeleteModalOpen.value = true;
+};
 
 const handleDelete = async () => {
-  if (!deleteTarget.value) return
-  loadingDelete.value = true
-  const desc = deleteTarget.value.description
+  if (!deleteTarget.value) return;
+  loadingDelete.value = true;
+  const desc = deleteTarget.value.description;
   try {
     await $fetch(`/api/transactions/${deleteTarget.value.id}`, {
-      method: 'DELETE'
-    })
-    isDeleteModalOpen.value = false
+      method: "DELETE",
+    });
+    isDeleteModalOpen.value = false;
     toast.add({
-      title: 'Transação excluída',
+      title: "Transação excluída",
       description: `"${desc}" foi excluída.`,
-      color: 'neutral',
-      icon: 'i-heroicons-trash'
-    })
-    await refreshTransactions()
+      color: "neutral",
+      icon: "i-heroicons-trash",
+    });
+    await refreshTransactions();
   } catch (e: unknown) {
     const err = e as {
-      data?: { message?: string, statusMessage?: string }
-      message?: string
-    }
+      data?: { message?: string; statusMessage?: string };
+      message?: string;
+    };
     toast.add({
-      title: 'Erro ao excluir',
+      title: "Erro ao excluir",
       description:
-        err?.data?.message
-        ?? err?.data?.statusMessage
-        ?? err?.message
-        ?? 'Tente novamente.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+        err?.data?.message ??
+        err?.data?.statusMessage ??
+        err?.message ??
+        "Tente novamente.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingDelete.value = false
-    deleteTarget.value = null
+    loadingDelete.value = false;
+    deleteTarget.value = null;
   }
-}
+};
 
 // ─────────────────────────────────────────────
 // Quick status update
 // ─────────────────────────────────────────────
 const updateStatus = async (t: Transaction, status: TransactionStatus) => {
-  if (t.isInstallmentParent && status === 'paid') {
+  if (t.isInstallmentParent && status === "paid") {
     const installments = transactions.value.filter(
-      tx => tx.parentTransactionId === t.id
-    )
-    const allInstallmentsPaid
-      = installments.length > 0
-        && installments.every(installment => installment.status === 'paid')
+      (tx) => tx.parentTransactionId === t.id,
+    );
+    const allInstallmentsPaid =
+      installments.length > 0 &&
+      installments.every((installment) => installment.status === "paid");
 
     if (!allInstallmentsPaid) {
       toast.add({
-        title: 'Não foi possível marcar como pago',
-        description: 'Todas as parcelas precisam estar pagas primeiramente.',
-        color: 'warning',
-        icon: 'i-heroicons-exclamation-triangle'
-      })
-      return
+        title: "Não foi possível marcar como pago",
+        description: "Todas as parcelas precisam estar pagas primeiramente.",
+        color: "warning",
+        icon: "i-heroicons-exclamation-triangle",
+      });
+      return;
     }
   }
 
   try {
     await $fetch(`/api/transactions/${t.id}`, {
-      method: 'PUT',
-      body: { status }
-    })
+      method: "PUT",
+      body: { status },
+    });
     toast.add({
-      title: 'Status atualizado',
+      title: "Status atualizado",
       description: `Transação agora está como "${statusConfig[status].label}".`,
-      color: 'success',
-      icon: statusConfig[status].icon
-    })
-    await refreshTransactions()
+      color: "success",
+      icon: statusConfig[status].icon,
+    });
+    await refreshTransactions();
   } catch (e: unknown) {
     const err = e as {
-      data?: { message?: string, statusMessage?: string }
-      message?: string
-    }
+      data?: { message?: string; statusMessage?: string };
+      message?: string;
+    };
     toast.add({
-      title: 'Erro ao atualizar status',
+      title: "Erro ao atualizar status",
       description:
-        err?.data?.message
-        ?? err?.data?.statusMessage
-        ?? err?.message
-        ?? 'Tente novamente.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+        err?.data?.message ??
+        err?.data?.statusMessage ??
+        err?.message ??
+        "Tente novamente.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   }
-}
+};
 
 const STATUS_ACTIONS: Record<
   TransactionStatus,
-  { next: TransactionStatus, label: string }[]
+  { next: TransactionStatus; label: string }[]
 > = {
   pending: [
-    { next: 'paid', label: 'Marcar como Pago' },
-    { next: 'cancelled', label: 'Cancelar' }
+    { next: "paid", label: "Marcar como Pago" },
+    { next: "cancelled", label: "Cancelar" },
   ],
   paid: [],
-  cancelled: [{ next: 'pending', label: 'Reabrir como Pendente' }]
-}
+  cancelled: [{ next: "pending", label: "Reabrir como Pendente" }],
+};
 
 // ─────────────────────────────────────────────
 // PDF Report Download
 // ─────────────────────────────────────────────
-const loadingPDF = ref(false)
+const loadingPDF = ref(false);
 
 const PDF_TABLE_HEADERS = [
-  'DESC.',
-  'TIPO',
-  'STS.',
-  'DATA',
-  'VENC.',
-  'PAG.',
-  'VAL.'
-]
+  "DESC.",
+  "TIPO",
+  "STS.",
+  "DATA",
+  "VENC.",
+  "PAG.",
+  "VAL.",
+];
 
 const PDF_STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendente',
-  paid: 'Pago',
-  cancelled: 'Cancelado'
-}
+  pending: "Pendente",
+  paid: "Pago",
+  cancelled: "Cancelado",
+};
 
 const PDF_TYPE_LABELS: Record<string, string> = {
-  income: 'Receita',
-  expense: 'Despesa'
-}
+  income: "Receita",
+  expense: "Despesa",
+};
 
 const buildPdfTransactionRow = (
   t: Transaction,
   fmtDate: (v: string | number | Date | null | undefined) => string,
-  fmtCurrency: (cents: number) => string
+  fmtCurrency: (cents: number) => string,
 ) => {
-  const categoryInfo = t.category ? `\nCategoria: ${t.category}` : ''
+  const categoryInfo = t.category ? `\nCategoria: ${t.category}` : "";
   const saleInfo = t.sale
-    ? `\nVenda: ${t.sale.customerName}`
-    + (t.sale.items?.length
-      ? ` (${t.sale.items.reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)} m³)`
-      : '')
-    : ''
+    ? `\nVenda: ${t.sale.customerName}` +
+      (t.sale.items?.length
+        ? ` (${t.sale.items.reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)} m³)`
+        : "")
+    : "";
 
   return [
     t.description.toUpperCase() + categoryInfo + saleInfo,
-    (PDF_TYPE_LABELS[t.type] || '—').toUpperCase(),
-    (PDF_STATUS_LABELS[t.status] || '—').toUpperCase(),
+    (PDF_TYPE_LABELS[t.type] || "—").toUpperCase(),
+    (PDF_STATUS_LABELS[t.status] || "—").toUpperCase(),
     fmtDate(t.date),
     fmtDate(t.dueDate),
-    (t.paymentMethod ?? '—').toUpperCase(),
-    (t.type === 'income' ? '+' : '-') + fmtCurrency(t.amount)
-  ]
-}
+    (t.paymentMethod ?? "—").toUpperCase(),
+    (t.type === "income" ? "+" : "-") + fmtCurrency(t.amount),
+  ];
+};
 
 const getTransactionsPdfTableConfig = (
   rows: Transaction[],
   fmtDate: (v: string | number | Date | null | undefined) => string,
-  fmtCurrency: (cents: number) => string
+  fmtCurrency: (cents: number) => string,
 ) => ({
   startY: 99,
   head: [PDF_TABLE_HEADERS],
-  body: rows.map(t => buildPdfTransactionRow(t, fmtDate, fmtCurrency)),
-  theme: 'grid' as const,
+  body: rows.map((t) => buildPdfTransactionRow(t, fmtDate, fmtCurrency)),
+  theme: "grid" as const,
   headStyles: {
     fillColor: [24, 24, 27],
     textColor: [255, 255, 255],
-    fontStyle: 'bold',
+    fontStyle: "bold",
     fontSize: 7,
     cellPadding: 4,
-    halign: 'left'
+    halign: "left",
   },
   styles: {
     fontSize: 7,
     cellPadding: 3.5,
-    font: 'helvetica',
-    textColor: [63, 63, 70]
+    font: "helvetica",
+    textColor: [63, 63, 70],
   },
   columnStyles: {
-    0: { cellWidth: 'auto', fontStyle: 'bold', textColor: [24, 24, 27] },
-    1: { cellWidth: 18, halign: 'center' },
-    2: { cellWidth: 18, halign: 'center' },
-    3: { cellWidth: 18, halign: 'center' },
-    4: { cellWidth: 22, halign: 'center' },
-    5: { cellWidth: 20, halign: 'center' },
-    6: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
+    0: { cellWidth: "auto", fontStyle: "bold", textColor: [24, 24, 27] },
+    1: { cellWidth: 18, halign: "center" },
+    2: { cellWidth: 18, halign: "center" },
+    3: { cellWidth: 18, halign: "center" },
+    4: { cellWidth: 22, halign: "center" },
+    5: { cellWidth: 20, halign: "center" },
+    6: { cellWidth: 28, halign: "right", fontStyle: "bold" },
   },
   didParseCell: (data: any) => {
-    if (data.section !== 'body') return
+    if (data.section !== "body") return;
 
     if (data.column.index === 6) {
-      const val = data.cell.raw as string
-      data.cell.styles.textColor = val.startsWith('+')
+      const val = data.cell.raw as string;
+      data.cell.styles.textColor = val.startsWith("+")
         ? [22, 163, 74]
-        : [220, 38, 38]
+        : [220, 38, 38];
     }
 
     if (data.column.index === 2) {
-      const val = data.cell.raw as string
-      if (val === 'PAGO') data.cell.styles.textColor = [22, 163, 74]
-      if (val === 'PENDENTE') data.cell.styles.textColor = [245, 158, 11]
-      if (val === 'CANCELADO') data.cell.styles.textColor = [220, 38, 38]
+      const val = data.cell.raw as string;
+      if (val === "PAGO") data.cell.styles.textColor = [22, 163, 74];
+      if (val === "PENDENTE") data.cell.styles.textColor = [245, 158, 11];
+      if (val === "CANCELADO") data.cell.styles.textColor = [220, 38, 38];
     }
   },
-  alternateRowStyles: { fillColor: [250, 250, 250] }
-})
+  alternateRowStyles: { fillColor: [250, 250, 250] },
+});
 
 const downloadReport = async () => {
-  loadingPDF.value = true
+  loadingPDF.value = true;
   try {
-    const { jsPDF } = await import('jspdf')
-    const { default: autoTable } = await import('jspdf-autotable')
+    const { jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
 
-    const doc = new jsPDF() as any
-    const pw = doc.internal.pageSize.width
-    const ph = doc.internal.pageSize.height
+    const doc = new jsPDF() as any;
+    const pw = doc.internal.pageSize.width;
+    const ph = doc.internal.pageSize.height;
     const fmtCurrency = (cents: number) =>
-      new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(cents / 100)
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(cents / 100);
     const fmtDate = (v: string | number | Date | null | undefined) =>
       v
-        ? new Intl.DateTimeFormat('pt-BR').format(
-            new Date(v as string | number | Date)
+        ? new Intl.DateTimeFormat("pt-BR").format(
+            new Date(v as string | number | Date),
           )
-        : '—'
+        : "—";
 
-    const rows = filteredTransactions.value
+    const rows = filteredTransactions.value;
     const periodLabel = (() => {
-      const start = dateStart.value
-      const end = dateEnd.value
+      const start = dateStart.value;
+      const end = dateEnd.value;
       if (start && end) {
-        if (start === end) return `Data: ${formatDateInputPtBR(start)}`
-        return `Período: ${formatDateInputPtBR(start)} — ${formatDateInputPtBR(end)}`
+        if (start === end) return `Data: ${formatDateInputPtBR(start)}`;
+        return `Período: ${formatDateInputPtBR(start)} — ${formatDateInputPtBR(end)}`;
       }
-      if (start) return `A partir de: ${formatDateInputPtBR(start)}`
-      if (end) return `Até: ${formatDateInputPtBR(end)}`
+      if (start) return `A partir de: ${formatDateInputPtBR(start)}`;
+      if (end) return `Até: ${formatDateInputPtBR(end)}`;
 
       // Caso não haja filtros de data, encontrar o range nos registros
       if (rows.length > 0) {
-        const dates = rows.map(r => new Date(r.date).getTime())
-        const min = new Date(Math.min(...dates))
-        const max = new Date(Math.max(...dates))
+        const dates = rows.map((r) => new Date(r.date).getTime());
+        const min = new Date(Math.min(...dates));
+        const max = new Date(Math.max(...dates));
         if (min.toDateString() === max.toDateString())
-          return `Data: ${fmtDate(min)}`
-        return `Período: ${fmtDate(min)} — ${fmtDate(max)}`
+          return `Data: ${fmtDate(min)}`;
+        return `Período: ${fmtDate(min)} — ${fmtDate(max)}`;
       }
-      return 'Período: Integral'
-    })()
+      return "Período: Integral";
+    })();
 
     // ── Watermark
-    doc.setTextColor(230, 230, 230)
-    doc.setFontSize(60)
-    doc.setFont('helvetica', 'bold')
-    doc.saveGraphicsState()
-    doc.setGState(new (doc as any).GState({ opacity: 0.08 }))
-    doc.text('MEU CONCRETO', pw / 2, ph / 2, { align: 'center', angle: 45 })
-    doc.restoreGraphicsState()
+    doc.setTextColor(230, 230, 230);
+    doc.setFontSize(60);
+    doc.setFont("helvetica", "bold");
+    doc.saveGraphicsState();
+    doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+    doc.text("MEU CONCRETO", pw / 2, ph / 2, { align: "center", angle: 45 });
+    doc.restoreGraphicsState();
 
     // ── Header brand block
-    doc.setFillColor(34, 197, 94)
-    doc.roundedRect(15, 15, 10, 10, 2, 2, 'F')
-    doc.setDrawColor(255, 255, 255)
-    doc.setLineWidth(0.8)
-    doc.line(17.5, 20.5, 22.5, 20.5)
-    doc.line(19.5, 18.5, 20.5, 18.5)
-    doc.line(19, 18, 21, 18)
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(15, 15, 10, 10, 2, 2, "F");
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.8);
+    doc.line(17.5, 20.5, 22.5, 20.5);
+    doc.line(19.5, 18.5, 20.5, 18.5);
+    doc.line(19, 18, 21, 18);
 
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(24, 24, 27)
-    doc.text('MEU', 28, 20.5)
-    doc.setTextColor(34, 197, 94)
-    doc.text('CONCRETO', 40.5, 20.5)
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(161, 161, 170)
-    doc.text('OPERATIONAL SYSTEM', 28, 24.5, { charSpace: 0.5 })
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(24, 24, 27);
+    doc.text("MEU", 28, 20.5);
+    doc.setTextColor(34, 197, 94);
+    doc.text("CONCRETO", 40.5, 20.5);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(161, 161, 170);
+    doc.text("OPERATIONAL SYSTEM", 28, 24.5, { charSpace: 0.5 });
 
     // ── Report title (right side)
-    doc.setTextColor(24, 24, 27)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('RELATÓRIO DE TRANSAÇÕES', pw - 15, 20.5, { align: 'right' })
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(113, 113, 122)
-    doc.text(periodLabel, pw - 15, 25.5, { align: 'right' })
-    const generatedAt = `Gerado em: ${new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date())}`
-    doc.text(generatedAt, pw - 15, 30, { align: 'right' })
+    doc.setTextColor(24, 24, 27);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("RELATÓRIO DE TRANSAÇÕES", pw - 15, 20.5, { align: "right" });
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(113, 113, 122);
+    doc.text(periodLabel, pw - 15, 25.5, { align: "right" });
+    const generatedAt = `Gerado em: ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date())}`;
+    doc.text(generatedAt, pw - 15, 30, { align: "right" });
 
     // ── Divider
-    doc.setDrawColor(228, 228, 231)
-    doc.setLineWidth(0.1)
-    doc.line(15, 38, pw - 15, 38)
+    doc.setDrawColor(228, 228, 231);
+    doc.setLineWidth(0.1);
+    doc.line(15, 38, pw - 15, 38);
 
     // ── Company info block
-    const co = company.value
+    const co = company.value;
     if (co) {
-      const colW = (pw - 30) / 2
+      const colW = (pw - 30) / 2;
 
       // Left: identity
-      doc.setFontSize(6.5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(113, 113, 122)
-      doc.text('EMPRESA EMISSORA', 15, 44, { charSpace: 0.3 })
-      doc.setFontSize(8.5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(24, 24, 27)
-      doc.text(co.name, 15, 50)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7.5)
-      doc.setTextColor(113, 113, 122)
-      let cy = 55
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(113, 113, 122);
+      doc.text("EMPRESA EMISSORA", 15, 44, { charSpace: 0.3 });
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(24, 24, 27);
+      doc.text(co.name, 15, 50);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(113, 113, 122);
+      let cy = 55;
       if (co.document) {
-        doc.text(`CNPJ: ${co.document}`, 15, cy)
-        cy += 4.5
+        doc.text(`CNPJ: ${co.document}`, 15, cy);
+        cy += 4.5;
       }
       if (co.phone) {
-        doc.text(`Tel: ${co.phone}`, 15, cy)
-        cy += 4.5
+        doc.text(`Tel: ${co.phone}`, 15, cy);
+        cy += 4.5;
       }
       if (co.email) {
-        doc.text(`E-mail: ${co.email}`, 15, cy)
+        doc.text(`E-mail: ${co.email}`, 15, cy);
       }
 
       // Right: address
       const addrParts = [
         co.address,
-        [co.city, co.state].filter(Boolean).join(' / '),
-        co.zip ? `CEP: ${co.zip}` : ''
-      ].filter(Boolean)
+        [co.city, co.state].filter(Boolean).join(" / "),
+        co.zip ? `CEP: ${co.zip}` : "",
+      ].filter(Boolean);
       if (addrParts.length) {
-        doc.setFontSize(6.5)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(113, 113, 122)
-        doc.text('ENDEREÇO', 15 + colW, 44, { charSpace: 0.3 })
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7.5)
-        doc.setTextColor(113, 113, 122)
-        let ay = 50
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(113, 113, 122);
+        doc.text("ENDEREÇO", 15 + colW, 44, { charSpace: 0.3 });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(113, 113, 122);
+        let ay = 50;
         addrParts.forEach((line) => {
-          const split = doc.splitTextToSize(line, colW - 5)
-          doc.text(split, 15 + colW, ay)
-          ay += split.length * 4.5
-        })
+          const split = doc.splitTextToSize(line, colW - 5);
+          doc.text(split, 15 + colW, ay);
+          ay += split.length * 4.5;
+        });
       }
     }
 
     // ── Divider (after company block)
-    doc.setDrawColor(228, 228, 231)
-    doc.setLineWidth(0.1)
-    doc.line(15, 73, pw - 15, 73)
+    doc.setDrawColor(228, 228, 231);
+    doc.setLineWidth(0.1);
+    doc.line(15, 73, pw - 15, 73);
 
     // ── KPI summary boxes
-    const paid = rows.filter(t => t.status === 'paid')
+    const paid = rows.filter((t) => t.status === "paid");
     const income = paid
-      .filter(t => t.type === 'income')
-      .reduce((s, t) => s + t.amount, 0)
+      .filter((t) => t.type === "income")
+      .reduce((s, t) => s + t.amount, 0);
     const expense = paid
-      .filter(t => t.type === 'expense')
-      .reduce((s, t) => s + t.amount, 0)
-    const balance = income - expense
+      .filter((t) => t.type === "expense")
+      .reduce((s, t) => s + t.amount, 0);
+    const balance = income - expense;
     const pending = rows
-      .filter(t => t.status === 'pending')
-      .reduce((s, t) => s + t.amount, 0)
+      .filter((t) => t.status === "pending")
+      .reduce((s, t) => s + t.amount, 0);
 
     const kpiCols = [
       {
-        label: 'RECEITAS (PAGAS)',
+        label: "RECEITAS (PAGAS)",
         value: fmtCurrency(income),
-        color: [22, 163, 74] as [number, number, number]
+        color: [22, 163, 74] as [number, number, number],
       },
       {
-        label: 'DESPESAS (PAGAS)',
+        label: "DESPESAS (PAGAS)",
         value: fmtCurrency(expense),
-        color: [220, 38, 38] as [number, number, number]
+        color: [220, 38, 38] as [number, number, number],
       },
       {
-        label: 'SALDO LÍQUIDO',
+        label: "SALDO LÍQUIDO",
         value: fmtCurrency(Math.abs(balance)),
         color:
           balance >= 0
             ? ([34, 197, 94] as [number, number, number])
-            : ([220, 38, 38] as [number, number, number])
+            : ([220, 38, 38] as [number, number, number]),
       },
       {
-        label: 'A RECEBER/PAGAR',
+        label: "A RECEBER/PAGAR",
         value: fmtCurrency(pending),
-        color: [245, 158, 11] as [number, number, number]
-      }
-    ]
-    const kpiW = (pw - 30) / 4
+        color: [245, 158, 11] as [number, number, number],
+      },
+    ];
+    const kpiW = (pw - 30) / 4;
     kpiCols.forEach((k, i) => {
-      const x = 15 + i * kpiW
-      doc.setFontSize(6)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(113, 113, 122)
-      doc.text(k.label, x + kpiW / 2, 80, { align: 'center', charSpace: 0.3 })
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...k.color)
-      doc.text(k.value, x + kpiW / 2, 87, { align: 'center' })
-    })
+      const x = 15 + i * kpiW;
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(113, 113, 122);
+      doc.text(k.label, x + kpiW / 2, 80, { align: "center", charSpace: 0.3 });
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...k.color);
+      doc.text(k.value, x + kpiW / 2, 87, { align: "center" });
+    });
 
     // ── Divider (after KPIs)
-    doc.setDrawColor(228, 228, 231)
-    doc.setLineWidth(0.1)
-    doc.line(15, 93, pw - 15, 93)
+    doc.setDrawColor(228, 228, 231);
+    doc.setLineWidth(0.1);
+    doc.line(15, 93, pw - 15, 93);
 
     // ── Table
     autoTable(
       doc,
-      getTransactionsPdfTableConfig(rows, fmtDate, fmtCurrency) as any
-    )
+      getTransactionsPdfTableConfig(rows, fmtDate, fmtCurrency) as any,
+    );
 
     // ── Footer
-    const finalY = (doc as any).lastAutoTable.finalY
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(24, 24, 27)
-    doc.text(`Total de registros: ${rows.length}`, 15, finalY + 8)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7)
-    doc.setTextColor(161, 161, 170)
+    const finalY = (doc as any).lastAutoTable.finalY;
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(24, 24, 27);
+    doc.text(`Total de registros: ${rows.length}`, 15, finalY + 8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(161, 161, 170);
     doc.text(
-      'Meu Concreto OS — Relatório gerado automaticamente.',
+      "Meu Concreto OS — Relatório gerado automaticamente.",
       pw / 2,
       ph - 12,
-      { align: 'center' }
-    )
+      { align: "center" },
+    );
 
-    const filename = `transacoes-${new Date().toLocaleDateString('sv')}.pdf`
-    doc.save(filename)
+    const filename = `transacoes-${new Date().toLocaleDateString("sv")}.pdf`;
+    doc.save(filename);
     toast.add({
-      title: 'PDF gerado',
+      title: "PDF gerado",
       description: `"${filename}" baixado com sucesso.`,
-      color: 'success',
-      icon: 'i-heroicons-arrow-down-tray'
-    })
+      color: "success",
+      icon: "i-heroicons-arrow-down-tray",
+    });
   } catch (e) {
-    console.error(e)
+    console.error(e);
     toast.add({
-      title: 'Erro ao gerar PDF',
-      description: 'Não foi possível gerar o relatório.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
+      title: "Erro ao gerar PDF",
+      description: "Não foi possível gerar o relatório.",
+      color: "error",
+      icon: "i-heroicons-exclamation-circle",
+    });
   } finally {
-    loadingPDF.value = false
+    loadingPDF.value = false;
   }
-}
+};
 // ─────────────────────────────────────────────
 // CSV & Excel Exporters
 // ─────────────────────────────────────────────
 const exportFilteredCsv = () => {
   if (filteredTransactions.value.length === 0) {
     toast.add({
-      title: 'Sem dados',
-      description: 'Não há registros para exportar com os filtros atuais.',
-      color: 'warning'
-    })
-    return
+      title: "Sem dados",
+      description: "Não há registros para exportar com os filtros atuais.",
+      color: "warning",
+    });
+    return;
   }
 
   const headers = [
-    'ID',
-    'Data',
-    'Vencimento',
-    'Descrição',
-    'Categoria',
-    'Tipo',
-    'Status',
-    'Método Pgto.',
-    'Valor (R$)',
-    'Cliente / Obra',
-    'ID Venda'
-  ]
+    "ID",
+    "Data",
+    "Vencimento",
+    "Descrição",
+    "Categoria",
+    "Tipo",
+    "Status",
+    "Método Pgto.",
+    "Valor (R$)",
+    "Cliente / Obra",
+    "ID Venda",
+  ];
 
   const rows = filteredTransactions.value.map((t) => {
     return [
@@ -794,63 +798,75 @@ const exportFilteredCsv = () => {
       formatDateNumeric(t.date),
       formatDateNumeric(t.dueDate),
       `"${t.description.replace(/"/g, '""')}"`,
-      `"${t.category || ''}"`,
-      t.type === 'income' ? 'Receita' : 'Despesa',
-      t.status === 'paid' ? 'Pago' : t.status === 'pending' ? 'Pendente' : 'Cancelado',
-      `"${t.paymentMethod || ''}"`,
-      (t.type === 'expense' ? '-' : '') + (t.amount / 100).toFixed(2).replace('.', ','),
-      `"${t.sale?.customerName || ''}"`,
-      t.saleId || ''
-    ]
-  })
+      `"${t.category || ""}"`,
+      t.type === "income" ? "Receita" : "Despesa",
+      t.status === "paid"
+        ? "Pago"
+        : t.status === "pending"
+          ? "Pendente"
+          : "Cancelado",
+      `"${t.paymentMethod || ""}"`,
+      (t.type === "expense" ? "-" : "") +
+        (t.amount / 100).toFixed(2).replace(".", ","),
+      `"${t.sale?.customerName || ""}"`,
+      t.saleId || "",
+    ];
+  });
 
   const csvContent = [
-    headers.join(';'),
-    ...rows.map(row => row.join(';'))
-  ].join('\n')
+    headers.join(";"),
+    ...rows.map((row) => row.join(";")),
+  ].join("\n");
 
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.setAttribute('href', url)
-  link.setAttribute('download', `transacoes-${formatISODate(new Date())}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
+  const blob = new Blob(["\ufeff" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `transacoes-${formatISODate(new Date())}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 const exportFilteredExcel = async () => {
   if (filteredTransactions.value.length === 0) {
     toast.add({
-      title: 'Sem dados',
-      description: 'Não há registros para exportar.',
-      color: 'warning'
-    })
-    return
+      title: "Sem dados",
+      description: "Não há registros para exportar.",
+      color: "warning",
+    });
+    return;
   }
 
-  const { utils, writeFile } = await import('xlsx')
+  const { utils, writeFile } = await import("xlsx");
 
-  const rows = filteredTransactions.value.map(t => ({
-    'ID': t.id,
-    'Data': formatDateNumeric(t.date),
-    'Vencimento': formatDateNumeric(t.dueDate),
-    'Descrição': t.description,
-    'Categoria': t.category || '',
-    'Tipo': t.type === 'income' ? 'Receita' : 'Despesa',
-    'Status': t.status === 'paid' ? 'Pago' : t.status === 'pending' ? 'Pendente' : 'Cancelado',
-    'Método Pgto.': t.paymentMethod || '',
-    'Valor (R$)': (t.type === 'expense' ? -1 : 1) * (t.amount / 100),
-    'Cliente / Obra': t.sale?.customerName || '',
-    'ID Venda': t.saleId || ''
-  }))
+  const rows = filteredTransactions.value.map((t) => ({
+    ID: t.id,
+    Data: formatDateNumeric(t.date),
+    Vencimento: formatDateNumeric(t.dueDate),
+    Descrição: t.description,
+    Categoria: t.category || "",
+    Tipo: t.type === "income" ? "Receita" : "Despesa",
+    Status:
+      t.status === "paid"
+        ? "Pago"
+        : t.status === "pending"
+          ? "Pendente"
+          : "Cancelado",
+    "Método Pgto.": t.paymentMethod || "",
+    "Valor (R$)": (t.type === "expense" ? -1 : 1) * (t.amount / 100),
+    "Cliente / Obra": t.sale?.customerName || "",
+    "ID Venda": t.saleId || "",
+  }));
 
-  const worksheet = utils.json_to_sheet(rows)
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, 'Transações')
+  const worksheet = utils.json_to_sheet(rows);
+  const workbook = utils.book_new();
+  utils.book_append_sheet(workbook, worksheet, "Transações");
 
-  writeFile(workbook, `transacoes-${formatISODate(new Date())}.xlsx`)
-}
+  writeFile(workbook, `transacoes-${formatISODate(new Date())}.xlsx`);
+};
 </script>
 
 <template>
@@ -902,8 +918,8 @@ const exportFilteredExcel = async () => {
           label: smartDueAlert.action,
           color: 'neutral',
           variant: 'ghost',
-          onClick: focusSmartDueAlert
-        }
+          onClick: focusSmartDueAlert,
+        },
       ]"
       class="rounded-2xl"
     />
@@ -953,16 +969,14 @@ const exportFilteredExcel = async () => {
     <!-- ══════════════════════════════════════════
          MODAL — Delete Confirm
     ══════════════════════════════════════════ -->
-    <UModal
-      v-model:open="isDeleteModalOpen"
-      title="Excluir Transação"
-    >
+    <UModal v-model:open="isDeleteModalOpen" title="Excluir Transação">
       <template #body>
         <div class="px-6 py-4 space-y-4">
           <p class="text-sm text-zinc-600 dark:text-zinc-400">
             Tem certeza que deseja excluir a transação
             <span class="font-bold text-zinc-900 dark:text-white">
-              "{{ deleteTarget?.description }}" </span>?
+              "{{ deleteTarget?.description }}" </span
+            >?
           </p>
           <div
             v-if="deleteTarget"
@@ -1008,9 +1022,7 @@ const exportFilteredExcel = async () => {
               }}{{ formatCurrency(deleteTarget.amount) }}
             </span>
           </div>
-          <p class="text-xs text-zinc-400">
-            Esta ação é irreversível.
-          </p>
+          <p class="text-xs text-zinc-400">Esta ação é irreversível.</p>
         </div>
       </template>
       <template #footer>
