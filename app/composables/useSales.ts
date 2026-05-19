@@ -11,7 +11,11 @@ import type {
   MixDesign,
 } from "../types/sales";
 import { normalizeSaleStatus } from "~/utils/status";
-import { parseDateInputLocal, parseItemDate } from "~/utils/date-input";
+import {
+  parseDateInputLocal,
+  parseItemDate,
+  formatDateInputPtBR,
+} from "~/utils/date-input";
 import { isBefore, isAfter, startOfDay, endOfDay } from "date-fns";
 
 export const useSales = () => {
@@ -437,6 +441,31 @@ export const useSales = () => {
 
     const rows = filteredSales.value;
 
+    const periodLabel = (() => {
+      const start = dateStart.value;
+      const end = dateEnd.value;
+      if (start && end) {
+        if (start === end) return `Data: ${formatDateInputPtBR(start)}`;
+        return `Período: ${formatDateInputPtBR(start)} — ${formatDateInputPtBR(end)}`;
+      }
+      if (start) return `A partir de: ${formatDateInputPtBR(start)}`;
+      if (end) return `Até: ${formatDateInputPtBR(end)}`;
+
+      if (rows.length > 0) {
+        const dates = rows
+          .map((s) => parseItemDate(s.date || s.createdAt)?.getTime())
+          .filter(Boolean) as number[];
+        if (dates.length > 0) {
+          const min = new Date(Math.min(...dates));
+          const max = new Date(Math.max(...dates));
+          if (min.toDateString() === max.toDateString())
+            return `Data: ${formatDateNumeric(min)}`;
+          return `Período: ${formatDateNumeric(min)} — ${formatDateNumeric(max)}`;
+        }
+      }
+      return "Período: Integral";
+    })();
+
     // Watermark
     doc.setTextColor(230, 230, 230);
     doc.setFontSize(60);
@@ -474,18 +503,24 @@ export const useSales = () => {
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(113, 113, 122);
-    doc.text(`Gerado em: ${formatISODate(new Date())}`, pw - 15, 25.5, {
-      align: "right",
-    });
+    doc.text(periodLabel, pw - 15, 25.5, { align: "right" });
+    doc.text(
+      `Gerado em: ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date())}`,
+      pw - 15,
+      30,
+      {
+        align: "right",
+      },
+    );
 
     // Divider
     doc.setDrawColor(228, 228, 231);
     doc.setLineWidth(0.1);
-    doc.line(15, 30, pw - 15, 30);
+    doc.line(15, 38, pw - 15, 38);
 
     // Table
     autoTable(doc, {
-      startY: 35,
+      startY: 42,
       head: [
         ["ID", "Data", "Entrega", "Cliente", "Pagamento", "Status", "Total"],
       ],
