@@ -1,0 +1,10 @@
+export type NotificationType
+  = | 'sale'
+    | 'quote'
+    | 'quote_updated'
+    | 'transaction'
+    | 'user'
+    | 'product'
+    | 'schedule'
+    | 'customer'
+    | 'system'

@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `default_company_id` integer REFERENCES companies(id);
