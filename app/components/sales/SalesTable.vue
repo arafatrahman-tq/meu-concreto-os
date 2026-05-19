@@ -38,6 +38,7 @@ const STATUS_OPTS = [
   { label: "Aberta", value: "open" },
   { label: "Pendente", value: "in_progress" },
   { label: "Concluída", value: "completed" },
+  { label: "Faturada", value: "billed" },
   { label: "Cancelado", value: "cancelled" },
 ];
 

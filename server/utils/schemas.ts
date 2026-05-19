@@ -334,6 +334,7 @@ export const saleSchema = z.object({
       "open",
       "in_progress",
       "completed",
+      "billed",
       "cancelled",
       "pending",
       "confirmed",

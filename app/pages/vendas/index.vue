@@ -172,7 +172,9 @@ onMounted(() => {
 
   if (
     typeof status === "string" &&
-    ["all", "open", "in_progress", "completed", "cancelled"].includes(status)
+    ["all", "open", "in_progress", "completed", "billed", "cancelled"].includes(
+      status,
+    )
   ) {
     statusFilter.value = status as typeof statusFilter.value;
   }
