@@ -78,6 +78,7 @@ export default defineEventHandler(async (event) => {
       fck: i.fck || null,
       slump: i.slump || null,
       stoneSize: i.stoneSize || null,
+      // Se countAsConcreteVolume for undefined/null ou true, mostra o volume
       volumeM3: i.countAsConcreteVolume !== false ? i.quantity : null
     })),
     paymentMethod: paymentMethodToUse
