@@ -1,0 +1,9 @@
+node_modules
+.output
+.nuxt
+.git
+.env
+dist
+*.db
+*.sqlite
+data
