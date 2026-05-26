@@ -40,6 +40,7 @@ export interface DocumentPDFData {
     fck?: number | null
     slump?: number | null
     stoneSize?: string | null
+    volumeM3?: number | null // Volume em m³ para itens de concreto
   }>
   paymentMethod?: {
     name: string
@@ -55,6 +56,24 @@ export interface DocumentPDFData {
     name: string
     phone?: string | null
     commissionRate?: number | null
+  } | null
+  // Campos opcionais para relatório de transações
+  transactionReport?: {
+    periodStart: Date
+    periodEnd: Date
+    totalIncome: number
+    totalExpense: number
+    balance: number
+    transactions: Array<{
+      id: number
+      date: Date
+      description: string
+      type: 'income' | 'expense'
+      amount: number
+      category?: string | null
+      status: string
+      volumeM3?: number | null
+    }>
   } | null
 }
 
@@ -330,6 +349,7 @@ export async function generateDocumentPDF(
 
     return [
       desc,
+      item.volumeM3 ? `${item.volumeM3.toFixed(2)}` : '-',
       `${item.quantity} ${item.unit || ''}`,
       fmt(item.unitPrice),
       fmt(item.totalPrice)
@@ -338,7 +358,7 @@ export async function generateDocumentPDF(
 
   autoTable(doc, {
     startY: 85,
-    head: [['DESC.', 'QTD.', 'VLR. UNIT.', 'TOTAL']],
+    head: [['DESC.', 'M³', 'QTD.', 'VLR. UNIT.', 'TOTAL']],
     body: tableRows,
     theme: 'grid',
     headStyles: {
@@ -358,10 +378,11 @@ export async function generateDocumentPDF(
     },
     columnStyles: {
       0: { cellWidth: 'auto' },
-      1: { cellWidth: 20, halign: 'center' },
-      2: { cellWidth: 30, halign: 'right' },
-      3: {
-        cellWidth: 30,
+      1: { cellWidth: 18, halign: 'center' },
+      2: { cellWidth: 22, halign: 'center' },
+      3: { cellWidth: 28, halign: 'right' },
+      4: {
+        cellWidth: 28,
         halign: 'right',
         fontStyle: 'bold',
         textColor: [24, 24, 27]

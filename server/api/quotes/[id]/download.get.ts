@@ -77,7 +77,8 @@ export default defineEventHandler(async (event) => {
       totalPrice: i.totalPrice,
       fck: i.fck || null,
       slump: i.slump || null,
-      stoneSize: i.stoneSize || null
+      stoneSize: i.stoneSize || null,
+      volumeM3: i.countAsConcreteVolume ? i.quantity : null
     })),
     paymentMethod: targetPaymentMethod
       ? {
