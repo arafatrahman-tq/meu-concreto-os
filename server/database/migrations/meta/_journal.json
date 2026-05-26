@@ -253,6 +253,13 @@
       "when": 1773689962301,
       "tag": "0035_perfect_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1779799183334,
+      "tag": "0036_wet_rick_jones",
+      "breakpoints": true
     }
   ]
 }

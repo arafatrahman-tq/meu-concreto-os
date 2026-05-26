@@ -522,19 +522,38 @@ export const useSales = () => {
     autoTable(doc, {
       startY: 42,
       head: [
-        ["ID", "Data", "Entrega", "Cliente", "Pagamento", "Status", "Total"],
+        [
+          "ID",
+          "Data",
+          "Entrega",
+          "Cliente",
+          "M³",
+          "Pagamento",
+          "Status",
+          "Total",
+        ],
       ],
-      body: rows.map((s) => [
-        `#${s.id}`,
-        formatDateNumeric(s.date),
-        formatDateNumeric(s.deliveryDate),
-        (s as any).customerName || "",
-        s.paymentMethod || "-",
-        (
-          statusConfig[s.status as keyof typeof statusConfig]?.label || s.status
-        ).toUpperCase(),
-        fmtCurrency(s.total),
-      ]),
+      body: rows.map((s) => {
+        const volumeM3 = s.items
+          ? s.items
+              .filter((i) => i.countAsConcreteVolume)
+              .reduce((sum, i) => sum + i.quantity, 0)
+          : 0;
+
+        return [
+          `#${s.id}`,
+          formatDateNumeric(s.date),
+          formatDateNumeric(s.deliveryDate),
+          (s as any).customerName || "",
+          volumeM3 > 0 ? volumeM3.toFixed(2) : "-",
+          s.paymentMethod || "-",
+          (
+            statusConfig[s.status as keyof typeof statusConfig]?.label ||
+            s.status
+          ).toUpperCase(),
+          fmtCurrency(s.total),
+        ];
+      }),
       theme: "grid",
       headStyles: {
         fillColor: [24, 24, 27],
@@ -550,6 +569,10 @@ export const useSales = () => {
         textColor: [63, 63, 70],
       },
       alternateRowStyles: { fillColor: [250, 250, 250] },
+      columnStyles: {
+        4: { halign: "center" },
+        7: { halign: "right" },
+      },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY;

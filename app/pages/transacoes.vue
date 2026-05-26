@@ -424,11 +424,11 @@ const loadingPDF = ref(false);
 
 const PDF_TABLE_HEADERS = [
   "DESC.",
+  "M³",
   "TIPO",
   "STS.",
   "DATA",
   "VENC.",
-  "PAG.",
   "VAL.",
 ];
 
@@ -449,20 +449,22 @@ const buildPdfTransactionRow = (
   fmtCurrency: (cents: number) => string,
 ) => {
   const categoryInfo = t.category ? `\nCategoria: ${t.category}` : "";
-  const saleInfo = t.sale
-    ? `\nVenda: ${t.sale.customerName}` +
-      (t.sale.items?.length
-        ? ` (${t.sale.items.reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)} m³)`
-        : "")
-    : "";
+  const saleInfo = t.sale ? `\nVenda: ${t.sale.customerName}` : "";
+
+  const volumeM3 =
+    t.sale && t.sale.items
+      ? t.sale.items
+          .filter((i: any) => i.countAsConcreteVolume)
+          .reduce((acc: number, i: any) => acc + (i.quantity || 0), 0)
+      : 0;
 
   return [
     t.description.toUpperCase() + categoryInfo + saleInfo,
+    volumeM3 > 0 ? volumeM3.toFixed(2) : "-",
     (PDF_TYPE_LABELS[t.type] || "—").toUpperCase(),
     (PDF_STATUS_LABELS[t.status] || "—").toUpperCase(),
     fmtDate(t.date),
     fmtDate(t.dueDate),
-    (t.paymentMethod ?? "—").toUpperCase(),
     (t.type === "income" ? "+" : "-") + fmtCurrency(t.amount),
   ];
 };
@@ -492,10 +494,10 @@ const getTransactionsPdfTableConfig = (
   },
   columnStyles: {
     0: { cellWidth: "auto", fontStyle: "bold", textColor: [24, 24, 27] },
-    1: { cellWidth: 18, halign: "center" },
+    1: { cellWidth: 15, halign: "center" },
     2: { cellWidth: 18, halign: "center" },
     3: { cellWidth: 18, halign: "center" },
-    4: { cellWidth: 22, halign: "center" },
+    4: { cellWidth: 20, halign: "center" },
     5: { cellWidth: 20, halign: "center" },
     6: { cellWidth: 28, halign: "right", fontStyle: "bold" },
   },

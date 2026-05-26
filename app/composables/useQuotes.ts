@@ -530,17 +530,27 @@ export const useQuotes = () => {
     // Table
     autoTable(doc, {
       startY: 42,
-      head: [["ID", "DATA", "CLIENTE", "STATUS", "VENDEDOR", "TOTAL"]],
-      body: rows.map((q) => [
-        `#${q.id}`,
-        formatDateNumeric(q.date),
-        q.customerName.toUpperCase(),
-        (
-          statusConfig[q.status as keyof typeof statusConfig]?.label || q.status
-        ).toUpperCase(),
-        ((q as any).seller?.name || "—").toUpperCase(),
-        fmtCurrency(q.total),
-      ]),
+      head: [["ID", "DATA", "CLIENTE", "M³", "STATUS", "VENDEDOR", "TOTAL"]],
+      body: rows.map((q) => {
+        const volumeM3 = q.items
+          ? q.items
+              .filter((i: any) => i.countAsConcreteVolume)
+              .reduce((sum: number, i: any) => sum + i.quantity, 0)
+          : 0;
+
+        return [
+          `#${q.id}`,
+          formatDateNumeric(q.date),
+          q.customerName.toUpperCase(),
+          volumeM3 > 0 ? volumeM3.toFixed(2) : "-",
+          (
+            statusConfig[q.status as keyof typeof statusConfig]?.label ||
+            q.status
+          ).toUpperCase(),
+          ((q as any).seller?.name || "—").toUpperCase(),
+          fmtCurrency(q.total),
+        ];
+      }),
       theme: "grid",
       headStyles: {
         fillColor: [24, 24, 27],
@@ -556,6 +566,10 @@ export const useQuotes = () => {
         textColor: [63, 63, 70],
       },
       alternateRowStyles: { fillColor: [250, 250, 250] },
+      columnStyles: {
+        3: { halign: "center" },
+        6: { halign: "right" },
+      },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY;
