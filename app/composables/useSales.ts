@@ -385,6 +385,51 @@ export const useSales = () => {
     }
   };
 
+  // ─────────────────────────────────────────────
+  // Delivery Date
+  // ─────────────────────────────────────────────
+  const isDeliveryModalOpen = ref(false);
+  const deliveryTarget = ref<Sale | null>(null);
+  const deliveryDateInput = ref("");
+  const loadingDelivery = ref(false);
+
+  const openDeliveryChange = (s: Sale) => {
+    deliveryTarget.value = s;
+    deliveryDateInput.value = formatISODate(
+      s.deliveryDate || s.date || new Date(),
+    );
+    isDeliveryModalOpen.value = true;
+  };
+
+  const handleUpdateDelivery = async () => {
+    if (!deliveryTarget.value || !deliveryDateInput.value) return;
+    loadingDelivery.value = true;
+    try {
+      await $fetch(`/api/sales/${deliveryTarget.value.id}`, {
+        method: "PUT",
+        body: {
+          deliveryDate: deliveryDateInput.value,
+        },
+      });
+      toast.add({
+        title: "Data de entrega atualizada",
+        description: `Nova data: ${formatDateInputPtBR(deliveryDateInput.value)}`,
+        color: "success",
+        icon: "i-heroicons-calendar-days",
+      });
+      isDeliveryModalOpen.value = false;
+      await refreshSales();
+    } catch (e) {
+      toast.add({
+        title: "Erro ao atualizar data",
+        description: getApiError(e),
+        color: "error",
+      });
+    } finally {
+      loadingDelivery.value = false;
+    }
+  };
+
   const exportFilteredExcel = async () => {
     if (filteredSales.value.length === 0) {
       toast.add({
@@ -637,6 +682,13 @@ export const useSales = () => {
     loadingCancel,
     openCancelConfirm,
     handleCancel,
+    // Delivery
+    isDeliveryModalOpen,
+    deliveryTarget,
+    deliveryDateInput,
+    loadingDelivery,
+    openDeliveryChange,
+    handleUpdateDelivery,
     // Actions
     openDeleteConfirm,
     handleDelete,

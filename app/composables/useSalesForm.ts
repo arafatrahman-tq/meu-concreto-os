@@ -116,8 +116,18 @@ export const useSalesForm = (options: {
     }
   })
 
+  watch(
+    () => form.date,
+    (newVal) => {
+      if (newVal && !isEditing.value) {
+        form.deliveryDate = newVal
+      }
+    }
+  )
+
   const clearErrors = () => {
     for (const key in formErrors) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete formErrors[key]
     }
   }

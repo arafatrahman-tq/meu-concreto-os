@@ -1,34 +1,38 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { defineNuxtConfig } from 'nuxt/config'
+import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/ui'],
+  modules: ["@nuxt/eslint", "@nuxt/ui"],
 
   devtools: {
-    enabled: true
+    enabled: true,
   },
 
   app: {
     head: {
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
-    }
+      link: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    },
   },
 
-  css: ['~/assets/css/main.css'],
+  css: ["~/assets/css/main.css"],
 
   runtimeConfig: {
     // Override via NUXT_SESSION_SECRET env var — must be ≥32 chars in production
     sessionSecret:
-      process.env.NUXT_SESSION_SECRET
-      || 'meu-concreto-dev-only-secret-change-in-production!!',
+      process.env.NUXT_SESSION_SECRET ||
+      "meu-concreto-dev-only-secret-change-in-production!!",
     public: {
-      version: process.env.npm_package_version || '1.0.0',
-      appTimezone: process.env.APP_TIMEZONE || process.env.REPORT_TIMEZONE || process.env.TZ || 'America/Sao_Paulo'
-    }
+      version: process.env.npm_package_version || "1.0.0",
+      appTimezone:
+        process.env.APP_TIMEZONE ||
+        process.env.REPORT_TIMEZONE ||
+        process.env.TZ ||
+        "America/Sao_Paulo",
+    },
   },
 
   build: {
-    transpile: ['zod']
+    transpile: ["zod"],
   },
 
   routeRules: {
@@ -37,41 +41,52 @@ export default defineNuxtConfig({
     // binaries at build time, and fail with ResolveMessage {}.
   },
 
-  compatibilityDate: '2025-01-15',
+  compatibilityDate: "2025-01-15",
+
+  icon: {
+    clientBundle: {
+      scan: true,
+      icons: [
+        "lucide:moon",
+        "lucide:sun",
+        "lucide:anvil",
+        "lucide:package",
+        "lucide:box",
+        "lucide:flask-conical",
+        "lucide:chevron-down",
+        "heroicons:sun",
+        "heroicons:moon",
+      ],
+    },
+    serverBundle: {
+      collections: ["heroicons", "lucide", "simple-icons"],
+    },
+    provider: "server",
+  },
 
   nitro: {
     // @libsql/client uses native binaries and transitive deps that Nitro
     // cannot bundle — mark them as external so they resolve from node_modules at runtime
     externals: {
       external: [
-        '@libsql/client',
-        'libsql',
-        '@libsql/hrana-client',
-        '@libsql/isomorphic-ws',
-        '@libsql/isomorphic-fetch',
-        '@libsql/linux-x64-musl',
-        '@libsql/linux-x64-gnu',
-        'ws'
-      ]
-    }
+        "@libsql/client",
+        "libsql",
+        "@libsql/hrana-client",
+        "@libsql/isomorphic-ws",
+        "@libsql/isomorphic-fetch",
+        "@libsql/linux-x64-musl",
+        "@libsql/linux-x64-gnu",
+        "ws",
+      ],
+    },
   },
 
   eslint: {
     config: {
       stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
-    }
+        commaDangle: "never",
+        braceStyle: "1tbs",
+      },
+    },
   },
-
-  icon: {
-    clientBundle: {
-      scan: true
-    },
-    serverBundle: {
-      collections: ['heroicons', 'lucide', 'simple-icons']
-    },
-    provider: 'server'
-  }
-})
+});

@@ -25,6 +25,7 @@ const emit = defineEmits<{
   cancel: [sale: Sale];
   bill: [sale: Sale];
   sendPdf: [sale: Sale];
+  "update-delivery": [sale: Sale];
   updateStatus: [sale: Sale, next: SaleStatus];
 }>();
 
@@ -541,6 +542,11 @@ STATUS_ACTIONS.confirmed = STATUS_ACTIONS.in_progress ?? [];
                         label: 'Baixar PDF',
                         icon: 'i-heroicons-arrow-down-tray',
                         onSelect: () => downloadPdf(s.id),
+                      },
+                      {
+                        label: 'Alterar Entrega',
+                        icon: 'i-heroicons-calendar-days',
+                        onSelect: () => emit('update-delivery', s),
                       },
                     ],
                     // Status actions

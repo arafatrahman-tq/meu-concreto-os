@@ -64,6 +64,14 @@ const {
   loadingCancel,
   openCancelConfirm,
   handleCancel,
+
+  // Delivery
+  isDeliveryModalOpen,
+  deliveryTarget,
+  deliveryDateInput,
+  loadingDelivery,
+  openDeliveryChange,
+  handleUpdateDelivery,
 } = useSales();
 
 const driverOptions = computed(() => [
@@ -311,6 +319,7 @@ onMounted(() => {
       @delete="openDeleteConfirm"
       @bill="openBilling"
       @cancel="openCancelConfirm"
+      @update-delivery="openDeliveryChange"
       @update-status="updateStatus"
       @send-pdf="sendPdf"
     />
@@ -357,6 +366,8 @@ onMounted(() => {
       v-model:confirm-create-modal-open="isConfirmCreateModalOpen"
       v-model:cancel-modal-open="isCancelModalOpen"
       v-model:cancel-reason="cancelReason"
+      v-model:delivery-modal-open="isDeliveryModalOpen"
+      v-model:delivery-date="deliveryDateInput"
       :delete-target="deleteTarget"
       :loading-delete="loadingDelete"
       :billing-sale="billingSale"
@@ -368,11 +379,14 @@ onMounted(() => {
       :is-creating="isCreating"
       :cancel-target="cancelTarget"
       :loading-cancel="loadingCancel"
+      :delivery-target="deliveryTarget"
+      :loading-delivery="loadingDelivery"
       @delete="handleDelete"
       @bill="handleBill"
       @confirm-delete="handleConfirmDelete(form)"
       @confirm-create="handleConfirmCreate(form)"
       @cancel="handleCancel"
+      @update-delivery="handleUpdateDelivery"
     />
   </div>
 </template>
